@@ -13,6 +13,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import koerper
+import vokabular
 import wiederanlauf
 from boardprobe import antwort, vergleiche_board
 from kern import Erbgedaechtnis, Gedaechtnis, Kontextgedaechtnis, Knoten, MAX_TAKT, REGELN, ZUSTAENDE
@@ -337,6 +338,69 @@ class KoerperTests(unittest.TestCase):
             ziel.write_text(",".join(koerper.KOPF_ALT) + "\n1,1001,380,371820,326,OK,0,0\n")
             meta, werte = koerper.pruefen(ziel)
             self.assertEqual((werte[0]["last"], werte[0]["temp_dc"]), (0, 380))
+
+
+class VokabularTests(unittest.TestCase):
+    # Fassung 1 des festen Kerns. Wer hier etwas ändert, bricht die Verständigung
+    # mit älteren Knoten. Neue Wörter kommen nur hinten an VOKABULAR dazu.
+    FASSUNG_1 = [(1, "OK", "OK"), (2, "SCHWACH", "SCHWACH"), (3, "AUSFALL", "AUSFALL"), (4, "VORWARNUNG", None),
+                 (5, "TEMP_HOCH", "SCHWACH"), (6, "TEMP_KRITISCH", "AUSFALL"), (7, "SPEICHER_KNAPP", "SCHWACH"),
+                 (8, "SPEICHER_VOLL", "AUSFALL"), (9, "SCHLEIFE_ZAEH", "SCHWACH"), (10, "SCHLEIFE_STEHT", "AUSFALL")]
+
+    def test_alte_nummern_bleiben_neue_kommen_hinten_dazu(self):
+        v = vokabular.VOKABULAR
+        self.assertEqual([(w.nummer, w.name, w.oberbegriff) for w in v[:len(self.FASSUNG_1)]], self.FASSUNG_1)
+        self.assertEqual([w.nummer for w in v], list(range(1, len(v) + 1)))
+        namen = [w.name for w in v + vokabular.VORSCHLAEGE]
+        self.assertEqual(len(namen), len(set(namen)))
+        self.assertTrue(all(w.nummer is None and w.bedeutung for w in vokabular.VORSCHLAEGE))
+        # Die bisherigen Token im Fünf-Byte-Paket tragen dieselben Nummern.
+        from versuch import TOKEN
+        self.assertTrue(all(vokabular.NACH_NAME[name].nummer == nummer for name, nummer in TOKEN.items()))
+        for hoch, kritisch in vokabular.ERBFOLGEN:
+            a, b = vokabular.NACH_NAME[hoch], vokabular.NACH_NAME[kritisch]
+            self.assertEqual((a.signal, a.oberbegriff, b.oberbegriff), (b.signal, "SCHWACH", "AUSFALL"))
+
+    def test_grobe_sicht_wie_einstufung_im_geraet(self):
+        g = koerper.ERKUNDUNG
+        for t in (None, 499, 500, 599, 600):
+            for h in (16384, 16385, 65536, 65537):
+                for l in (19999, 20000, 199999, 200000):
+                    self.assertEqual(vokabular.grob(vokabular.koerperwort(t, h, l, g)),
+                                     koerper.einstufen(t, h, l, g), (t, h, l))
+
+    def test_horizont_eins_entscheidet_wie_der_knoten(self):
+        spur = generiere("Rückkehr", 3)
+        knoten = Knoten(Erbgedaechtnis())
+        erwartet = [knoten.schritt(t, z).vorwarnung for t, z in enumerate(spur, 1)]
+        modell = vokabular.Wortgedaechtnis(vokabular.GROBWOERTER, vokabular.GROBERBE)
+        self.assertEqual(vokabular.warnungen(spur, modell, 1), erwartet)
+
+    def test_weiter_blick_warnt_vor_der_hitze(self):
+        rhythmus = ["OK"] * 10 + ["TEMP_HOCH"] * 8 + ["TEMP_KRITISCH"] * 3
+        woerter = rhythmus * 10
+        neu = lambda: vokabular.Wortgedaechtnis(vokabular.KOERPERWOERTER, vokabular.ERBFOLGEN)
+        nah = vokabular.bewerte(woerter, vokabular.warnungen(woerter, neu(), 1), 10)
+        weit = vokabular.bewerte(woerter, vokabular.warnungen(woerter, neu(), 10), 10)
+        # Bei einem Takt warnt nur das Erbe zu Beginn, mit zehn Takten jede Phase acht Takte vorher.
+        self.assertEqual((nah["phasen"], nah["vorgewarnt"]), (10, 1))
+        self.assertEqual((weit["vorgewarnt"], weit["fehlalarme"], weit["vorwarnzeit"]), (10, 0, 8))
+        m = neu()
+        vokabular.warnungen(woerter, m, 1)
+        werte = [m.kritisch_binnen("OK", h) for h in range(1, 25)]
+        self.assertEqual(werte, sorted(werte))
+
+    def test_alarme_verschmelzen_nicht_ueber_eine_phase(self):
+        woerter = ["OK", "OK", "TEMP_HOCH", "TEMP_KRITISCH", "OK", "TEMP_HOCH", "OK", "OK"]
+        warn = [False, False, True, False, False, True, False, False]
+        b = vokabular.bewerte(woerter, warn, 2)
+        self.assertEqual((b["phasen"], b["vorgewarnt"], b["alarme"], b["fehlalarme"]), (1, 1, 2, 1))
+
+    def test_richtung_teilt_nur_ok_und_hoch(self):
+        temps = [360] * 25 + [370] * 25
+        woerter = ["OK"] * 49 + ["TEMP_KRITISCH"]
+        neu = vokabular.mit_richtung(woerter, temps, 20)
+        self.assertEqual((neu[24], neu[45], neu[49]), ("OK", "TEMP_STEIGT", "TEMP_KRITISCH"))
 
 
 @unittest.skipUnless(shutil.which("c++"), "Hostvergleich benötigt einen C++11-Compiler")

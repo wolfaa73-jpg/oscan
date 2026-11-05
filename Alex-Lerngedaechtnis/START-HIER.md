@@ -40,6 +40,8 @@ Die Schwierigkeit beim Vergessen ist die Wahl des richtigen Maßstabs. Eine lang
 
 **Der eigene Körper kann das Erbe widerlegen.** Unter Last wärmt sich der S3 langsam von 36 auf 38 bis 39 °C. Auf „warm“ folgt im nächsten Takt fast nie „heiß“. Der Knoten mit Erbe warnt deshalb dreimal wie mitgegeben, dann haben ihn drei eigene Folgen „SCHWACH → SCHWACH“ überstimmt. Die feste Regel warnt weiter bei jedem warmen Takt. Für träge Signale ist ein Takt Vorhersage zu kurz.
 
+**Mit weiterem Blick bestätigt dieselbe Erfahrung das Erbe.** `vokabular.py` gibt dem Knoten zehn feste Wörter mit Nummer, Oberbegriff und Bedeutung. Für eine Vorwarnung denkt es seine gelernte Tabelle bis zu 30 oder 60 Takte weiter. Am Mitschnitt unter Last kündigt es so alle 20 Hitzephasen an, im Median 30 bzw. 56 s vorher, und landet aus eigener Erfahrung genau bei der festen Regel. Die meisten Fehlalarme sind Nachwärme beim Abkühlen. Mehr Wörter helfen erst, wenn mehr als die Temperatur schwankt.
+
 **Eine gesendete Meldung ist noch keine empfangene Meldung.** Im zweiten Versuch dauert der Ausfall 20 Takte. Geht genau die erste Ausfallmeldung verloren, übersieht das reine Melden von Zustandswechseln den gesamten Ausfall. Mit einer zusätzlichen Zustandsmeldung spätestens alle fünf Takte erfährt die Gegenstelle in Takt 11 vom Ausfall in Takt 6. Dafür sendet der Knoten im 36-Takt-Versuch 40 statt 15 Nutzbytes. Beim Senden in jedem Takt wären es 180. Bei vollständiger Funkstille kann die Gegenstelle nur kenntlich machen, ab wann ihr letztes Wissen zu alt ist.
 
 ## Was jetzt benutzbar ist
@@ -48,7 +50,8 @@ Die Schwierigkeit beim Vergessen ist die Wahl des richtigen Maßstabs. Eine lang
 - **Ein Gedächtnis mit Neustart.** Alle drei Lernregeln (Zeit, Kontext, Erbe) können ihren Zustand auf dem Rechner sichern und mit absoluten Takten fortsetzen. Messlücken erzeugen keine erfundenen Übergänge. Der ESP32-Sketch hat eigene Befehle zum Sichern und Laden. Das Erbe gehört zur Regel. Ein Stand mit abweichendem Erbe wird beim Laden abgewiesen.
 - **Drei übersetzte Firmwarevarianten.** Zeit, Kontext und Erbe wurden für den klassischen ESP32 (`esp32dev`) und für Alex’ ESP32-S3-N16R8 (`esp32s3`) gebaut. Der identische Sketchcode wurde im Hosttest pro Variante über 57.840 Beobachtungen mit Python verglichen. Für einen physischen Lauf liegt ein serieller Prüfer bei. Seit 0.3 übersteht er einen langsamen Start, bei dem das Board wiederholte Neustartbefehle alle beantwortet. Auf Alex’ ESP32-S3 bestanden alle drei Varianten am 5. November die Demo mit 240 von 240 Antworten. Die Erbe-Variante behielt ihren Lernstand über eine Stromtrennung.
 - **Körpersignale.** Seit 0.4 misst der S3 im Körpermodus in eigenem Takt Chiptemperatur, freien Speicher und Schleifenlücke, stuft sie ein und lernt damit. `koerper.py` zeichnet auf und rechnet jede Entscheidung nach. Mit `--last` arbeitet Kern 0 in einem Rhythmus und wärmt den Chip, die eingebaute LED zeigt den Zustand.
-- **Ein reproduzierbarer Übergabestand.** 42 automatisierte Tests waren erfolgreich. Der Versuchsbericht läuft offline. Quellcode, Messdateien und eine eingefrorene Kopie der Originalnotizen liegen im Ordner, die Lieferungen 0.1 und 0.2 unter `../archiv`.
+- **Ein Vokabular.** `vokabular.py` legt zehn Wörter fest und wertet Körperaufnahmen mit weiterem Blick aus. Es läuft bisher nur auf dem Rechner, das Gerät spricht weiter OK, SCHWACH und AUSFALL.
+- **Ein reproduzierbarer Übergabestand.** 48 automatisierte Tests waren erfolgreich. Der Versuchsbericht läuft offline. Quellcode, Messdateien und eine eingefrorene Kopie der Originalnotizen liegen im Ordner, die Lieferungen 0.1 und 0.2 unter `../archiv`.
 
 ## Womit Alex und Claude weitermachen sollten
 

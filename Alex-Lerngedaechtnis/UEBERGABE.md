@@ -20,6 +20,7 @@ Alex’ Fernziel ist ein lokales System, dessen Gedächtnis die Arbeit vorhanden
 | Wie bleibt ein Lernstand über zwei Läufe erhalten? | neustart.py, esp32/Lernknoten/Knoten.h |
 | Wo liegen Gerätesketch und serieller Referenzvergleich? | esp32/Lernknoten/Lernknoten.ino, esp32/platformio.ini, boardprobe.py, wiederanlauf.py |
 | Wie nimmt der Knoten seinen eigenen Zustand wahr? | esp32/Lernknoten/Koerper.h, koerper.py |
+| Welche Wörter kennt er, und wie weit blickt er voraus? | vokabular.py |
 | Welche Nachweise sind automatisiert? | test_versuch.py, test_labor.py |
 
 ## Referenzlauf und Aussagegrenzen
@@ -168,6 +169,55 @@ Unter Last steigt der Chip binnen etwa einer Minute auf 38 °C, an der Spitze au
 Probeweise neu eingestuft (SCHWACH ab 37, AUSFALL ab 39 °C) zeigte die Erkundung: Auf ein warmes Signal folgte im nächsten Takt nur in 6 von 351 Fällen ein heißes. Die feste Regel hätte 345 Fehlwarnungen gegeben. „Erbe und Kontext“ warnte dreimal, dann hatte die eigene Erfahrung das Erbe überstimmt. Für ein so träges Signal ist ein Takt Vorhersage zu kurz.
 
 Für den Mitschnitt gelten die auf der Erkundung gewählten Grenzen, danach eingefroren: SCHWACH ab 38 °C, AUSFALL ab 39 °C, Speicher und Lücke wie in `ERKUNDUNG`. Auf der Erkundung ergab das 67 % OK, 27 % SCHWACH und 6 % AUSFALL. Der Mitschnitt mit demselben Lastrhythmus begann um 13:34 und ist auf 12 Stunden angelegt.
+
+## Vokabular
+
+`vokabular.py` legt die Wörter fest, in denen der Knoten über seinen Körper spricht, bisher nur auf dem Rechner. Es folgt den Regeln aus Alex’ Vokabularentwurf:
+- **Feste Nummern:** Nummern ändern sich nie und werden nie neu vergeben, neue Wörter kommen nur hinten dazu.
+- **Alte Token:** 1 bis 4 sind die bisherigen Token des Fünf-Byte-Pakets.
+- **Oberbegriff:** Jedes Körperwort hat einen. Ein Knoten, der nur OK, SCHWACH und AUSFALL kennt, versteht damit weiter alles.
+- **Prüfung:** Ein Test hält Fassung 1 fest und schlägt an, sobald jemand eine bestehende Nummer ändert.
+
+| Nr. | Wort | Oberbegriff | Bedeutung |
+|---:|---|---|---|
+| 1 | OK | OK | nichts Auffälliges |
+| 2 | SCHWACH | SCHWACH | Oberbegriff: eingeschränkt, aber arbeitsfähig |
+| 3 | AUSFALL | AUSFALL | Oberbegriff: nicht arbeitsfähig |
+| 4 | VORWARNUNG | – | Meldung: ein Ausfall wird erwartet |
+| 5 | TEMP_HOCH | SCHWACH | Chiptemperatur ab der Grenze für hoch |
+| 6 | TEMP_KRITISCH | AUSFALL | Chiptemperatur ab der Grenze für kritisch |
+| 7 | SPEICHER_KNAPP | SCHWACH | freier Speicher bis zur Grenze für knapp |
+| 8 | SPEICHER_VOLL | AUSFALL | freier Speicher bis zur Grenze für voll |
+| 9 | SCHLEIFE_ZAEH | SCHWACH | fremde Wartezeit der Hauptschleife ab der Grenze für zäh |
+| 10 | SCHLEIFE_STEHT | AUSFALL | fremde Wartezeit der Hauptschleife ab der Grenze für steht |
+
+Jeder Körpertakt bekommt das schwerste zutreffende Wort. Bei gleicher Schwere geht Temperatur vor Speicher vor Schleife. Der Oberbegriff dieses Worts ist genau die Einstufung, die das Gerät heute schon vornimmt, ein Test prüft das an allen Grenzfällen. Das Erbe gilt je Signal: Auf hoch folgt kritisch, mit drei festen Beobachtungen.
+
+**Weiter Blick.** Das Wortgedächtnis lernt wie die Kontextregel, welches Wort auf welches folgt. Für eine Vorwarnung denkt es diese Tabelle Schritt für Schritt weiter und schätzt so, wie wahrscheinlich binnen H Takten ein kritisches Wort kommt. Bei H = 1 entscheidet es Takt für Takt genau wie der bisherige Knoten, auch das prüft ein Test.
+
+**Wie gezählt wird.** Kritische Läufe mit höchstens 10 Takten Abstand gelten als eine Hitzephase. Sonst zählte jedes Flackern zwischen zwei Gradstufen als neuer Ausfall. Ein Alarm ist ein zusammenhängender Warnlauf außerhalb einer Phase, über eine Phase hinweg verschmelzen zwei Läufe nicht. Er ist richtig, wenn während des Laufs oder binnen H Takten danach eine Phase beginnt.
+
+```bash
+python3 vokabular.py liste
+python3 vokabular.py auswertung messungen/koerper-last-2026-11-05.csv --horizont 30 60
+```
+
+**Am Mitschnitt unter Last, 41 Minuten mit 20 Hitzephasen:**
+
+| Verfahren | vorgewarnt, Horizont 30 s | Fehlalarme / Alarme | Vorwarnzeit | vorgewarnt, Horizont 60 s | Fehlalarme / Alarme | Vorwarnzeit |
+|---|---:|---:|---:|---:|---:|---:|
+| Feste Regel | 20 / 20 | 14 / 34 | 30 s | 20 / 20 | 13 / 34 | 56 s |
+| Grob, ein Takt (heute im Gerät) | 1 / 20 | 0 / 1 | 28 s | 2 / 20 | 0 / 1 | 44 s |
+| Grob, weiter Blick | 20 / 20 | 14 / 34 | 30 s | 20 / 20 | 13 / 34 | 56 s |
+| Vokabular, weiter Blick | 20 / 20 | 14 / 34 | 30 s | 20 / 20 | 13 / 34 | 56 s |
+| Vorschlag Richtung, weiter Blick | 20 / 20 | 24 / 44 | 30 s | 20 / 20 | 14 / 36 | 60 s |
+
+Drei Befunde:
+- **Der Blick entscheidet über das Erbe.** Bei einem Takt widerlegt die Erfahrung das Erbe. Mit 30 bis 60 s Blick kommt sie aus eigenen Beobachtungen genau bei der festen Regel an: Auf warm folgt binnen einer Minute heiß.
+- **Mehr Wörter allein ändern noch nichts.** Auf dem Tisch schwankt nur die Temperatur, TEMP_HOCH ist dann SCHWACH und TEMP_KRITISCH ist AUSFALL. Die Wörter für Speicher und Schleife warten auf Erfahrungen.
+- **Die Fehlalarme sind Nachwärme.** 12 der 14 beginnen außerhalb der Last, 10 davon höchstens 15 s nach dem Ende einer Hitzephase, wenn der Chip beim Abkühlen noch auf 38 °C steht.
+
+Ein erster Vorschlag für den wachsenden Rand teilt OK und TEMP_HOCH nach der Richtung der Temperatur auf: Median der letzten fünf Takte gegen fünf Takte 20 Takte zuvor. Das Fenster ist eine Wahl vorab, die Erkundung hatte für eine Wahl aus den Daten nur zwei Hitzephasen. Der Vorschlag verschiebt die Warnungen nach vorn, beseitigt die Nachwärme aber nicht. In dieser Form ist er deshalb nicht bestätigt und hat keine Nummer bekommen. Gegen Nachwärme spricht mehr für einen längeren Zusammenhang, etwa das vorige Wort oder die Dauer in einem Zustand, als für weitere Wörter.
 
 ## Kommunikationsversuch und nächste Entscheidung
 
