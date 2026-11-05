@@ -10,10 +10,15 @@ from dataclasses import asdict, astuple, dataclass
 from pathlib import Path
 
 from boardprobe import antwort, bereit
-from kern import Knoten, REGELN, ZUSTAENDE
+from kern import Knoten, MAX_BLICK, REGELN, ZUSTAENDE
 
-KOPF = ("takt", "zeit_ms", "temp_dc", "heap", "luecke_us", "zustand", "sofort", "vorwarnung", "last")
-KOPF_ALT = KOPF[:-1]  # erste Aufnahmen vom 5. November, noch ohne Lastphase
+KOPF = ("takt", "zeit_ms", "temp_dc", "heap", "luecke_us", "zustand", "sofort", "vorwarnung", "reiz")
+# Ältere Aufnahmen bleiben lesbar. Am 5. November hieß die letzte Spalte zuerst "last" und
+# kannte nur die Last, die ersten Aufnahmen hatten sie noch gar nicht.
+KOPF_LAST = KOPF[:-1] + ("last",)
+KOPF_ALT = KOPF[:-1]
+# Bits der Spalte reiz, wie reize() im Sketch.
+LAST, LECK, BREMSE = 1, 2, 4
 MAX_TEMP = 100000  # Zehntelgrad, wie maxTemp im Sketch
 
 
@@ -55,25 +60,33 @@ def einstufen(temp_dc, heap, luecke_us, g):
 
 
 def lies_koerperzeile(zeile):
-    """K,takt,zustand,sofort,vorwarnung,temp_dc,heap,luecke_us,last"""
+    """K,takt,zustand,sofort,vorwarnung,temp_dc,heap,luecke_us,reiz"""
     teile = zeile.decode("ascii", "replace").split(",")
     if len(teile) != 9 or teile[0] != "K" or teile[2] not in ZUSTAENDE:
         raise ValueError(f"Unerwartete Körperzeile {zeile!r}.")
-    takt, sofort, warnung, heap, luecke, last = (int(teile[i]) for i in (1, 3, 4, 6, 7, 8))
+    takt, sofort, warnung, heap, luecke, reiz = (int(teile[i]) for i in (1, 3, 4, 6, 7, 8))
     temp = None if teile[5] == "-" else int(teile[5])
     return dict(takt=takt, temp_dc=temp, heap=heap, luecke_us=luecke, zustand=teile[2],
-                sofort=sofort, vorwarnung=warnung, last=last)
+                sofort=sofort, vorwarnung=warnung, reiz=reiz)
 
 
-def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None):
+def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=1, leck=None, bremse=None):
     """Körpermodus starten und jede Zeile mitschreiben. Gibt die Zahl der Takte zurück.
 
-    last=(an_s, aus_s) lässt Kern 0 in diesem Rhythmus arbeiten. Der Knoten spürt das
-    nur über seine Messwerte."""
+    last=(an_s, aus_s) lässt Kern 0 in diesem Rhythmus arbeiten. leck=(byte, boden, halten,
+    pause) belegt Speicher, bremse=(start, schritt, bis, halten, pause) hält die Hauptschleife
+    an, beide wie LECK und BREMSE im Sketch. Der Knoten spürt alle Reize nur über seine
+    Messwerte. blick sind die Takte, die seine Vorwarnung vorausdenkt."""
     if not 100 <= intervall_ms < 2**32:
         raise ValueError("Das Intervall muss mindestens 100 ms betragen.")
     if last is not None and not all(type(s) is int and 0 <= s <= 3600 for s in last):
         raise ValueError("Last und Pause in ganzen Sekunden bis 3600.")
+    if type(blick) is not int or not 1 <= blick <= MAX_BLICK:
+        raise ValueError(f"Der Blick muss 1 bis {MAX_BLICK} Takte betragen.")
+    # Die Bereiche von Leck und Bremse prüft das Gerät, hier nur die Form.
+    for name, werte, anzahl in (("Leck", leck, 4), ("Bremse", bremse, 5)):
+        if werte is not None and (len(werte) != anzahl or not all(type(w) is int and 0 <= w < 2**32 for w in werte)):
+            raise ValueError(f"{name} braucht {anzahl} ganze Zahlen ab null.")
     if ziel.exists() or ziel.with_suffix(".json").exists():
         raise ValueError(f"{ziel} oder die zugehörige .json gibt es schon.")
     bereit(port, regel)
@@ -83,16 +96,22 @@ def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None):
         port.write(grenzen.befehl() + b"\n")
         if (erhalten := antwort(port, nach_handschlag=True, frist=3.0)) != b"GRENZEN,ok":
             raise ValueError(f"Grenzen nicht übernommen, erhalten {erhalten!r}.")
-        # Die Last vor dem Körpermodus starten, damit keine Körperzeile vor der Bestätigung kommt.
+        # Blick und Reize vor dem Körpermodus, damit keine Körperzeile vor einer Bestätigung kommt.
+        befehle = [(f"BLICK {blick}", b"BLICK,ok", "Blick nicht übernommen")]
         if last is not None:
-            port.write(f"LAST {last[0]} {last[1]}\n".encode("ascii"))
-            if (erhalten := antwort(port, frist=3.0)) != b"LAST,ok":
-                raise ValueError(f"Last nicht gestartet, erhalten {erhalten!r}.")
-        port.write(f"KOERPER {intervall_ms}\n".encode("ascii"))
-        if (erhalten := antwort(port, frist=3.0)) != b"KOERPER,an":
-            raise ValueError(f"Körpermodus nicht gestartet, erhalten {erhalten!r}.")
-        meta = dict(regel=regel, intervall_ms=intervall_ms, grenzen=asdict(grenzen),
-                    last=None if last is None else list(last), beginn=time.strftime("%Y-%m-%d %H:%M"))
+            befehle.append((f"LAST {last[0]} {last[1]}", b"LAST,ok", "Last nicht gestartet"))
+        if leck is not None:
+            befehle.append(("LECK " + " ".join(map(str, leck)), b"LECK,ok", "Leck nicht gestartet"))
+        if bremse is not None:
+            befehle.append(("BREMSE " + " ".join(map(str, bremse)), b"BREMSE,ok", "Bremse nicht gestartet"))
+        befehle.append((f"KOERPER {intervall_ms}", b"KOERPER,an", "Körpermodus nicht gestartet"))
+        for befehl, bestaetigung, fehler in befehle:
+            port.write(befehl.encode("ascii") + b"\n")
+            if (erhalten := antwort(port, frist=3.0)) != bestaetigung:
+                raise ValueError(f"{fehler}, erhalten {erhalten!r}.")
+        meta = dict(regel=regel, intervall_ms=intervall_ms, grenzen=asdict(grenzen), blick=blick,
+                    last=None if last is None else list(last), leck=None if leck is None else list(leck),
+                    bremse=None if bremse is None else list(bremse), beginn=time.strftime("%Y-%m-%d %H:%M"))
         with ziel.with_suffix(".json").open("x", encoding="utf-8") as datei:
             json.dump(meta, datei, ensure_ascii=False, indent=1)
         with ziel.open("x", encoding="utf-8", newline="") as datei:
@@ -124,13 +143,15 @@ def lies_aufnahme(pfad):
     with pfad.open(encoding="utf-8", newline="") as datei:
         zeilen = csv.reader(datei, strict=True)
         kopf = next(zeilen, None)
-        if kopf not in (list(KOPF), list(KOPF_ALT)):
+        if kopf not in (list(KOPF), list(KOPF_LAST), list(KOPF_ALT)):
             raise ValueError("Kopf der Aufnahme ist ungültig.")
         werte = []
         for nummer, zeile in enumerate(zeilen, start=2):
             if len(zeile) != len(kopf):
                 raise ValueError(f"Zeile {nummer} ist unvollständig.")
-            z = {"last": "0", **dict(zip(kopf, zeile))}  # alte Aufnahmen ohne Lastphase
+            z = dict(zip(kopf, zeile))
+            # "last" kannte nur die Last, also Bit 1. Ganz alte Aufnahmen hatten keine Reize.
+            z.setdefault("reiz", z.pop("last", "0"))
             w = {f: int(z[f]) for f in KOPF if f not in ("temp_dc", "zustand")}
             w["temp_dc"] = None if z["temp_dc"] == "-" else int(z["temp_dc"])
             w["zustand"] = z["zustand"]
@@ -146,7 +167,7 @@ def pruefen(pfad):
     """Jede Einstufung und jede Entscheidung des Geräts mit Python nachrechnen."""
     meta, werte = lies_aufnahme(pfad)
     g = Grenzen(**meta["grenzen"])
-    knoten = Knoten(REGELN[meta["regel"]]())
+    knoten = Knoten(REGELN[meta["regel"]](), blick=meta.get("blick", 1))
     for nummer, w in enumerate(werte, start=2):
         if einstufen(w["temp_dc"], w["heap"], w["luecke_us"], g) != w["zustand"]:
             raise ValueError(f"Zeile {nummer}: Einstufung {w['zustand']} passt nicht zu den Rohwerten.")
@@ -168,7 +189,8 @@ def bericht(meta, werte):
     temps = [w["temp_dc"] for w in werte if w["temp_dc"] is not None]
     heaps = [w["heap"] for w in werte]
     luecken = [w["luecke_us"] for w in werte]
-    zeilen = [f"{len(werte)} Takte à {meta['intervall_ms']} ms, Regel {meta['regel']}, Beginn {meta['beginn']}."]
+    blick = f", Blick {meta['blick']} Takte" if meta.get("blick", 1) > 1 else ""
+    zeilen = [f"{len(werte)} Takte à {meta['intervall_ms']} ms, Regel {meta['regel']}{blick}, Beginn {meta['beginn']}."]
     if temps:
         zeilen.append(f"Chiptemperatur {grad(min(temps))} bis {grad(max(temps))} °C, "
                       f"Median {grad(statistics.median(temps))} °C"
@@ -177,13 +199,20 @@ def bericht(meta, werte):
         zeilen.append(f"Freier Speicher {tausender(min(heaps))} bis {tausender(max(heaps))} Byte.")
         zeilen.append(f"Schleifenlücke Median {tausender(statistics.median(luecken))} µs, "
                       f"größte {tausender(max(luecken))} µs.")
-    for name, phase in (("Unter Last", 1), ("In Ruhe", 0)):
-        teil = [w for w in werte if w["last"] == phase]
-        t = [w["temp_dc"] for w in teil if w["temp_dc"] is not None]
-        if t and any(w["last"] for w in werte):
-            zeilen.append(f"{name} ({len(teil)} Takte): Temperatur Median {grad(statistics.median(t))} °C, "
-                          f"höchstens {grad(max(t))} °C, Lücke Median "
-                          f"{tausender(statistics.median(w['luecke_us'] for w in teil))} µs.")
+    if any(w["reiz"] for w in werte):
+        for name, teil in (("Unter Last", [w for w in werte if w["reiz"] & LAST]),
+                           ("Mit Leck", [w for w in werte if w["reiz"] & LECK]),
+                           ("Mit Bremse", [w for w in werte if w["reiz"] & BREMSE]),
+                           ("In Ruhe", [w for w in werte if not w["reiz"]])):
+            t = [w["temp_dc"] for w in teil if w["temp_dc"] is not None]
+            if not teil:
+                continue
+            zeilen.append(f"{name} ({len(teil)} Takte): "
+                          + (f"Temperatur Median {grad(statistics.median(t))} °C, höchstens {grad(max(t))} °C, "
+                             if t else "")
+                          + f"Speicher ab {tausender(min(w['heap'] for w in teil))} Byte, Lücke Median "
+                          f"{tausender(statistics.median(w['luecke_us'] for w in teil))} µs, größte "
+                          f"{tausender(max(w['luecke_us'] for w in teil))} µs.")
     zustaende = {z: sum(w["zustand"] == z for w in werte) for z in ZUSTAENDE}
     zeilen.append("Zustände: " + ", ".join(f"{z} {n}" for z, n in zustaende.items())
                   + f". Vorwarnungen: {sum(w['vorwarnung'] for w in werte)}.")
@@ -207,6 +236,13 @@ def main():
     a.add_argument("--grenzen", type=int, nargs=6, metavar="N", help="Temperatur schwach ausfall (Zehntelgrad), "
                    "Speicher schwach ausfall (Byte), Lücke schwach ausfall (µs)")
     a.add_argument("--last", type=int, nargs=2, metavar=("AN", "AUS"), help="Kern 0 arbeitet AN s, ruht AUS s")
+    a.add_argument("--blick", type=int, default=1, help=f"Takte, die die Vorwarnung vorausdenkt, 1 bis {MAX_BLICK}")
+    a.add_argument("--leck", type=int, nargs=4, metavar=("BYTE", "BODEN", "HALTEN", "PAUSE"),
+                   help="Speicherleck: BYTE je Takt, bis nur noch BODEN Byte frei sind, HALTEN Takte am Boden, "
+                        "dann PAUSE Takte frei")
+    a.add_argument("--bremse", type=int, nargs=5, metavar=("START", "SCHRITT", "BIS", "HALTEN", "PAUSE"),
+                   help="Hauptschleife steht je Takt START, START+SCHRITT … bis BIS ms still, HALTEN Takte bei BIS, "
+                        "dann PAUSE Takte nicht")
     k = sub.add_parser("pruefen", help="Einstufungen und Entscheidungen nachrechnen")
     k.add_argument("datei", type=Path)
     s = sub.add_parser("spur", help="takt,zustand für versuch.py, wahlweise neu eingestuft")
@@ -223,7 +259,8 @@ def main():
             grenzen = Grenzen(*arg.grenzen) if arg.grenzen else ERKUNDUNG
             with serial.Serial(arg.port, 115200, timeout=0.6, write_timeout=2) as port:
                 anzahl = aufnehmen(port, arg.regel, grenzen, arg.intervall_ms, arg.takte, arg.datei,
-                                   tuple(arg.last) if arg.last else None)
+                                   tuple(arg.last) if arg.last else None, arg.blick,
+                                   tuple(arg.leck) if arg.leck else None, tuple(arg.bremse) if arg.bremse else None)
             print(f"{anzahl} Takte aufgezeichnet in {arg.datei}.")
         elif arg.aktion == "pruefen":
             meta, werte = pruefen(arg.datei)

@@ -2,9 +2,11 @@
 // Im Körpermodus misst sich der Knoten in eigenem Takt selbst.
 #include "Knoten.h"
 #include "Koerper.h"
+#include "Reize.h"
 #include <string.h>
 #ifdef ARDUINO_ARCH_ESP32
 #include <Preferences.h>
+#include <esp_heap_caps.h>
 #endif
 
 #if defined(ALEX_KONTEXT) && defined(ALEX_ERBE)
@@ -93,6 +95,39 @@ void lastSchleife(void *) {
     }
 }
 
+// Speicherleck und Bremse der Hauptschleife, beide im Takt des Körpers. Auch davon
+// erfährt der Knoten nur über seine Messwerte.
+Leck leck;
+Bremse bremse;
+void *bloecke[512];
+unsigned belegt = 0;
+uint32_t stauMs = 0;    // Stillstand, der im nächsten Durchlauf von loop() ansteht
+bool gebremst = false;  // seit dem letzten Takt stand die Schleife einmal still
+
+void leckFrei() {
+    while (belegt) heap_caps_free(bloecke[--belegt]);
+}
+
+// Vor der Messung: einen Block belegen oder alles freigeben, wie es der Ablauf will.
+void leckTakt() {
+    switch (leck.takt()) {
+    case Leck::BELEGEN: {
+        const uint32_t frei = ESP.getFreeHeap();
+        void *block = belegt < sizeof(bloecke) / sizeof(bloecke[0]) && frei > leck.boden
+                      && frei - leck.boden >= leck.block
+                    ? heap_caps_malloc(leck.block, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT) : nullptr;
+        if (block) bloecke[belegt++] = block;
+        else leck.voll();
+        break;
+    }
+    case Leck::FREIGEBEN:
+        leckFrei();
+        break;
+    default:
+        break;
+    }
+}
+
 #ifdef ALEX_RGB_PIN
 bool blitzAn = false;
 uint32_t blitzEnde = 0;
@@ -115,15 +150,27 @@ void blitze(Zustand z) {
     eigeneArbeit = true;
 }
 #endif
-#else
-const bool lastAktiv = false;
 #endif
 
-// Körpermodus und Last aus, die LED zurück auf bereit.
+// Welche Reize gerade wirken, als Bits für die Auswertung: 1 Last, 2 Leck, 4 Bremse.
+unsigned reize() {
+#ifdef ARDUINO_ARCH_ESP32
+    return (lastAktiv ? 1u : 0u) | (belegt ? 2u : 0u) | (gebremst ? 4u : 0u);
+#else
+    return 0;
+#endif
+}
+
+// Körpermodus und alle Reize aus, die LED zurück auf bereit.
 void ruhe() {
     koerperAn = false;
 #ifdef ARDUINO_ARCH_ESP32
     lastAnMs = 0;
+    leck = Leck();
+    leckFrei();
+    bremse = Bremse();
+    stauMs = 0;
+    gebremst = false;
 #ifdef ALEX_RGB_PIN
     blitzAn = false;
     zeigeZustand(UNBEKANNT);
@@ -148,7 +195,9 @@ bool koerperTakt(bool tempGueltig, int32_t temp, uint32_t heap, uint32_t luecke)
     Serial.print(heap);
     Serial.print(',');
     Serial.print(luecke);
-    Serial.println(lastAktiv ? ",1" : ",0");
+    Serial.print(',');
+    Serial.print(reize());
+    Serial.println("");
 #if defined(ARDUINO_ARCH_ESP32) && defined(ALEX_RGB_PIN)
     if (entscheidung.warnung) blitze(zustand); else zeigeZustand(zustand);
 #endif
@@ -169,6 +218,14 @@ void koerperSchleife() {
     if (!eigeneArbeit && jetzt - letzteRunde > luecke) luecke = jetzt - letzteRunde;
     eigeneArbeit = false;
     letzteRunde = jetzt;
+    if (stauMs) {
+        // Die Bremse: Dieser Durchlauf steht still, die Lücke misst das als fremde Wartezeit.
+        const uint32_t ms = stauMs;
+        stauMs = 0;
+        gebremst = true;
+        delay(ms);
+        return;
+    }
 #ifdef ALEX_RGB_PIN
     if (blitzAn && static_cast<int32_t>(millis() - blitzEnde) >= 0) {
         blitzAn = false;
@@ -176,6 +233,7 @@ void koerperSchleife() {
     }
 #endif
     if (!koerperAn || static_cast<int32_t>(millis() - naechsterTick) < 0) return;
+    leckTakt();
     const float grad = temperatureRead();
     const bool gueltig = !isnan(grad);
     const int32_t temp = gueltig ? static_cast<int32_t>(lroundf(grad * 10.0f)) : 0;
@@ -183,6 +241,8 @@ void koerperSchleife() {
         ruhe();
         Serial.println("FEHLER");
     }
+    gebremst = false;
+    stauMs = bremse.takt();
     eigeneArbeit = true;
     luecke = 0;
     naechsterTick += intervallMs;
@@ -237,6 +297,14 @@ bool verarbeiteZeile() {
         Serial.println("GRENZEN,ok");
         return true;
     }
+    if (befehl("BLICK", rest)) {
+        // Takte, die die Vorwarnung vorausdenkt. Nicht während des Körpermodus, sonst passt
+        // die Aufnahme nicht mehr zu ihrer Nachrechnung.
+        uint32_t takte;
+        if (koerperAn || !felder(rest, &takte, 1) || !knoten.setzeBlick(takte)) return false;
+        Serial.println("BLICK,ok");
+        return true;
+    }
     if (befehl("MESSWERT", rest)) {
         // Rohwerte von außen, etwa eine aufgezeichnete Spur. "-" steht für eine nicht lesbare Temperatur.
         const bool gueltig = *rest != '-';
@@ -269,6 +337,28 @@ bool verarbeiteZeile() {
         if (w[0] && !lastTask
             && xTaskCreatePinnedToCore(lastSchleife, "last", 3072, nullptr, 1, &lastTask, 0) != pdPASS) return false;
         Serial.println("LAST,ok");
+        return true;
+    }
+    if (befehl("LECK", rest)) {
+        // Byte je Takt, Boden in Byte, Takte am Boden, Takte Pause. LECK 0 0 0 0 beendet und gibt frei.
+        uint32_t w[4];
+        if (!felder(rest, w, 4)) return false;
+        Leck neu;
+        if ((w[0] | w[1] | w[2] | w[3]) && !neu.starte(w[0], w[1], w[2], w[3])) return false;
+        leckFrei();
+        leck = neu;
+        Serial.println("LECK,ok");
+        return true;
+    }
+    if (befehl("BREMSE", rest)) {
+        // Start, Schritt und Ende des Stillstands in ms, Takte am Ende, Takte Pause. BREMSE 0 0 0 0 0 beendet.
+        uint32_t w[5];
+        if (!felder(rest, w, 5)) return false;
+        Bremse neu;
+        if ((w[0] | w[1] | w[2] | w[3] | w[4]) && !neu.starte(w[0], w[1], w[2], w[3], w[4])) return false;
+        bremse = neu;
+        stauMs = 0;
+        Serial.println("BREMSE,ok");
         return true;
     }
 #endif

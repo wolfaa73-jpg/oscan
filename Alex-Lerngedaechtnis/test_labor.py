@@ -95,6 +95,47 @@ class DatenTests(unittest.TestCase):
                 self.assertEqual(b.nutzbytes, b.nachrichten * 5)
 
 
+class BlickTests(unittest.TestCase):
+    def test_ein_takt_ist_genau_der_ausfallanteil(self):
+        for f in FAMILIEN:
+            k = Knoten(Erbgedaechtnis())
+            for t, z in enumerate(generiere(f, 7), 1):
+                k.schritt(t, z)
+                g = k.gedaechtnis
+                for zustand in ZUSTAENDE:
+                    zeile, erbe = g.gewichte[zustand], g.erbe[zustand]
+                    beleg = sum(zeile[x] + erbe[x] for x in ZUSTAENDE)
+                    direkt = (zeile["AUSFALL"] + erbe["AUSFALL"]) / beleg if beleg else 0.0
+                    # Bitgleich, nicht nur ungefähr: Sonst entscheidet der Blick 1 anders als bisher.
+                    self.assertEqual(g.schaetze(zustand, 1)[0].hex(), direkt.hex())
+
+    def test_weiter_blick_von_hand_gerechnet(self):
+        g = Kontextgedaechtnis()
+        g.gewichte["SCHWACH"].update(SCHWACH=2.0, AUSFALL=2.0)
+        g.gewichte["OK"].update(OK=3.0, SCHWACH=1.0)
+        self.assertEqual([g.schaetze("SCHWACH", h)[0] for h in (1, 2, 3)], [0.5, 0.75, 0.875])
+        # Von OK: erst SCHWACH mit einem Viertel, dann AUSFALL mit der Hälfte davon.
+        self.assertEqual([g.schaetze("OK", h)[0] for h in (1, 2, 3)], [0.0, 0.125, 0.125 + 0.75 * 0.125 + 0.125 * 0.5])
+        # Ein Zustand ohne Beleg bleibt, wie er ist.
+        self.assertEqual(g.schaetze("AUSFALL", 9), (0.0, 0))
+
+    def test_weiter_blick_waechst_mit_dem_horizont(self):
+        k = Knoten(Erbgedaechtnis())
+        for t, z in enumerate(generiere("Rückkehr", 2), 1):
+            k.schritt(t, z)
+        for zustand in ("OK", "SCHWACH"):
+            werte = [k.gedaechtnis.schaetze(zustand, h)[0] for h in range(1, 61)]
+            self.assertEqual(werte, sorted(werte))
+            self.assertLessEqual(werte[-1], 1.0 + 1e-12)  # Rundung darf ein Bit darüber liegen
+
+    def test_blick_hat_grenzen(self):
+        for falsch in (0, 601, True, 2.0):
+            with self.subTest(blick=falsch):
+                with self.assertRaises(ValueError):
+                    Knoten(Erbgedaechtnis(), blick=falsch)
+        self.assertEqual(Knoten(Erbgedaechtnis(), blick=600).blick, 600)
+
+
 class ErbeTests(unittest.TestCase):
     def test_erbe_traegt_ab_dem_ersten_schwachen_signal(self):
         self.assertTrue(Knoten(Erbgedaechtnis()).schritt(1, "SCHWACH").vorwarnung)
@@ -272,11 +313,11 @@ class KoerperTests(unittest.TestCase):
            (None, 298000, 250000), (430, 300000, 60)]
 
     @staticmethod
-    def geraetezeilen(roh, g, regel, last=None):
+    def geraetezeilen(roh, g, regel, reize=None, blick=1):
         """So antwortet das Gerät, wenn es wie Python einstuft und entscheidet."""
-        k = Knoten(REGELN[regel]())
+        k = Knoten(REGELN[regel](), blick=blick)
         zeilen = []
-        for takt, ((t, h, l), phase) in enumerate(zip(roh, last or [0] * len(roh)), 1):
+        for takt, ((t, h, l), phase) in enumerate(zip(roh, reize or [0] * len(roh)), 1):
             z = koerper.einstufen(t, h, l, g)
             s = k.schritt(takt, z)
             zeilen.append(f"K,{takt},{z},{int(s.sofort)},{int(s.vorwarnung)},"
@@ -300,44 +341,87 @@ class KoerperTests(unittest.TestCase):
                     koerper.Grenzen(*falsch)
         self.assertEqual(self.G.befehl(), b"GRENZEN 500 600 65536 16384 20000 200000")
 
-    def test_aufnahme_pruefung_und_neue_einstufung(self):
-        phasen = [1, 1, 1, 0, 0, 0]
-        antworten = [b"BEREIT,ERBE", b"GRENZEN,ok", b"LAST,ok", b"KOERPER,an",
-                     *(z.encode() for z in self.geraetezeilen(self.ROH, self.G, "erbe", phasen))]
-        zeilen, gesendet = iter(a + b"\r\n" for a in antworten), []
+    @staticmethod
+    def port(antworten, gesendet):
+        """Ein Gerät, das der Reihe nach diese Zeilen sendet und alles Gesendete sammelt."""
+        zeilen = iter(a + b"\r\n" for a in antworten)
         class Port:
             def write(self, daten):
                 gesendet.append(daten)
             def readline(self):
                 return next(zeilen, b"")
+        return Port()
+
+    def test_aufnahme_pruefung_und_neue_einstufung(self):
+        phasen = [1, 1, 1, 0, 0, 0]
+        antworten = [b"BEREIT,ERBE", b"GRENZEN,ok", b"BLICK,ok", b"LAST,ok", b"KOERPER,an",
+                     *(z.encode() for z in self.geraetezeilen(self.ROH, self.G, "erbe", phasen))]
+        gesendet = []
         with tempfile.TemporaryDirectory() as ort:
             ziel = Path(ort, "koerper.csv")
-            self.assertEqual(koerper.aufnehmen(Port(), "erbe", self.G, 1000, len(self.ROH), ziel, (3, 3)), 6)
+            self.assertEqual(koerper.aufnehmen(self.port(antworten, gesendet), "erbe", self.G, 1000,
+                                               len(self.ROH), ziel, (3, 3)), 6)
             # Die Last startet vor dem Körpermodus, STOP beendet beides.
             self.assertLess(gesendet.index(b"LAST 3 3\n"), gesendet.index(b"KOERPER 1000\n"))
             self.assertEqual(gesendet[-1], b"STOP\n")
             meta, werte = koerper.pruefen(ziel)
-            self.assertEqual(meta["last"], [3, 3])
+            self.assertEqual((meta["last"], meta["blick"], meta["leck"]), ([3, 3], 1, None))
             self.assertEqual([w["zustand"] for w in werte], ["OK", "OK", "SCHWACH", "AUSFALL", "AUSFALL", "OK"])
-            self.assertEqual([w["last"] for w in werte], phasen)
+            self.assertEqual([w["reiz"] for w in werte], phasen)
             self.assertIn("Unter Last (3 Takte)", koerper.bericht(meta, werte))
             locker = koerper.Grenzen(550, 700, 65536, 16384, 20000, 300000)
             self.assertEqual([z for _, z in koerper.neu_einstufen(werte, locker)],
                              ["OK", "OK", "OK", "SCHWACH", "SCHWACH", "OK"])
             with self.assertRaises(ValueError):
-                koerper.aufnehmen(Port(), "erbe", self.G, 1000, 1, ziel)
+                koerper.aufnehmen(self.port([], []), "erbe", self.G, 1000, 1, ziel)
             ziel.write_text(ziel.read_text().replace(",SCHWACH,0,1,1", ",SCHWACH,0,0,1"))
             with self.assertRaises(ValueError):
                 koerper.pruefen(ziel)
 
-    def test_aufnahme_ohne_lastspalte_bleibt_lesbar(self):
+    def test_aufnahme_mit_blick_leck_und_bremse(self):
+        # Ein Leck drückt den Speicher unter beide Grenzen, danach steht die Schleife still.
+        roh = [(410, 300000, 60), (410, 60000, 60), (410, 16000, 60), (410, 300000, 30000),
+               (410, 300000, 250000), (410, 300000, 60)] * 4
+        reize = [0, 2, 2, 4, 4, 0] * 4
+        antworten = [b"BEREIT,ERBE", b"GRENZEN,ok", b"BLICK,ok", b"LECK,ok", b"BREMSE,ok", b"KOERPER,an",
+                     *(z.encode() for z in self.geraetezeilen(roh, self.G, "erbe", reize, blick=5))]
+        gesendet = []
+        with tempfile.TemporaryDirectory() as ort:
+            ziel = Path(ort, "reize.csv")
+            koerper.aufnehmen(self.port(antworten, gesendet), "erbe", self.G, 1000, len(roh), ziel,
+                              blick=5, leck=(4096, 12288, 3, 60), bremse=(10, 10, 300, 5, 60))
+            reihe = [gesendet.index(b) for b in (b"GRENZEN 500 600 65536 16384 20000 200000\n", b"BLICK 5\n",
+                                                b"LECK 4096 12288 3 60\n", b"BREMSE 10 10 300 5 60\n",
+                                                b"KOERPER 1000\n")]
+            self.assertEqual(reihe, sorted(reihe))
+            meta, werte = koerper.pruefen(ziel)
+            self.assertEqual((meta["blick"], meta["leck"], meta["bremse"]), (5, [4096, 12288, 3, 60], [10, 10, 300, 5, 60]))
+            bericht = koerper.bericht(meta, werte)
+            for teil in ("Blick 5 Takte", "Mit Leck (8 Takte): Temperatur", "Speicher ab 16.000 Byte",
+                         "Mit Bremse (8 Takte)", "größte 250.000 µs", "In Ruhe (8 Takte)"):
+                self.assertIn(teil, bericht)
+            # Mit einem Takt Blick passt dieselbe Aufnahme nicht mehr zu ihren Vorwarnungen.
+            daten = json.loads(ziel.with_suffix(".json").read_text())
+            ziel.with_suffix(".json").write_text(json.dumps(dict(daten, blick=1)))
+            with self.assertRaises(ValueError):
+                koerper.pruefen(ziel)
+            for falsch in (dict(blick=0), dict(blick=601), dict(leck=(1, 2, 3)), dict(bremse=(1, 2, 3, 4, -5))):
+                with self.subTest(falsch=falsch):
+                    with self.assertRaises(ValueError):
+                        koerper.aufnehmen(self.port([], []), "erbe", self.G, 1000, 1, Path(ort, "x.csv"), **falsch)
+
+    def test_aeltere_aufnahmen_bleiben_lesbar(self):
         with tempfile.TemporaryDirectory() as ort:
             ziel = Path(ort, "alt.csv")
             ziel.with_suffix(".json").write_text(json.dumps(dict(
                 regel="erbe", intervall_ms=1000, grenzen=dataclasses_asdict(self.G), beginn="2026-11-05 10:11")))
             ziel.write_text(",".join(koerper.KOPF_ALT) + "\n1,1001,380,371820,326,OK,0,0\n")
             meta, werte = koerper.pruefen(ziel)
-            self.assertEqual((werte[0]["last"], werte[0]["temp_dc"]), (0, 380))
+            self.assertEqual((werte[0]["reiz"], werte[0]["temp_dc"]), (0, 380))
+            # Mittags hieß die Spalte noch "last" und kannte nur die Last.
+            ziel.write_text(",".join(koerper.KOPF_LAST) + "\n1,1001,380,371820,326,OK,0,0,1\n")
+            meta, werte = koerper.pruefen(ziel)
+            self.assertEqual(werte[0]["reiz"], koerper.LAST)
 
 
 class VokabularTests(unittest.TestCase):
@@ -369,12 +453,16 @@ class VokabularTests(unittest.TestCase):
                     self.assertEqual(vokabular.grob(vokabular.koerperwort(t, h, l, g)),
                                      koerper.einstufen(t, h, l, g), (t, h, l))
 
-    def test_horizont_eins_entscheidet_wie_der_knoten(self):
-        spur = generiere("Rückkehr", 3)
-        knoten = Knoten(Erbgedaechtnis())
-        erwartet = [knoten.schritt(t, z).vorwarnung for t, z in enumerate(spur, 1)]
-        modell = vokabular.Wortgedaechtnis(vokabular.GROBWOERTER, vokabular.GROBERBE)
-        self.assertEqual(vokabular.warnungen(spur, modell, 1), erwartet)
+    def test_grobe_sicht_entscheidet_wie_der_knoten_bei_jedem_blick(self):
+        # Die Auswertung am Rechner und der Knoten im Gerät rechnen denselben Blick.
+        for blick in (1, 30, 60):
+            for f in FAMILIEN:
+                with self.subTest(blick=blick, familie=f):
+                    spur = generiere(f, 3)
+                    knoten = Knoten(Erbgedaechtnis(), blick=blick)
+                    erwartet = [knoten.schritt(t, z).vorwarnung for t, z in enumerate(spur, 1)]
+                    modell = vokabular.Wortgedaechtnis(vokabular.GROBWOERTER, vokabular.GROBERBE)
+                    self.assertEqual(vokabular.warnungen(spur, modell, blick), erwartet)
 
     def test_weiter_blick_warnt_vor_der_hitze(self):
         rhythmus = ["OK"] * 10 + ["TEMP_HOCH"] * 8 + ["TEMP_KRITISCH"] * 3
@@ -396,6 +484,39 @@ class VokabularTests(unittest.TestCase):
         b = vokabular.bewerte(woerter, warn, 2)
         self.assertEqual((b["phasen"], b["vorgewarnt"], b["alarme"], b["fehlalarme"]), (1, 1, 2, 1))
 
+    def test_je_takt_trifft_immer_warnen_nur_die_grundrate(self):
+        # Nach Läufen gezählt verliert „immer warnen“ kaum etwas, je Takt zeigt sich der Preis.
+        woerter = ["OK", "OK", "TEMP_HOCH", "TEMP_KRITISCH", "OK", "OK", "OK", "OK"]
+        immer = vokabular.bewerte(woerter, [not vokabular.kritisch(w) for w in woerter], 2)
+        self.assertEqual((immer["vorgewarnt"], immer["fehlalarme"], immer["alarme"]), (1, 1, 2))
+        self.assertEqual((immer["warnanteil"], immer["trefferquote"], immer["grundrate"]), (1.0, 2 / 7, 2 / 7))
+        b = vokabular.bewerte(woerter, [False, False, True, False, False, True, False, False], 2)
+        self.assertEqual((b["warnanteil"], b["trefferquote"]), (2 / 7, 0.5))
+
+    def test_stufen_je_signal_passen_zum_koerperwort(self):
+        # Das Körperwort ist die schwerste Stufe, bei gleicher Schwere Temperatur vor Speicher vor Schleife.
+        g = koerper.ERKUNDUNG
+        for t in (None, 499, 500, 600):
+            for h in (16384, 16385, 65536, 65537):
+                for l in (19999, 20000, 200000):
+                    stufen = vokabular.stufen_je_signal(t, h, l, g)
+                    schwerste = next((stufen[s] for schwere in ("AUSFALL", "SCHWACH") for s, _, _ in vokabular.SIGNALE
+                                      if vokabular.grob(stufen[s]) == schwere), "OK")
+                    self.assertEqual(vokabular.koerperwort(t, h, l, g), schwerste, (t, h, l))
+
+    def test_je_signal_kein_treffer_fuer_fremde_phase(self):
+        # Die Warnung beim warmen Takt trifft nur in der Gesamtzählung, weil danach der Speicher voll wird.
+        woerter = ["OK", "TEMP_HOCH", "SPEICHER_KNAPP", "SPEICHER_VOLL", "OK", "OK"]
+        stufen = [{s: w if w in (hoch, kritischer) else "OK" for s, hoch, kritischer in vokabular.SIGNALE}
+                  for w in woerter]
+        warn = [False, True, True, False, False, False]
+        self.assertEqual(vokabular.bewerte(woerter, warn, 3)["trefferquote"], 1.0)
+        s = vokabular.bewerte_je_signal(woerter, stufen, warn, 3)
+        self.assertEqual(s["temperatur"], dict(phasen=0, vorgewarnt=0, warnanteil=1.0, trefferquote=0.0))
+        self.assertEqual(s["speicher"], dict(phasen=1, vorgewarnt=1, warnanteil=1.0, trefferquote=1.0))
+        self.assertEqual(s["schleife"], dict(phasen=0, vorgewarnt=0, warnanteil=None, trefferquote=None))
+        self.assertEqual(s["ok"], dict(warnanteil=0.0, trefferquote=None))
+
     def test_richtung_teilt_nur_ok_und_hoch(self):
         temps = [360] * 25 + [370] * 25
         woerter = ["OK"] * 49 + ["TEMP_KRITISCH"]
@@ -414,6 +535,9 @@ class SketchTests(unittest.TestCase):
             flags = [] if regel == "zeit" else [f"-DALEX_{regel.upper()}"]
             subprocess.run(["c++", "-std=c++11", "-Wall", "-Wextra", "-Werror", "-pedantic",
                             *flags, str(ROOT / "esp32/host.cpp"), "-o", str(out)], check=True)
+            # macOS prüft den ersten Start eines frisch gebauten Programms, unter Last dauert das
+            # Sekunden. Einmal vorab starten, damit die Fristen der Tests nur den Sketch messen.
+            subprocess.run([str(out)], input=b"", capture_output=True, timeout=120, check=True)
             cls.binaries[regel] = out
 
     @classmethod
@@ -435,6 +559,87 @@ class SketchTests(unittest.TestCase):
             res = subprocess.run([str(binpfad)], input="\n".join(eingabe)+"\n", text=True,
                                  capture_output=True, timeout=30, check=True)
             self.assertEqual(res.stdout.splitlines(), erwartet)
+
+    def test_sketch_paritaet_mit_weitem_blick(self):
+        spuren = [beispielspur()] + [generiere(f, 1000) for f in FAMILIEN]
+        for regel, binpfad in self.binaries.items():
+            for blick in (2, 60):
+                with self.subTest(regel=regel, blick=blick):
+                    eingabe, erwartet, nah = [], ["takt,zustand,sofort,vorwarnung"], []
+                    for spur in spuren:
+                        k, eins = Knoten(REGELN[regel](), blick=blick), Knoten(REGELN[regel]())
+                        # Ein neuer Lauf beginnt mit Blick 1, der Blick kommt danach.
+                        eingabe += ["NEUER_LAUF", f"BLICK {blick}"]
+                        erwartet += ["BEREIT," + regel.upper(), "BLICK,ok"]
+                        for t, z in enumerate(spur, 1):
+                            s = k.schritt(t, z)
+                            nah.append(eins.schritt(t, z).vorwarnung != s.vorwarnung)
+                            eingabe.append(f"{t},{z}")
+                            erwartet.append(f"{t},{z},{int(s.sofort)},{int(s.vorwarnung)}")
+                    res = subprocess.run([str(binpfad)], input="\n".join(eingabe) + "\n", text=True,
+                                         capture_output=True, timeout=30, check=True)
+                    self.assertEqual(res.stdout.splitlines(), erwartet)
+                    # Sonst prüfte der Vergleich nur den bekannten Blick 1.
+                    self.assertTrue(any(nah))
+
+    def test_blick_befehl_und_neuer_lauf(self):
+        spur = beispielspur()[:60]
+        befehle = ["BLICK 0", "BLICK 601", "BLICK 30 1", "BLICK", "BLICK 600", "BLICK 60", "NEUER_LAUF"]
+        befehle += [f"{t},{z}" for t, z in enumerate(spur, 1)]
+        for regel, exe in self.binaries.items():
+            with self.subTest(regel=regel):
+                k = Knoten(REGELN[regel]())  # NEUER_LAUF setzt den Blick auf 1 zurück
+                erwartet = ["FEHLER"] * 4 + ["BLICK,ok"] * 2 + ["BEREIT," + regel.upper()]
+                erwartet += [f"{t},{z},{int(s.sofort)},{int(s.vorwarnung)}"
+                             for t, z in enumerate(spur, 1) for s in [k.schritt(t, z)]]
+                r = subprocess.run([str(exe)], input="\n".join(befehle) + "\n", text=True,
+                                   capture_output=True, timeout=5, check=True)
+                self.assertEqual(r.stdout.splitlines()[1:], erwartet)
+
+    def test_reize_ablauf_am_rechner(self):
+        quelle = Path(self.tmp.name, "reize.cpp")
+        quelle.write_text(r'''#include "Reize.h"
+#include <cstdio>
+int main() {
+    Bremse b;
+    std::printf("%d", b.starte(10, 10, 30, 2, 2));
+    for (int i = 0; i < 14; ++i) std::printf(" %u", static_cast<unsigned>(b.takt()));
+    Leck l;
+    std::printf("\n%d", l.starte(4096, 8192, 2, 2));
+    unsigned bloecke = 0;  // Nach drei Blöcken ist der Boden erreicht.
+    for (int i = 0; i < 12; ++i) {
+        const Leck::Aktion a = l.takt();
+        if (a == Leck::BELEGEN) {
+            if (bloecke < 3) ++bloecke; else l.voll();
+        } else if (a == Leck::FREIGEBEN) {
+            bloecke = 0;
+        }
+        std::printf(" %d:%u", static_cast<int>(a), bloecke);
+    }
+    Bremse x;
+    Leck y;
+    std::printf("\n%d%d%d%d%d%d%d %d%d%d%d%d%d\n",
+                x.starte(0, 0, 1, 1, 1), x.starte(10, 10, 30, 0, 1), x.starte(10, 10, 30, 1, 3601),
+                x.starte(40, 10, 30, 1, 1), x.starte(10, 10, 901, 1, 1), x.starte(0, 1, 900, 3600, 3600),
+                x.starte(30, 1, 30, 1, 1),
+                y.starte(1023, 8192, 1, 1), y.starte(65537, 8192, 1, 1), y.starte(4096, 8191, 1, 1),
+                y.starte(4096, 8192, 0, 1), y.starte(4096, 8192, 1, 3601), y.starte(65536, 8192, 3600, 3600));
+    Bremse aus;
+    Leck still;
+    std::printf("%u %d\n", static_cast<unsigned>(aus.takt()), static_cast<int>(still.takt()));
+}
+''')
+        exe = Path(self.tmp.name, "reize")
+        subprocess.run(["c++", "-std=c++11", "-Wall", "-Wextra", "-Werror", "-pedantic",
+                        "-I", str(ROOT / "esp32/Lernknoten"), str(quelle), "-o", str(exe)], check=True)
+        zeilen = subprocess.run([str(exe)], capture_output=True, text=True, timeout=5, check=True).stdout.splitlines()
+        # Bremse: Rampe 10, 20, zwei Takte bei 30, zwei Takte ohne, dann von vorn.
+        self.assertEqual(zeilen[0], "1 10 20 30 30 0 0 10 20 30 30 0 0 10 20")
+        # Leck (1 belegen, 2 freigeben): drei Blöcke, zwei Takte am Boden, zwei Takte frei, wieder wachsen.
+        self.assertEqual(zeilen[1], "1 1:1 1:2 1:3 1:3 0:3 2:0 0:0 1:1 1:2 1:3 1:3 0:3")
+        self.assertEqual(zeilen[2], "0000011 000001")
+        # Ohne Start tut keiner etwas.
+        self.assertEqual(zeilen[3], "0 0")
 
     def test_sketch_behaelt_zustand_bei_fehlerhaften_zeilen(self):
         folge = b"1,OK\r\n1,SCHWACH\n4294967296,OK\n2,OK\x00x\n" + b"X"*80 + b"\n5,AUSFALL\n"
@@ -525,12 +730,21 @@ class SketchTests(unittest.TestCase):
         roh = KoerperTests.ROH + [(599, 65536, 19999), (600, 16385, 0), (None, 16384, 0)]
         befehle = ["MESSWERT 400 1 1", "GRENZEN 600 500 1 2 3 4", g.befehl().decode()]
         befehle += [f"MESSWERT {'-' if t is None else t} {h} {l}" for t, h, l in roh]
-        befehle += ["MESSWERT -5 1 1", "KOERPER 1000", "LAST 1 1", "STOP"]
+        befehle += ["MESSWERT -5 1 1", "KOERPER 1000", "LAST 1 1", "LECK 4096 12288 3 60",
+                    "BREMSE 10 10 300 5 60", "STOP"]
+        # Mit weitem Blick auf einer längeren Folge aus Leck und Bremse.
+        lang = [(410, 300000, 60), (410, 60000, 60), (410, 16000, 60), (410, 300000, 30000),
+                (410, 300000, 250000), (410, 300000, 60)] * 5
+        weit = [g.befehl().decode(), "BLICK 30"] + [f"MESSWERT {t} {h} {l}" for t, h, l in lang]
         for regel, exe in self.binaries.items():
             with self.subTest(regel=regel):
                 erwartet = ["FEHLER", "FEHLER", "GRENZEN,ok", *KoerperTests.geraetezeilen(roh, g, regel)]
-                # Negative Temperaturen gibt es nicht, Körpermodus und Last nur am Gerät.
-                erwartet += ["FEHLER", "FEHLER", "FEHLER", "KOERPER,aus"]
+                # Negative Temperaturen gibt es nicht, Körpermodus und Reize nur am Gerät.
+                erwartet += ["FEHLER"] * 5 + ["KOERPER,aus"]
                 r = subprocess.run([str(exe)], input="\n".join(befehle) + "\n", text=True,
+                                   capture_output=True, timeout=5, check=True)
+                self.assertEqual(r.stdout.splitlines()[1:], erwartet)
+                erwartet = ["GRENZEN,ok", "BLICK,ok", *KoerperTests.geraetezeilen(lang, g, regel, blick=30)]
+                r = subprocess.run([str(exe)], input="\n".join(weit) + "\n", text=True,
                                    capture_output=True, timeout=5, check=True)
                 self.assertEqual(r.stdout.splitlines()[1:], erwartet)

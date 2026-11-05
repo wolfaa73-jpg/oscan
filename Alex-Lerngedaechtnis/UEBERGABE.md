@@ -1,6 +1,6 @@
 # Übergabe an Alex und Claude
 
-**Version 0.4 · Stand 5. November 2026**
+**Version 0.5 · Stand 5. November 2026**
 
 Alex’ Fernziel ist ein lokales System, dessen Gedächtnis die Arbeit vorhandener Geräte mitsteuert. Im Labor kann man den ersten Mechanismus isoliert untersuchen. Eine erlernte Vorhersage verändert die ausgehenden Meldungen. Der feste Ausfallreflex bleibt von jeder Lernregel unabhängig. Programmcode, ein Prüfsummenvergleich und das Erkennen des eigenen Gerätezustands sind drei unterschiedliche Dinge. Eine beglaubigte Startkette und ein integriertes Betriebssystem sind Forschungsarbeit für spätere Stufen.
 
@@ -90,14 +90,14 @@ pio run -d esp32
 
 | Gebaute Variante | Vom Linker gemeldete RAM-Belegung | Vom Build gemeldeter Flashbedarf |
 |---|---:|---:|
-| esp32dev · Zeit | 21.740 Byte | 282.625 Byte |
-| esp32dev-kontext · Kontext | 21.740 Byte | 282.625 Byte |
-| esp32dev-erbe · Erbe und Kontext | 21.740 Byte | 282.633 Byte |
-| esp32s3 · Zeit | 18.872 Byte | 282.337 Byte |
-| esp32s3-kontext · Kontext | 18.872 Byte | 282.337 Byte |
-| esp32s3-erbe · Erbe und Kontext | 18.872 Byte | 282.345 Byte |
+| esp32dev · Zeit | 23.956 Byte | 287.401 Byte |
+| esp32dev-kontext · Kontext | 23.956 Byte | 287.417 Byte |
+| esp32dev-erbe · Erbe und Kontext | 23.956 Byte | 287.413 Byte |
+| esp32s3 · Zeit | 21.584 Byte | 300.001 Byte |
+| esp32s3-kontext · Kontext | 21.584 Byte | 300.001 Byte |
+| esp32s3-erbe · Erbe und Kontext | 21.584 Byte | 300.009 Byte |
 
-Gemessen am 5. November auf Alex’ Mac. Die Zahlen umfassen das Arduino-Programm samt Framework. Die neun Gewichte und die Erbtabelle belegen je 72 Byte. In 0.2 lag die RAM-Belegung ohne Erbtabelle bei 21.668 Byte. Die Laufzeit pro Takt, Stromaufnahme und tatsächlich beanspruchte Flashzyklen sind am Gerät zu messen. Der Hosttest führt je Variante den identischen Sketch auf der Demo und allen 120 Kontrollspuren aus. Alle 57.840 Antworten pro Variante stimmen bei Takt, Zustand, Sofortmeldung und Vorwarnung mit Python überein.
+Gebaut am 5. November mit Stand 0.5 auf Alex’ Mac. Die Zahlen umfassen das Arduino-Programm samt Framework. Die neun Gewichte und die Erbtabelle belegen je 72 Byte, die Tabelle für die Blöcke des Lecks 2.048 Byte. In 0.3, vor Körpermodus und Reizen, lag die RAM-Belegung beim S3 bei 18.872 Byte. Die Rechenzeit des weiten Blicks ist am Gerät gemessen (siehe „Weiter Blick im Gerät“), Stromaufnahme und tatsächlich beanspruchte Flashzyklen noch nicht. Der Hosttest führt je Variante den identischen Sketch auf der Demo und allen 120 Kontrollspuren aus. Alle 57.840 Antworten pro Variante stimmen bei Takt, Zustand, Sofortmeldung und Vorwarnung mit Python überein.
 
 **Erster Boardlauf.** Nach dem Aufspielen der zum Gerät passenden Variante den seriellen Monitor schließen und mit einem Python-Interpreter mit `pyserial` den Prüfer starten. Den Beispielport durch den tatsächlichen Port ersetzen. Der Prüfer startet bewusst einen leeren RAM-Lauf, sendet eine Zeile, wartet auf die Antwort und vergleicht jede Entscheidung. Erwartet werden 240 von 240 passende Antworten. Startet das Board langsam, sendet der Prüfer `NEUER_LAUF` mehrmals, und jede Wiederholung wird beantwortet. Seit 0.3 überspringt er diese späten Bereitmeldungen vor der ersten Antwort. Vorher schlug der Hosttest gelegentlich beim ersten Start frisch übersetzter Programme fehl.
 
@@ -129,19 +129,38 @@ Der Hosttest spielt beide Teile in zwei getrennten Prozessen mit Dateibackend du
 
 Seit 0.4 misst sich der Knoten auf Wunsch selbst. Im Körpermodus liest er in eigenem Takt die Chiptemperatur, den freien internen Speicher und die größte Lücke zwischen zwei Durchläufen von `loop()` seit dem letzten Takt. Durchläufe mit eigener Arbeit, also Messung, Ausgabe und LED, zählen dabei nicht mit, gemessen wird nur fremde Wartezeit. Daraus stuft er den Takt als OK, SCHWACH oder AUSFALL ein, der schlechteste der drei Werte zählt. Mit dieser Einstufung lernt er wie im Replay. Eine nicht lesbare Temperatur steht als „-“ in der Ausgabe und zählt nicht mit.
 
-Die Firmware hat keine eigenen Grenzwerte. `GRENZEN` übergibt sie in Zehntelgrad, Byte und Mikrosekunden, `KOERPER <ms>` startet den Modus, `STOP` beendet ihn. Jeder Takt antwortet mit `K,takt,zustand,sofort,vorwarnung,temp_dc,heap,luecke_us,last`. `MESSWERT` speist Rohwerte von außen ein und nimmt denselben Weg durch Einstufung und Lernen. Darüber vergleicht der Hosttest beides mit Python.
+Die Firmware hat keine eigenen Grenzwerte. `GRENZEN` übergibt sie in Zehntelgrad, Byte und Mikrosekunden, `KOERPER <ms>` startet den Modus, `STOP` beendet ihn. Jeder Takt antwortet mit `K,takt,zustand,sofort,vorwarnung,temp_dc,heap,luecke_us,reiz`. Das letzte Feld hält in Bits fest, welche Reize gerade wirken: 1 Last, 2 Leck, 4 Bremse. Bis 0.4 hieß es `last` und kannte nur die Last, solche Aufnahmen bleiben lesbar. `MESSWERT` speist Rohwerte von außen ein und nimmt denselben Weg durch Einstufung und Lernen. Darüber vergleicht der Hosttest beides mit Python.
 
-**Eine Veränderung mitgeben.** `LAST <an_s> <aus_s>` lässt Kern 0 im vorgegebenen Rhythmus arbeiten und ruhen, die Hauptschleife läuft auf Kern 1. Die Arbeit gibt alle 10 ms kurz ab, damit der Task-Wachhund nicht anschlägt und keine Meldung ins Protokoll schreibt. `LAST 0 0`, `STOP` und `NEUER_LAUF` beenden die Last. Das letzte Feld der Körperzeile vermerkt die Phase nur für die Auswertung. Die Einstufung kennt sie nicht, der Knoten spürt die Last allein über seine Messwerte.
+**Eine Veränderung mitgeben.** `LAST <an_s> <aus_s>` lässt Kern 0 im vorgegebenen Rhythmus arbeiten und ruhen, die Hauptschleife läuft auf Kern 1. Die Arbeit gibt alle 10 ms kurz ab, damit der Task-Wachhund nicht anschlägt und keine Meldung ins Protokoll schreibt. `LAST 0 0`, `STOP` und `NEUER_LAUF` beenden die Last. Die Einstufung kennt die Phase nicht, der Knoten spürt die Last allein über seine Messwerte.
+
+**Speicher und Schleife reizen (seit 0.5).** Damit auch die Wörter für Speicher und Schleife Erfahrungen bekommen, gibt es zwei weitere Reize. Beide wirken im Takt des Körpers, ihr Ablauf steht in `Reize.h` und wird am Rechner geprüft:
+- `LECK <byte> <boden> <halten> <pause>` belegt je Takt einen Block internen Speichers, bis kein Block mehr über den Boden passt. Dann bleibt es `halten` Takte am Boden, gibt alles frei und wächst nach `pause` Takten wieder. Blöcke von 1 bis 64 KiB. Der Boden liegt bei mindestens 8 KiB, das ist eine gewählte Reserve für Ausgabe, LED und Lastaufgabe, noch keine gemessene.
+- `BREMSE <start> <schritt> <bis> <halten> <pause>` hält die Hauptschleife je Takt einmal an: `start`, `start + schritt` und so weiter bis `bis` Millisekunden, dann `halten` Takte bei `bis` und `pause` Takte gar nicht. Höchstens 900 ms, damit bei 1 s Takt kein Takt ausfällt. Der Stillstand zählt als fremde Wartezeit und erscheint im nächsten Takt als Lücke.
+
+`LECK 0 0 0 0` und `BREMSE 0 0 0 0 0` beenden einen Reiz, `STOP` und `NEUER_LAUF` beenden alle und geben den Speicher frei.
+
+**Auf dem S3 am 5. November.** Jede Probe lief mit Blick 60, und alle Einstufungen und Entscheidungen stimmten mit Python überein:
+- **Leck mit hohem Boden** (`--leck 4096 200000 3 10`, 90 Takte): Je Takt sinkt der freie Speicher um 4.112 Byte, also 4 KiB und 16 Byte Verwaltung. Bei 203.012 Byte hält er drei Takte, nach der Freigabe stehen wieder 363.380 Byte zur Verfügung.
+- **Leck bis knapp über den Boden** (`--leck 4096 12288 5 30`, 150 Takte): Ab Takt 73 ist der Speicher knapp (SCHWACH), ab Takt 85 voll (AUSFALL, unter 16 KiB). Mit 13.860 Byte frei lief der S3 sechs Takte lang weiter, der Takt blieb auf die Millisekunde pünktlich. Danach gab er alles frei. Die Untergrenze von 8 KiB ist damit noch nicht geprüft.
+- **Bremse** (`--bremse 10 10 300 5 30`, 80 Takte): Die Lücke folgt der Rampe auf weniger als 1 ms genau, 9,6 ms, 19,6 ms und so weiter bis 299,6 ms. Die Abweichung kommt vom 1-ms-Raster von FreeRTOS. Ab 20 ms ist der Takt SCHWACH, ab 200 ms AUSFALL. Nach fünf Takten bei 300 ms und 30 Takten Pause beginnt die Rampe wieder.
+
+Gegenüber 0.4 stehen 2.120 Byte weniger frei, davon 2.048 für die Blocktabelle. Mit Lastaufgabe sind es 363.380 Byte. Die Aufgabe bleibt nach ihrem ersten Start bestehen, auch über `NEUER_LAUF` hinweg.
+
+**Test läuft:** Seit dem 5. November, 20:45, zeichnet der S3 eine Stunde mit allen drei Reizen auf: Last 120/120, Leck `4096 12288 5 120`, Bremse `10 10 300 5 120` und Blick 60. Ausgewertet wird auch je Signal (siehe „Wie gezählt wird“ unter Vokabular). Das Ergebnis folgt.
+
+**Weiter Blick im Gerät (seit 0.5).** `BLICK <takte>` lässt die Vorwarnung bis zu 600 Takte vorausdenken, wie `blick_voraus` in kern.py. Blick 1 entscheidet wie bisher, ein neuer Lauf beginnt wieder damit. Während des Körpermodus nimmt das Gerät keinen neuen Blick an, sonst passte die Aufnahme nicht mehr zu ihrer Nachrechnung. Gerät und Python summieren in derselben Reihenfolge. Der Hosttest vergleicht beide bei Blick 2 und 60 für alle drei Lernregeln, absichtlich falsche Varianten fallen dabei auf (ein Schritt zu wenig: 7, ein vergessenes Erbe: 129 von 6.026 Antworten abweichend). Am Rechner verbietet eine Pragma-Zeile dem Compiler, Multiplikation und Addition zu verschmelzen. Auf den geprüften Spuren hätte das keine Entscheidung verändert, die Zeile ist Vorsorge.
+
+Auf dem S3 bestand 0.5 am 5. November die Demo bei Blick 1 wieder mit 240 von 240 Antworten. Bei Blick 60 stimmten sechs Minuten unter Last alle 360 Körpertakte mit Python überein, dazu die drei Reizproben. Im Replay mit einem Muster, das alle neun Übergänge belegt, passten bei Blick 1, 60, 300 und 600 jeweils 240 von 240 Antworten. Die Antwortzeit über die serielle Leitung stieg dabei im Median von 2,50 ms bei Blick 1 auf 2,75, 3,79 und 5,06 ms. Der Blick kostet also etwa 4,3 µs je Takt Vorausschau, bei 600 Takten 2,6 ms, ein Viertelprozent eines Sekundentakts. Gemessen ist das ohne Last auf Kern 0.
 
 **LED.** Ist `ALEX_RGB_PIN` gesetzt (S3-Profile: GPIO48 wie in der Core-Variante DevKitC-1 v1.0, am UICPAL-Board bestätigt), zeigt die eingebaute RGB-LED den Zustand: grün OK, gelb SCHWACH, rot AUSFALL, schwach weiß bereit und kurz blau bei einer Vorwarnung. Die LED-Arbeit zählt nicht zur Lücke. Ihr Treiber belegt 2.872 Byte Speicher.
 
 ```bash
-python3 koerper.py aufnahme messungen/koerper.csv --port /dev/PORT --regel erbe --takte 3600 --last 120 120
+python3 koerper.py aufnahme messungen/koerper.csv --port /dev/PORT --regel erbe --takte 3600 --last 120 120 --blick 60
 python3 koerper.py pruefen messungen/koerper.csv
 python3 koerper.py spur messungen/koerper.csv --grenzen 450 550 65536 16384 20000 200000 > spur.csv
 ```
 
-`aufnahme` schreibt neben die CSV eine JSON mit Regel, Intervall und Grenzen. `pruefen` rechnet jede Einstufung und jede Entscheidung des Geräts nach und fasst die Werte zusammen. `spur` stuft die Rohwerte wahlweise mit anderen Grenzen neu ein, als Eingabe für `versuch.py`. Die Grenzen der ersten Aufnahme (`ERKUNDUNG` in koerper.py: 50 und 60 °C, 64 und 16 KiB frei, 20 und 200 ms Lücke) sind vorläufige Erkundungswerte ohne Datenblattbezug. Eigene Aufnahmen liegen in `messungen/`, das nicht ins Repo geht.
+Leck und Bremse kommen genauso dazu, zum Beispiel `--leck 4096 12288 5 120 --bremse 10 10 300 5 120`. `aufnahme` schreibt neben die CSV eine JSON mit Regel, Intervall, Grenzen, Blick und Reizen. `pruefen` rechnet jede Einstufung und jede Entscheidung des Geräts nach und fasst die Werte zusammen. `spur` stuft die Rohwerte wahlweise mit anderen Grenzen neu ein, als Eingabe für `versuch.py`. Die Grenzen der ersten Aufnahme (`ERKUNDUNG` in koerper.py: 50 und 60 °C, 64 und 16 KiB frei, 20 und 200 ms Lücke) sind vorläufige Erkundungswerte ohne Datenblattbezug. Eigene Aufnahmen liegen in `messungen/`, das nicht ins Repo geht.
 
 **Erster Lauf am 5. November.** 30 Takte à 1 s auf dem ESP32-S3:
 - Chiptemperatur 35 bis 38 °C in ganzen Grad, direkt nach dem Aufspielen fallend
@@ -170,7 +189,15 @@ Unter Last steigt der Chip binnen etwa einer Minute auf 38 °C, an der Spitze au
 
 Probeweise neu eingestuft (SCHWACH ab 37, AUSFALL ab 39 °C) zeigte die Erkundung: Auf ein warmes Signal folgte im nächsten Takt nur in 6 von 351 Fällen ein heißes. Die feste Regel hätte 345 Fehlwarnungen gegeben. „Erbe und Kontext“ warnte dreimal, dann hatte die eigene Erfahrung das Erbe überstimmt. Für ein so träges Signal ist ein Takt Vorhersage zu kurz.
 
-Für den Mitschnitt gelten die auf der Erkundung gewählten Grenzen, danach eingefroren: SCHWACH ab 38 °C, AUSFALL ab 39 °C, Speicher und Lücke wie in `ERKUNDUNG`. Auf der Erkundung ergab das 67 % OK, 27 % SCHWACH und 6 % AUSFALL. Der Mitschnitt mit demselben Lastrhythmus begann um 13:34 und ist auf 12 Stunden angelegt.
+Für den Mitschnitt gelten die auf der Erkundung gewählten Grenzen, danach eingefroren: SCHWACH ab 38 °C, AUSFALL ab 39 °C, Speicher und Lücke wie in `ERKUNDUNG`. Auf der Erkundung ergab das 67 % OK, 27 % SCHWACH und 6 % AUSFALL. Der Mitschnitt mit demselben Lastrhythmus begann um 13:34. Für das Aufspielen von 0.5 endete er um 19:34, nach 21.610 statt der geplanten 43.200 Takte.
+
+**Mitschnitt unter Last, sechs Stunden.** Alle 21.610 Einstufungen und Entscheidungen stimmen mit Python überein, auch mit dem Rechenweg von 0.5 bei Blick 1. Der Speicher blieb bei 365.500 Byte, die Lücke lag im Median bei 16 µs. Die größte Lücke, 306 µs, fällt in den ersten Takt, dessen Fenster die Verarbeitung von `KOERPER` enthält. Danach waren es höchstens 18 µs. Mit einem Takt Blick warnte das Gerät 33-mal. In Ruhe lag der Median jede Stunde bei 37 °C, doch insgesamt wurde der Chip über den Nachmittag wärmer. Die Grenzen blieben fest, der Anteil heißer Takte stieg deshalb:
+
+| Stunde | Ruhe, tiefster Wert | Last, Median | Last, Spitze | Anteil AUSFALL |
+|---|---:|---:|---:|---:|
+| 1 | 35 °C | 38 °C | 39 °C | 16 % |
+| 3 | 36 °C | 39 °C | 39 °C | 32 % |
+| 6 | 36 °C | 39 °C | 40 °C | 43 % |
 
 ## Vokabular
 
@@ -195,13 +222,16 @@ Für den Mitschnitt gelten die auf der Erkundung gewählten Grenzen, danach eing
 
 Jeder Körpertakt bekommt das schwerste zutreffende Wort. Bei gleicher Schwere geht Temperatur vor Speicher vor Schleife. Der Oberbegriff dieses Worts ist genau die Einstufung, die das Gerät heute schon vornimmt, ein Test prüft das an allen Grenzfällen. Das Erbe gilt je Signal: Auf hoch folgt kritisch, mit drei festen Beobachtungen.
 
-**Weiter Blick.** Das Wortgedächtnis lernt wie die Kontextregel, welches Wort auf welches folgt. Für eine Vorwarnung denkt es diese Tabelle Schritt für Schritt weiter und schätzt so, wie wahrscheinlich binnen H Takten ein kritisches Wort kommt. Bei H = 1 entscheidet es Takt für Takt genau wie der bisherige Knoten, auch das prüft ein Test.
+**Weiter Blick.** Das Wortgedächtnis lernt wie die Kontextregel, welches Wort auf welches folgt. Für eine Vorwarnung denkt es diese Tabelle Schritt für Schritt weiter und schätzt so, wie wahrscheinlich binnen H Takten ein kritisches Wort kommt. Bei H = 1 entscheidet es Takt für Takt genau wie der bisherige Knoten, auch das prüft ein Test. Seit 0.5 teilen sich Auswertung und Knoten dafür eine Funktion, `kern.blick_voraus`. Über OK, SCHWACH und AUSFALL rechnet das Gerät mit `BLICK` dasselbe.
 
-**Wie gezählt wird.** Kritische Läufe mit höchstens 10 Takten Abstand gelten als eine Hitzephase. Sonst zählte jedes Flackern zwischen zwei Gradstufen als neuer Ausfall. Ein Alarm ist ein zusammenhängender Warnlauf außerhalb einer Phase, über eine Phase hinweg verschmelzen zwei Läufe nicht. Er ist richtig, wenn während des Laufs oder binnen H Takten danach eine Phase beginnt.
+**Wie gezählt wird.** Kritische Läufe mit höchstens 10 Takten Abstand gelten als eine kritische Phase. Sonst zählte jedes Flackern zwischen zwei Gradstufen als neuer Ausfall. Ein Alarm ist ein zusammenhängender Warnlauf außerhalb einer Phase, über eine Phase hinweg verschmelzen zwei Läufe nicht. Er ist richtig, wenn während des Laufs oder binnen H Takten danach eine Phase beginnt. So gezählt gewinnt, wer durchgehend warnt, denn ein langer Lauf reicht bis in die nächste Phase. Seit 0.5 zählt die Auswertung deshalb auch je Takt. Der **Warnanteil** ist der Teil der nicht kritischen Takte mit Warnung, die **Trefferquote** der Teil der Warntakte, auf die binnen H Takten ein kritischer Takt folgt. „Immer warnen“ steht als Maßstab in jeder Tabelle, seine Trefferquote ist die Grundrate. `--bis N` wertet nur die ersten N Takte aus, wie eine kürzere Aufnahme. `--nach N` zählt erst danach, gelernt wird über die ganze Aufnahme.
+
+Wirken mehrere Reize, zählt eine zweite Tabelle **je Signal**. Dafür wird jedes Signal für sich eingestuft, ohne den Vorrang der Wörter, ein Leck bleibt also auch bei heißem Chip sichtbar. Jedes Signal hat seine eigenen kritischen Phasen. Eine Warnung bei seinem hohen Wort (TEMP_HOCH, SPEICHER_KNAPP, SCHLEIFE_ZAEH) trifft nur, wenn binnen H Takten sein eigenes kritisches Wort folgt. Ein warmer Takt bekommt so keinen Treffer für ein Leck, das zufällig danach kommt. Bei Warnungen im Zustand OK zählt jedes kritische Wort. Diese Zählung stand fest, bevor die erste Aufnahme mit allen drei Reizen ausgewertet wurde.
 
 ```bash
 python3 vokabular.py liste
-python3 vokabular.py auswertung messungen/koerper-last-2026-11-05.csv --horizont 30 60
+python3 vokabular.py auswertung messungen/koerper-last-2026-11-05.csv --horizont 30 60 --bis 2460
+python3 vokabular.py auswertung messungen/koerper-last-2026-11-05.csv --horizont 30 60 --nach 2460
 ```
 
 **Am Mitschnitt unter Last, 41 Minuten mit 20 Hitzephasen:**
@@ -213,13 +243,32 @@ python3 vokabular.py auswertung messungen/koerper-last-2026-11-05.csv --horizont
 | Grob, weiter Blick | 20 / 20 | 14 / 34 | 30 s | 20 / 20 | 13 / 34 | 56 s |
 | Vokabular, weiter Blick | 20 / 20 | 14 / 34 | 30 s | 20 / 20 | 13 / 34 | 56 s |
 | Vorschlag Richtung, weiter Blick | 20 / 20 | 24 / 44 | 30 s | 20 / 20 | 14 / 36 | 60 s |
+| Immer warnen | 20 / 20 | 1 / 21 | 30 s | 20 / 20 | 1 / 21 | 60 s |
+
+Je Takt gezählt, bei 30 und 60 s Horizont: Die feste Regel warnt in 38 % der nicht kritischen Takte und trifft zu 68 bzw. 78 %. Der weite Blick warnt in 51 bzw. 55 % und trifft zu 54 bzw. 60 %. Immer warnen träfe zu 30 bzw. 44 %.
 
 Drei Befunde:
-- **Der Blick entscheidet über das Erbe.** Bei einem Takt widerlegt die Erfahrung das Erbe. Mit 30 bis 60 s Blick kommt sie aus eigenen Beobachtungen genau bei der festen Regel an: Auf warm folgt binnen einer Minute heiß.
+- **Der Blick entscheidet über das Erbe.** Bei einem Takt widerlegt die Erfahrung das Erbe. Mit 30 bis 60 s Blick bestätigt sie es aus eigenen Beobachtungen: Auf warm folgt binnen einer Minute heiß, und der Knoten warnt bei jedem warmen Takt wie die feste Regel. Er warnt aber auch in einem Teil der OK-Takte. Nach Läufen gezählt fällt das nicht auf, denn diese Warnungen verlängern nur Läufe, die ohnehin zählen. Je Takt trifft die feste Regel öfter.
 - **Mehr Wörter allein ändern noch nichts.** Auf dem Tisch schwankt nur die Temperatur, TEMP_HOCH ist dann SCHWACH und TEMP_KRITISCH ist AUSFALL. Die Wörter für Speicher und Schleife warten auf Erfahrungen.
 - **Die Fehlalarme sind Nachwärme.** 12 der 14 beginnen außerhalb der Last, 10 davon höchstens 15 s nach dem Ende einer Hitzephase, wenn der Chip beim Abkühlen noch auf 38 °C steht.
 
 Ein erster Vorschlag für den wachsenden Rand teilt OK und TEMP_HOCH nach der Richtung der Temperatur auf: Median der letzten fünf Takte gegen fünf Takte 20 Takte zuvor. Das Fenster ist eine Wahl vorab, die Erkundung hatte für eine Wahl aus den Daten nur zwei Hitzephasen. Der Vorschlag verschiebt die Warnungen nach vorn, beseitigt die Nachwärme aber nicht. In dieser Form ist er deshalb nicht bestätigt und hat keine Nummer bekommen. Gegen Nachwärme spricht mehr für einen längeren Zusammenhang, etwa das vorige Wort oder die Dauer in einem Zustand, als für weitere Wörter.
+
+**Endauswertung nach sechs Stunden.** Die Blickweiten 30 und 60 wurden an den ersten 41 Minuten gewählt, das ist die Tabelle oben. Danach folgten 114 Phasen, an denen nichts mehr gewählt wurde. Gelernt hat jedes Verfahren über die ganze Aufnahme, gezählt wird nur danach (`--nach 2460`). Alle Verfahren außer dem mit einem Takt Blick warnen jede der 114 Phasen vor.
+
+| Verfahren | Fehlalarme / Alarme, 30 s | Warnanteil | Trefferquote | Fehlalarme / Alarme, 60 s | Warnanteil | Trefferquote |
+|---|---:|---:|---:|---:|---:|---:|
+| Feste Regel | 158 / 279 | 44 % | 53 % | 130 / 279 | 44 % | 60 % |
+| Grob, ein Takt (bis 0.4 im Gerät, 1 von 114 vorgewarnt) | 9 / 9 | 0 % | 50 % | 9 / 9 | 0 % | 50 % |
+| Grob oder Vokabular, weiter Blick | 99 / 218 | 65 % | 38 % | 50 / 206 | 72 % | 48 % |
+| Vorschlag Richtung, weiter Blick | 123 / 246 | 64 % | 38 % | 46 / 200 | 80 % | 48 % |
+| Immer warnen | 1 / 115 | 100 % | 31 % | 1 / 115 | 100 % | 50 % |
+
+- **Nach Läufen gezählt gewinnt, wer immer warnt.** Ein durchgehender Lauf reicht von Phase zu Phase und gibt nur einen Fehlalarm. Der Zwischenstand nach knapp vier Stunden, der gelernte Blick schlage die feste Regel (55 gegen 96 Fehlalarme bei 60 s), beruhte auf dieser Zählung und hält nicht.
+- **Je Takt bleibt die feste Regel vorn.** Von den Verfahren, die jede Phase vorwarnen, warnt sie am seltensten und trifft am besten. Der gelernte Blick warnt bei jedem warmen Takt und dazu in vielen OK-Takten. Bei 60 s trifft er nicht besser als immer warnen. Drei Zustände verraten nicht, ob nach einem OK die nächste Hitze nah ist. Mit dem wärmer werdenden Chip warnte er auch in OK öfter: Sein Warnanteil stieg bei 60 s von 55 auf 72 %, der der festen Regel nur von 38 auf 44 %.
+- **Ein Takt bleibt zu kurz.** Er warnt eine von 114 Phasen vor, alle neun Alarme sind falsch.
+
+Für eine Entscheidung zählt, was jeder Warntakt kostet. So rechnet Daniels Systemversuch mit Reservetakten. Gegen die Warnungen in OK hilft eher mehr Zusammenhang, etwa das vorige Wort oder die Dauer im Zustand, als ein weiterer Blick.
 
 ## Kommunikationsversuch und nächste Entscheidung
 

@@ -6,6 +6,40 @@ from typing import Optional
 
 ZUSTAENDE = ("OK", "SCHWACH", "AUSFALL")
 MAX_TAKT = 2**32 - 1
+# Höchster Blick in Takten, wie maxBlick in Knoten.h. Bei einem Takt je Sekunde sind das
+# zehn Minuten, der Chip wärmt sich in etwa einer Minute auf und kühlt in zwei ab.
+MAX_BLICK = 600
+
+
+def ist_ausfall(zustand):
+    return zustand == "AUSFALL"
+
+
+def blick_voraus(woerter, gewichte, erbe, start, blick, kritisch):
+    """Wie wahrscheinlich wird binnen blick Takten ein kritischer Zustand erreicht?
+
+    Die gelernte Tabelle wird Schritt für Schritt weitergedacht, ein kritischer Zustand beendet
+    den Weg, ein Zustand ohne Beleg bleibt, wie er ist. Summiert wird in der festen Reihenfolge
+    von woerter, so rechnet Knoten.h bitgleich nach. Bei blick 1 ist das genau der Anteil der
+    kritischen Folgen in der Zeile von start."""
+    zeilen = {}
+    for w in woerter:
+        beleg = sum(gewichte[w][f] + erbe[w][f] for f in woerter)
+        zeilen[w] = ([(f, (gewichte[w][f] + erbe[w][f]) / beleg) for f in woerter if gewichte[w][f] + erbe[w][f]]
+                     if beleg else [(w, 1.0)])
+    verteilung, gesamt = {start: 1.0}, 0.0
+    for _ in range(blick):
+        weiter = {}
+        for w in woerter:
+            if w not in verteilung:
+                continue
+            for f, q in zeilen[w]:
+                if kritisch(f):
+                    gesamt += verteilung[w] * q
+                else:
+                    weiter[f] = weiter.get(f, 0.0) + verteilung[w] * q
+        verteilung = weiter
+    return gesamt
 
 
 class Gedaechtnis:
@@ -26,10 +60,11 @@ class Gedaechtnis:
         if vorher is not None:
             self.gewichte[vorher][jetzt] += 1
 
-    def schaetze(self, zustand):
+    def schaetze(self, zustand, blick=1):
+        """Anteil der Wege, die binnen blick Takten AUSFALL erreichen, und Beleg der eigenen Zeile."""
         zeile, erbe = self.gewichte[zustand], self.erbe[zustand]
         beleg = sum(zeile[z] + erbe[z] for z in ZUSTAENDE)
-        anteil = (zeile["AUSFALL"] + erbe["AUSFALL"]) / beleg if beleg else 0.0
+        anteil = blick_voraus(ZUSTAENDE, self.gewichte, self.erbe, zustand, blick, ist_ausfall) if beleg else 0.0
         return anteil, beleg
 
 
@@ -81,10 +116,15 @@ class Schritt:
 
 
 class Knoten:
-    def __init__(self, gedaechtnis=None, *, alle_senden=False, feste_warnregel=False):
+    """blick: wie viele Takte die Vorwarnung vorausdenkt, 1 entscheidet über den nächsten Takt."""
+
+    def __init__(self, gedaechtnis=None, *, alle_senden=False, feste_warnregel=False, blick=1):
+        if type(blick) is not int or not 1 <= blick <= MAX_BLICK:
+            raise ValueError(f"Der Blick muss 1 bis {MAX_BLICK} Takte betragen.")
         self.gedaechtnis = gedaechtnis
         self.alle_senden = alle_senden
         self.feste_warnregel = feste_warnregel
+        self.blick = blick
         self.takt = 0
         self.zustand = None
 
@@ -103,7 +143,7 @@ class Knoten:
         warnung = self.feste_warnregel and zustand == "SCHWACH"
         if self.gedaechtnis is not None:
             self.gedaechtnis.beobachte(vorher, zustand, abstand)
-            anteil, beleg = self.gedaechtnis.schaetze(zustand)
+            anteil, beleg = self.gedaechtnis.schaetze(zustand, self.blick)
             warnung = zustand != "AUSFALL" and beleg >= 3 and anteil >= 0.6
         self.takt, self.zustand = takt, zustand
         return Schritt(takt, zustand, statusmeldung, sofort, warnung, anteil, beleg)

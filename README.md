@@ -13,7 +13,7 @@ python3 -B -m unittest -v
 
 Gebraucht werden Python 3.9 oder neuer, für die Sketch-Tests ein C++11-Compiler und für das Gerät PlatformIO.
 
-**Stand 0.4 vom 5. November 2026.** Die Firmware entscheidet auf einem ESP32-S3 in allen drei Lernregeln genauso wie Python und behält ihren Lernstand über eine Stromtrennung. Im Körpermodus misst sie ihre eigene Chiptemperatur, ihren freien Speicher und ihre Schleifenzeit. Alle Aussagen zur Güte der Regeln stammen aus synthetischen Spuren, nicht aus Messungen im Alltag.
+**Stand 0.5 vom 5. November 2026.** Die Firmware entscheidet auf einem ESP32-S3 in allen drei Lernregeln genauso wie Python und behält ihren Lernstand über eine Stromtrennung. Im Körpermodus misst sie ihre eigene Chiptemperatur, ihren freien Speicher und ihre Schleifenzeit. Seit 0.5 kann sie ihre Vorwarnung bis zu 600 Takte vorausdenken und sich selbst Speicher und Hauptschleife knapp machen, beides auf dem S3 geprüft. Alle Aussagen zur Güte der Regeln stammen aus synthetischen Spuren, nicht aus Messungen im Alltag.
 
 Lizenz: MIT, siehe [LICENSE](LICENSE).
 

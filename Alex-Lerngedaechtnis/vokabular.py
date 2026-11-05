@@ -5,6 +5,7 @@ import sys
 from collections import Counter, namedtuple
 from pathlib import Path
 
+from kern import blick_voraus
 from koerper import lies_aufnahme, Grenzen
 
 Wort = namedtuple("Wort", "nummer name oberbegriff signal bedeutung")
@@ -41,6 +42,8 @@ GROBWOERTER = ("OK", "SCHWACH", "AUSFALL")
 ERBFOLGEN = (("TEMP_HOCH", "TEMP_KRITISCH"), ("SPEICHER_KNAPP", "SPEICHER_VOLL"),
              ("SCHLEIFE_ZAEH", "SCHLEIFE_STEHT"))
 GROBERBE = (("SCHWACH", "AUSFALL"),)
+# Je Signal sein hohes und sein kritisches Wort, für die Zählung je Signal.
+SIGNALE = tuple((NACH_NAME[hoch].signal, hoch, kritischer) for hoch, kritischer in ERBFOLGEN)
 
 
 def grob(name):
@@ -64,6 +67,20 @@ def koerperwort(temp_dc, heap, luecke_us, g):
         if trifft:
             return wort
     return "OK"
+
+
+def stufen_je_signal(temp_dc, heap, luecke_us, g):
+    """Jedes Signal für sich eingestuft, ohne den Vorrang aus koerperwort. So bleibt ein Leck
+    sichtbar, auch wenn der Chip zugleich heiß ist. Eine nicht lesbare Temperatur zählt als OK."""
+    t = temp_dc is not None
+
+    def stufe(kritischer, hoch, ist_kritisch, ist_hoch):
+        return kritischer if ist_kritisch else hoch if ist_hoch else "OK"
+    return {"temperatur": stufe("TEMP_KRITISCH", "TEMP_HOCH", t and temp_dc >= g.temp_ausfall,
+                                t and temp_dc >= g.temp_schwach),
+            "speicher": stufe("SPEICHER_VOLL", "SPEICHER_KNAPP", heap <= g.heap_ausfall, heap <= g.heap_schwach),
+            "schleife": stufe("SCHLEIFE_STEHT", "SCHLEIFE_ZAEH", luecke_us >= g.luecke_ausfall,
+                              luecke_us >= g.luecke_schwach)}
 
 
 def mit_richtung(woerter, temps, fenster):
@@ -106,28 +123,10 @@ class Wortgedaechtnis:
     def beleg(self, wort):
         return sum(self.gewichte[wort][f] + self.erbe[wort][f] for f in self.woerter)
 
-    def folgen(self, wort):
-        beleg = self.beleg(wort)
-        if not beleg:
-            return {wort: 1.0}  # ohne Erfahrung bleibt es, wie es ist
-        return {f: (self.gewichte[wort][f] + self.erbe[wort][f]) / beleg
-                for f in self.woerter if self.gewichte[wort][f] + self.erbe[wort][f]}
-
     def kritisch_binnen(self, wort, horizont):
-        """Wie wahrscheinlich folgt binnen horizont Takten ein kritisches Wort? Die gelernte Tabelle
-        wird dafür Schritt für Schritt weitergedacht, ein kritisches Wort beendet den Weg."""
-        tabelle = {w: self.folgen(w) for w in self.woerter}
-        verteilung, gesamt = {wort: 1.0}, 0.0
-        for _ in range(horizont):
-            weiter = Counter()
-            for w, p in verteilung.items():
-                for f, q in tabelle[w].items():
-                    if kritisch(f):
-                        gesamt += p * q
-                    else:
-                        weiter[f] += p * q
-            verteilung = weiter
-        return gesamt
+        """Wie wahrscheinlich folgt binnen horizont Takten ein kritisches Wort? Dieselbe Rechnung
+        wie im Knoten (kern.blick_voraus), nur über die Wörter dieses Gedächtnisses."""
+        return blick_voraus(self.woerter, self.gewichte, self.erbe, wort, horizont, kritisch)
 
 
 def warnungen(woerter, modell, horizont, schwelle=0.6, mindestbeleg=3):
@@ -160,12 +159,28 @@ def phasen(woerter, zusammen=10):
     return [p for p in laeufe([kritisch(w) for w in woerter], zusammen) if p[0] > 0]
 
 
+def binnen_vor(kritisch_je_takt, horizont):
+    """Die nicht kritischen Takte, auf die binnen horizont Takten ein kritischer folgt."""
+    ergebnis, naechster = set(), None
+    for t in range(len(kritisch_je_takt) - 1, -1, -1):
+        if kritisch_je_takt[t]:
+            naechster = t
+        elif naechster is not None and naechster - t <= horizont:
+            ergebnis.add(t)
+    return ergebnis
+
+
 def bewerte(woerter, warn, horizont, zusammen=10):
-    """Hitzephasen, davon vorgewarnt, Alarme, Fehlalarme und Vorwarnzeit bei gegebenem Horizont.
+    """Kritische Phasen, davon vorgewarnt, Alarme, Fehlalarme und Vorwarnzeit bei gegebenem Horizont.
 
     Ein Alarm ist ein zusammenhängender Warnlauf außerhalb einer Phase. Er ist richtig, wenn
     während des Laufs oder binnen horizont Takten danach eine Phase beginnt. Eine Phase gilt
-    als vorgewarnt, wenn in den horizont Takten vor ihrem Beginn gewarnt wurde."""
+    als vorgewarnt, wenn in den horizont Takten vor ihrem Beginn gewarnt wurde.
+
+    Nach Läufen gezählt gewinnt, wer durchgehend warnt, denn ein langer Lauf reicht bis in die
+    nächste Phase. Darum zählt auch jeder Takt: Der Warnanteil ist der Teil der nicht kritischen
+    Takte mit Warnung, die Trefferquote der Teil der Warntakte, auf die binnen horizont Takten
+    ein kritischer Takt folgt. Die Grundrate ist die Trefferquote von „immer warnen“."""
     liste = phasen(woerter, zusammen)
     beginne = [b for b, _ in liste]
     innen = {t for b, e in liste for t in range(b, e + 1)}
@@ -185,15 +200,44 @@ def bewerte(woerter, warn, horizont, zusammen=10):
         frueh = [s for s in range(max(0, beginn - horizont), beginn) if warn[s]]
         if frueh:
             zeiten.append(beginn - frueh[0])
+    folgt = binnen_vor([kritisch(w) for w in woerter], horizont)
+    ruhig = [t for t, w in enumerate(woerter) if not kritisch(w)]
+    gewarnt = [t for t in ruhig if warn[t]]
     return dict(phasen=len(liste), vorgewarnt=len(zeiten), alarme=len(alarme), fehlalarme=falsch,
-                vorwarnzeit=statistics.median(zeiten) if zeiten else None)
+                vorwarnzeit=statistics.median(zeiten) if zeiten else None,
+                warnanteil=len(gewarnt) / len(ruhig) if ruhig else None,
+                trefferquote=sum(t in folgt for t in gewarnt) / len(gewarnt) if gewarnt else None,
+                grundrate=len(folgt) / len(ruhig) if ruhig else None)
 
 
-def vergleiche_horizont(woerter, temps, horizont, fenster):
-    """Fünf Verfahren auf denselben Körpertakten, alle bei demselben Horizont bewertet."""
+def bewerte_je_signal(woerter, stufen, warn, horizont, zusammen=10):
+    """Je Signal seine eigenen kritischen Phasen und wie viele davon vorgewarnt sind, dazu Warnanteil
+    und Trefferquote bei seinem hohen Wort. Treffer ist nur, worauf binnen horizont Takten sein eigenes
+    kritisches Wort folgt. So bekommt ein warmer Takt keinen Treffer für ein Leck, das zufällig danach
+    kommt. Bei OK zählt jedes kritische Wort. stufen hält je Takt die Stufen aus stufen_je_signal."""
+    def anteile(takte, ziel):
+        gewarnt = [t for t in takte if warn[t]]
+        return dict(warnanteil=len(gewarnt) / len(takte) if takte else None,
+                    trefferquote=sum(t in ziel for t in gewarnt) / len(gewarnt) if gewarnt else None)
+
+    ergebnis = {}
+    for signal, hoch, kritischer in SIGNALE:
+        krit = [s[signal] == kritischer for s in stufen]
+        liste = [p for p in laeufe(krit, zusammen) if p[0] > 0]
+        vorgewarnt = sum(1 for b, _ in liste if any(warn[s] for s in range(max(0, b - horizont), b)))
+        ergebnis[signal] = dict(phasen=len(liste), vorgewarnt=vorgewarnt,
+                                **anteile([t for t, w in enumerate(woerter) if w == hoch], binnen_vor(krit, horizont)))
+    ergebnis["ok"] = anteile([t for t, w in enumerate(woerter) if w == "OK"],
+                         binnen_vor([kritisch(w) for w in woerter], horizont))
+    return ergebnis
+
+
+def verfahren(woerter, temps, horizont, fenster):
+    """Fünf Verfahren auf denselben Körpertakten, dazu „immer warnen“ als Maßstab, je mit
+    seiner Warnung in jedem Takt. Gelernt wird über alle übergebenen Takte."""
     grobe = [grob(w) for w in woerter]
     richtung = mit_richtung(woerter, temps, fenster)
-    verfahren = (
+    return (
         ("Feste Regel", [grob(w) == "SCHWACH" for w in woerter]),
         ("Grob, ein Takt", warnungen(grobe, Wortgedaechtnis(GROBWOERTER, GROBERBE), 1)),
         (f"Grob, {horizont} Takte", warnungen(grobe, Wortgedaechtnis(GROBWOERTER, GROBERBE), horizont)),
@@ -202,18 +246,20 @@ def vergleiche_horizont(woerter, temps, horizont, fenster):
         (f"+ Richtung, {horizont} Takte",
          warnungen(richtung, Wortgedaechtnis(KOERPERWOERTER + tuple(w.name for w in VORSCHLAEGE), ERBFOLGEN),
                    horizont)),
+        ("Immer warnen", [not kritisch(w) for w in woerter]),
     )
-    return [(name, bewerte(woerter, warn, horizont)) for name, warn in verfahren]
 
 
 def woerter_der_aufnahme(pfad, grenzen=None):
-    """Körperwörter und Temperaturen einer Aufnahme, wahlweise mit anderen Grenzen eingestuft."""
+    """Körperwörter, Temperaturen und Stufen je Signal einer Aufnahme, wahlweise mit anderen
+    Grenzen eingestuft."""
     meta, werte = lies_aufnahme(pfad)
     if any(b["takt"] != a["takt"] + 1 for a, b in zip(werte, werte[1:])):
         raise ValueError("Die Aufnahme hat Lücken in den Takten.")
     g = grenzen or Grenzen(**meta["grenzen"])
     woerter = [koerperwort(w["temp_dc"], w["heap"], w["luecke_us"], g) for w in werte]
-    return meta, woerter, [w["temp_dc"] for w in werte]
+    stufen = [stufen_je_signal(w["temp_dc"], w["heap"], w["luecke_us"], g) for w in werte]
+    return meta, woerter, [w["temp_dc"] for w in werte], stufen
 
 
 def main():
@@ -225,24 +271,52 @@ def main():
     a.add_argument("--horizont", type=int, nargs="+", default=[30, 60])
     a.add_argument("--fenster", type=int, default=20, help="Vergleichsfenster der Richtung in Takten")
     a.add_argument("--grenzen", type=int, nargs=6, metavar="N", help="wie bei koerper.py spur")
+    a.add_argument("--nach", type=int, default=0, metavar="N",
+                   help="erst nach den ersten N Takten zählen, gelernt wird über die ganze Aufnahme")
+    a.add_argument("--bis", type=int, metavar="N", help="nur die ersten N Takte, wie eine kürzere Aufnahme")
     arg = p.parse_args()
     try:
         if arg.aktion == "liste":
             for w in VOKABULAR + VORSCHLAEGE:
                 print(f"{w.nummer or 'neu':>3}  {w.name:16} {w.oberbegriff or '-':8} {w.bedeutung}")
             return
-        meta, woerter, temps = woerter_der_aufnahme(arg.datei, Grenzen(*arg.grenzen) if arg.grenzen else None)
+        meta, woerter, temps, stufen = woerter_der_aufnahme(arg.datei,
+                                                            Grenzen(*arg.grenzen) if arg.grenzen else None)
+        if arg.bis is not None:
+            if arg.bis < 1:
+                raise ValueError("--bis braucht mindestens einen Takt.")
+            woerter, temps, stufen = woerter[:arg.bis], temps[:arg.bis], stufen[:arg.bis]
         print(f"{len(woerter)} Takte, Wörter: "
               + ", ".join(f"{w} {n}" for w, n in Counter(woerter).most_common())
-              + f". Hitzephasen: {len(phasen(woerter))}, Richtungsfenster {arg.fenster} Takte.")
+              + f". Kritische Phasen: {len(phasen(woerter))}, Richtungsfenster {arg.fenster} Takte.")
+        if not 0 <= arg.nach < len(woerter):
+            raise ValueError("--nach muss vor dem Ende der Aufnahme liegen.")
+        if arg.nach:
+            print(f"Gezählt ab Takt {arg.nach + 1}: {len(phasen(woerter[arg.nach:]))} Phasen. "
+                  "Gelernt wird über die ganze Aufnahme.")
+        prozent = lambda wert: "-" if wert is None else f"{wert * 100:.0f} %"
         for h in arg.horizont:
             if h < 1:
                 raise ValueError("Der Horizont muss mindestens einen Takt betragen.")
-            print(f"\nHorizont {h} Takte: vorgewarnt / Phasen, Fehlalarme / Alarme, Vorwarnzeit (Median)")
-            for name, b in vergleiche_horizont(woerter, temps, h, arg.fenster):
+            liste = [(name, warn[arg.nach:]) for name, warn in verfahren(woerter, temps, h, arg.fenster)]
+            gezaehlt, je_takt = woerter[arg.nach:], stufen[arg.nach:]
+            print(f"\nHorizont {h} Takte: vorgewarnt / Phasen, Fehlalarme / Alarme, Vorwarnzeit (Median), "
+                  "Warnanteil, Trefferquote")
+            for name, warn in liste:
+                b = bewerte(gezaehlt, warn, h)
                 sekunden = None if b["vorwarnzeit"] is None else b["vorwarnzeit"] * meta["intervall_ms"] / 1000
                 zeit = "-" if sekunden is None else f"{sekunden:.0f} s"
-                print(f"  {name:24} {b['vorgewarnt']:4} / {b['phasen']:<4} {b['fehlalarme']:4} / {b['alarme']:<4}  {zeit}")
+                print(f"  {name:24} {b['vorgewarnt']:4} / {b['phasen']:<4} {b['fehlalarme']:4} / {b['alarme']:<4}"
+                      f" {zeit:>5} {prozent(b['warnanteil']):>6} {prozent(b['trefferquote']):>6}")
+            print(f"\nJe Signal, {h} Takte: vorgewarnt / Phasen, Warnanteil und Trefferquote beim hohen Wort, "
+                  "zuletzt bei OK")
+            print(f"  {'':24} " + " ".join(f"{signal.capitalize():>22}" for signal, _, _ in SIGNALE) + f" {'OK':>12}")
+            for name, warn in liste:
+                s = bewerte_je_signal(gezaehlt, je_takt, warn, h)
+                bloecke = [f"{s[n]['vorgewarnt']:4} / {s[n]['phasen']:<3}{prozent(s[n]['warnanteil']):>6}"
+                           f"{prozent(s[n]['trefferquote']):>6}" for n, _, _ in SIGNALE]
+                print(f"  {name:24} " + " ".join(bloecke)
+                      + f" {prozent(s['ok']['warnanteil']):>6}{prozent(s['ok']['trefferquote']):>6}")
     except (OSError, ValueError, KeyError) as fehler:
         p.exit(2, f"Vokabular: {fehler}\n")
 

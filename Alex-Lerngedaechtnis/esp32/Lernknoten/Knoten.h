@@ -4,6 +4,12 @@
 #include <string.h>
 #include <float.h>
 
+// Am Rechner darf der Compiler Multiplikation und Addition nicht zu einer Operation
+// verschmelzen, sonst rundet er anders als Python. Das Gerät rechnet double ohne FMA.
+#ifdef __clang__
+#pragma clang fp contract(off)
+#endif
+
 enum Zustand : uint8_t { OKAY, SCHWACH, AUSFALL, UNBEKANNT };
 
 struct Entscheidung {
@@ -64,12 +70,22 @@ public:
 
     uint32_t takt() const { return letzterTakt; }
 
+    // Wie viele Takte die Vorwarnung vorausdenkt, wie MAX_BLICK in kern.py. 1 entscheidet über
+    // den nächsten Takt. Kommt per BLICK vom Rechner, ein neuer Lauf beginnt wieder mit 1.
+    static constexpr uint32_t maxBlick = 600;
+    bool setzeBlick(uint32_t takte) {
+        if (!takte || takte > maxBlick) return false;
+        blick = takte;
+        return true;
+    }
+
     void neuerLauf() {
         for (auto &zeile : gewichte) {
             for (double &wert : zeile) wert = 0.0;
         }
         letzterTakt = 0;
         letzterZustand = UNBEKANNT;
+        blick = 1;
     }
 
     bool schritt(uint32_t takt, Zustand jetzt, Entscheidung &ausgabe) {
@@ -93,14 +109,55 @@ public:
         const double beleg = (zeile[OKAY] + geerbt[OKAY]) + (zeile[SCHWACH] + geerbt[SCHWACH])
                            + (zeile[AUSFALL] + geerbt[AUSFALL]);
         ausgabe.sofort = jetzt == AUSFALL && vorher != AUSFALL;
-        ausgabe.warnung = jetzt != AUSFALL && beleg >= 3.0
-                       && (zeile[AUSFALL] + geerbt[AUSFALL]) / beleg >= 0.6;
+        ausgabe.warnung = jetzt != AUSFALL && beleg >= 3.0 && ausfallBinnen(jetzt) >= 0.6;
         letzterTakt = takt;
         letzterZustand = jetzt;
         return true;
     }
 
 private:
+    // Wie blick_voraus in kern.py: Wie wahrscheinlich ist AUSFALL binnen blick Takten erreicht?
+    // Die gelernte Tabelle wird Schritt für Schritt weitergedacht, AUSFALL beendet den Weg, ein
+    // Zustand ohne Beleg bleibt, wie er ist. Bei blick 1 ist das der Ausfallanteil der Zeile.
+    double ausfallBinnen(Zustand start) const {
+        double folge[3][3];
+        bool besetzt[3][3];
+        for (unsigned w = 0; w < 3; ++w) {
+            const double *g = gewichte[w];
+            const double *e = erbe[w];
+            const double beleg = (g[OKAY] + e[OKAY]) + (g[SCHWACH] + e[SCHWACH]) + (g[AUSFALL] + e[AUSFALL]);
+            for (unsigned f = 0; f < 3; ++f) {
+                besetzt[w][f] = beleg != 0.0 ? g[f] + e[f] != 0.0 : f == w;
+                folge[w][f] = beleg != 0.0 ? (g[f] + e[f]) / beleg : 1.0;
+            }
+        }
+        double p[3] = {0.0, 0.0, 0.0};
+        bool da[3] = {false, false, false};
+        p[start] = 1.0;
+        da[start] = true;
+        double gesamt = 0.0;
+        for (uint32_t stufe = 0; stufe < blick; ++stufe) {
+            double weiter[3] = {0.0, 0.0, 0.0};
+            bool neu[3] = {false, false, false};
+            // Dieselbe Summenfolge wie in Python: Ausgangszustand, dann Folge, beide in Zustandsreihenfolge.
+            for (unsigned w = 0; w < 3; ++w) {
+                if (!da[w]) continue;
+                for (unsigned f = 0; f < 3; ++f) {
+                    if (!besetzt[w][f]) continue;
+                    if (f == AUSFALL) {
+                        gesamt += p[w] * folge[w][f];
+                    } else {
+                        weiter[f] += p[w] * folge[w][f];
+                        neu[f] = true;
+                    }
+                }
+            }
+            memcpy(p, weiter, sizeof(p));
+            memcpy(da, neu, sizeof(da));
+        }
+        return gesamt;
+    }
+
     static uint64_t lese(const uint8_t *p, unsigned n) {
         uint64_t wert = 0;
         for (unsigned i = 0; i < n; ++i) wert |= static_cast<uint64_t>(p[i]) << (8 * i);
@@ -124,4 +181,5 @@ private:
     const double faktor;
     uint32_t letzterTakt = 0;
     Zustand letzterZustand = UNBEKANNT;
+    uint32_t blick = 1;
 };
