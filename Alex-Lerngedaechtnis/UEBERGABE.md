@@ -146,7 +146,13 @@ Die Firmware hat keine eigenen Grenzwerte. `GRENZEN` übergibt sie in Zehntelgra
 
 Gegenüber 0.4 stehen 2.120 Byte weniger frei, davon 2.048 für die Blocktabelle. Mit Lastaufgabe sind es 363.380 Byte. Die Aufgabe bleibt nach ihrem ersten Start bestehen, auch über `NEUER_LAUF` hinweg.
 
-**Test läuft:** Seit dem 5. November, 20:45, zeichnet der S3 eine Stunde mit allen drei Reizen auf: Last 120/120, Leck `4096 12288 5 120`, Bremse `10 10 300 5 120` und Blick 60. Ausgewertet wird auch je Signal (siehe „Wie gezählt wird“ unter Vokabular). Das Ergebnis folgt.
+**Eine Stunde mit allen drei Reizen.** Am 5. November ab 20:45, mit Last 120/120, Leck `4096 12288 5 120`, Bremse `10 10 300 5 120` und Blick 60. Nach 53 min 48 s (Takt 3.228) startete der S3 neu, und der Rekorder brach am Startbanner des ROM ab. Bis dahin:
+- Alle 3.228 Einstufungen und Entscheidungen stimmen mit Python überein, kein Takt fehlt.
+- 15 Lecks liefen bis 13.860 Byte frei. Nach jeder Freigabe standen wieder genau 363.380 Byte zur Verfügung, der Speicher verliert also nichts.
+- 21 Bremsrampen erreichten je 299,6 ms. Ohne Bremse lag die Lücke ab Takt 2 bei höchstens 18 µs.
+- 39 % der Takte waren AUSFALL, wie vor dem Start geschätzt.
+
+Der Neustart ist ungeklärt. Vor dem Startbanner kam keine Zeile, also weder Panik noch Wachhund noch Brownout, die alle vorher etwas ausgeben. In diesem Moment lief die Last, das Leck stand bei 42.644 Byte frei und damit weit über dem Boden, die Bremse ruhte. macOS verzeichnet zu dieser Zeit kein USB- und kein Schlafereignis. Ohne Meldung kommen vor allem ein Reset von außen über die EN-Leitung der USB-Brücke oder ein Einbruch der Versorgung in Frage, belegt ist keins von beiden. Für den nächsten Lauf sollte die Firmware beim Start den Grund ihres Neustarts melden, und der Rekorder sollte die Zeilen nach einer unerwarteten Zeile aufheben.
 
 **Weiter Blick im Gerät (seit 0.5).** `BLICK <takte>` lässt die Vorwarnung bis zu 600 Takte vorausdenken, wie `blick_voraus` in kern.py. Blick 1 entscheidet wie bisher, ein neuer Lauf beginnt wieder damit. Während des Körpermodus nimmt das Gerät keinen neuen Blick an, sonst passte die Aufnahme nicht mehr zu ihrer Nachrechnung. Gerät und Python summieren in derselben Reihenfolge. Der Hosttest vergleicht beide bei Blick 2 und 60 für alle drei Lernregeln, absichtlich falsche Varianten fallen dabei auf (ein Schritt zu wenig: 7, ein vergessenes Erbe: 129 von 6.026 Antworten abweichend). Am Rechner verbietet eine Pragma-Zeile dem Compiler, Multiplikation und Addition zu verschmelzen. Auf den geprüften Spuren hätte das keine Entscheidung verändert, die Zeile ist Vorsorge.
 
@@ -269,6 +275,23 @@ Ein erster Vorschlag für den wachsenden Rand teilt OK und TEMP_HOCH nach der Ri
 - **Ein Takt bleibt zu kurz.** Er warnt eine von 114 Phasen vor, alle neun Alarme sind falsch.
 
 Für eine Entscheidung zählt, was jeder Warntakt kostet. So rechnet Daniels Systemversuch mit Reservetakten. Gegen die Warnungen in OK hilft eher mehr Zusammenhang, etwa das vorige Wort oder die Dauer im Zustand, als ein weiterer Blick.
+
+**Drei Reize, je Signal gezählt.** Die Stunde mit Last, Leck und Bremse (3.228 Takte, an ihr wurde nichts gewählt), Horizont 60 s:
+
+| Signal und hohes Wort | Phasen | vorgewarnt | Trefferquote beim hohen Wort |
+|---|---:|---:|---:|
+| Temperatur, TEMP_HOCH | 27 | 27 | 61 % |
+| Speicher, SPEICHER_KNAPP | 15 | 15 | 100 % |
+| Schleife, SCHLEIFE_ZAEH | 21 | 20 | 100 % |
+
+Feste Regel, grober und feiner Blick warnen bei jedem hohen Wort und kommen deshalb auf dieselben Zahlen. Das feine Vokabular entscheidet auch hier genau wie das grobe.
+- **Leck und Bremse kündigen sich verlässlich an, die Wärme nicht.** Auf knapp folgt immer voll, auf zäh immer steht, auf warm nur zu 61 % binnen einer Minute heiß. Bei verlässlichen Vorzeichen ist die feste Regel ideal, und das Gedächtnis lernt dasselbe.
+- **Ein Wort je Takt verdeckt ein zweites Signal.** Die eine Bremsphase ohne Vorwarnung hatte 18 zähe Takte vor sich, doch der Chip war zugleich heiß. Dann zählt das schwerere Wort TEMP_KRITISCH, und im Ausfall warnt der Knoten nicht. Bei 30 s Blick traf das zwei Lecks und drei Bremsphasen. Wer wissen will, was als Nächstes ausfällt, braucht einen Zustand je Signal.
+- **Im OK-Zustand trifft der Blick nur die Grundrate.** Er warnt in 74 % der OK-Takte und trifft zu 77 %, genau wie immer warnen. Insgesamt trifft die feste Regel zu 88 % bei 59 % Warnanteil, der Blick zu 84 % bei 89 %. Weil 39 % der Takte AUSFALL waren, liegt die Grundrate schon bei 83 %.
+
+```bash
+python3 vokabular.py auswertung messungen/koerper-reize-2026-11-05.csv --horizont 30 60
+```
 
 ## Kommunikationsversuch und nächste Entscheidung
 
