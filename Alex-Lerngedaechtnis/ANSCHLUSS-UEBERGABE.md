@@ -1,6 +1,6 @@
 # OSCan: Verbund und Arbeitsvergabe anschließen
 
-Stand 5. November 2026. Diese Etappe baut auf dem veröffentlichten Systemversuch `07793f1662fb36a9a0c09b5449773155594d7c4b` auf. Alex’ Hauptentwicklung bleibt die gemeinsame Grundlage. Die neue Arbeit wird separat unter `codex/verbund-disposition` geführt.
+Stand 5. November 2026. Diese Etappe baut auf Alex’ Hauptstand `c4ec40bec14516a1666566f619eb82c1ef35d930` auf. Darin ist unser erster Systemversuch `07793f1662fb36a9a0c09b5449773155594d7c4b` bereits übernommen und nachgeprüft. Der Anschluss wird separat unter `codex/verbund-disposition` zur Übernahme vorgeschlagen.
 
 ## Ergebnis
 
@@ -83,4 +83,4 @@ Der Kontrollvergleich aus Systemversuch 1 mit 300 Spuren wurde nach dem Herausl�
 - Eine tatsächliche Bereitschaftsbestätigung der Reserve ergänzen. Der Versuch modelliert Reservierung als Nutzungserlaubnis eines schon laufenden Prozesses; Startzeit, Energie und echte Kapazität sind noch nicht gemessen.
 - Alex’ Wortgedächtnis gezielt anbinden: bestätigte Wörter über `grob()` übersetzen und den Vorhersagehorizont explizit in eine Reservierungszeit überführen. Ein Alarm „binnen 30 Takten“ ist keine Zusage für genau den nächsten Takt.
 
-GitHub enthält den vorherigen geprüften Systemversuch auf `codex/systemversuch-1`. Diese neue Etappe ist erst dann online, wenn `codex/verbund-disposition` veröffentlicht wurde. Der Hauptzweig wird für die Übergabe nicht automatisch zusammengeführt.
+Die Übergabe erfolgt auf dem eigenen Arbeitszweig `codex/verbund-disposition` und als Pull Request gegen `main`. Alex kann dort den Anschluss getrennt von seinem bereits übernommenen ersten Systemversuch prüfen. Die Hauptentwicklung wird für die Übergabe nicht automatisch zusammengeführt.
