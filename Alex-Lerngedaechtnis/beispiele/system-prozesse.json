@@ -1,0 +1,12 @@
+{
+  "art": "Zwei lokale Prozesse, simulierte Ressourcenverfügbarkeit",
+  "verfahren": "erbe",
+  "auftraege": 720,
+  "ergebnisse": {
+    "PRIMAER": 640,
+    "RESERVE": 74,
+    "WARTEN": 6
+  },
+  "gepruefte_antworten": 714,
+  "pruefung": "Auftragsnummer und SHA-256 jeder ausgeführten Arbeit verglichen"
+}

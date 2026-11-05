@@ -17,8 +17,17 @@ Gebraucht werden Python 3.9 oder neuer, für die Sketch-Tests ein C++11-Compiler
 
 Lizenz: MIT, siehe [LICENSE](LICENSE).
 
-## Lokaler Verbundversuch
+## Systementscheidungen und Verbund prüfen
 
-Die Erweiterung im Arbeitszweig untersucht Sitzungen, mehrere Knoten und veraltete Meldungen.
-Der interaktive Offline-Bericht liegt unter [Verbund.html](Alex-Lerngedaechtnis/Verbund.html).
-Prüfkommandos, Annahmen und die Übernahme stehen in [VERBUND-UEBERGABE.md](Alex-Lerngedaechtnis/VERBUND-UEBERGABE.md).
+Der [Systemversuch](Alex-Lerngedaechtnis/SYSTEM-UEBERGABE.md) verbindet das Gedächtnis mit der Vergabe von Arbeitsaufträgen an Primär- und Reserve-Arbeiter. Er vergleicht feste und lernende Regeln auf wechselnden Systemzuständen und führt eine zusätzliche Probe mit zwei echten lokalen Prozessen aus.
+
+Den erzeugten [Systembericht](Alex-Lerngedaechtnis/Systembericht.html) herunterladen und lokal im Browser öffnen. Der [Verbundbericht](Alex-Lerngedaechtnis/Verbund.html) zeigt Knotenidentitäten, Sitzungen und veraltete Meldungen. Die [Verbund-Übergabe](Alex-Lerngedaechtnis/VERBUND-UEBERGABE.md) beschreibt dessen Protokoll und Grenzen.
+
+```bash
+cd Alex-Lerngedaechtnis
+python3 -B -m unittest -v
+python3 -B systemlabor.py prozesse
+python3 -B systemlabor.py kontrolle
+```
+
+Das sind Laufzeitexperimente auf dem vorhandenen Betriebssystem. Die Vergleichszahlen beruhen auf modellierten Arbeitsbedingungen; sie belegen noch keinen Vorteil eines vollständigen Betriebssystems im Alltag.

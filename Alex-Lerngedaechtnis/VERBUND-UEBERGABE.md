@@ -1,8 +1,8 @@
 # OSCan · Verbundversuch 1
 
-Stand 5. November 2026. Ausgangspunkt ist Alex’ OSCan 0.3, Git-Commit `8f823824aede3134677a449a2a55bb639976e4e7`. Die lokale Arbeit liegt auf `codex/knoten-und-sitzungen`.
+Stand 5. November 2026. Ausgangspunkt dieses Teilversuchs war Alex’ OSCan 0.3, Git-Commit `8f823824aede3134677a449a2a55bb639976e4e7`.
 
-Die Übernahme wurde zusätzlich gegen [OSCan 0.4, Commit `91b2435`](https://github.com/wolfaa73-jpg/oscan/commit/91b24356d1011667f76cfe664effaf7fe2688c0b) geprüft. Der beiliegende Patch lässt sich auf beide Revisionen anwenden. Das vollständige ZIP enthält die Basis 0.3 mit dieser Erweiterung. Für Alex’ aktuellen Stand ist der Patch der Übernahmeweg; das ZIP dient als eigenständig ausführbarer Prüfstand.
+Dieser Teilversuch ist auf [OSCan 0.4, Commit `91b2435`](https://github.com/wolfaa73-jpg/oscan/commit/91b24356d1011667f76cfe664effaf7fe2688c0b) geprüft und Bestandteil der gemeinsamen Systemübergabe. Einstieg in den aktuellen Gesamtstand: [SYSTEM-UEBERGABE.md](SYSTEM-UEBERGABE.md). Das ältere lokale Archiv `uebergabe-verbund-1` bleibt als eigenständiger Stand auf Basis 0.3 erhalten.
 
 Dieser Versuch setzt bei der offenen Absenderfrage aus der Ideensammlung an. Zwei Knoten können denselben lokalen Messtakt verwenden oder ihre Zähler nach einem Neustart neu beginnen. Die Gegenstelle braucht deshalb eine eindeutige Zuordnung und einen Maßstab dafür, wie frisch ihr Wissen ist.
 
@@ -86,4 +86,4 @@ Mit Alex’ zusätzlichem Stand 0.4 bestehen alle 56 Tests, einschließlich sein
 
 > Lies diese Übergabe und prüfe die Basisrevision. Nutze für Alex’ Stand 0.4 den Patch. Führe die vollständige Testsuite, die Simulation und die lokale UDP-Probe aus. Prüfe mit Alex als ersten Geräteweg einen Python-Knoten auf dem Pi und eine Python-Zentrale auf dem Mac. Lege fest, wie beide ihre frischen Sitzungskennungen über einen vertrauenswürdigen Anmeldeweg erhalten. Kläre Sensor, Abtastintervall und maximal toleriertes Alter einer Meldung. Plane anschließend den Anschluss von 0.4-Körpersignalen mit eigener Erfassung, ohne doppelte Lernschritte und mit nachprüfbarem Messalter. Übertrage danach den kleinen Paketvertrag auf die passende Geräteschnittstelle. Bei jedem Neustart von Sender oder Empfänger muss die alte Sitzung verworfen werden. Halte reale Verlustzeiten und Paketmengen neben den Simulationsergebnissen fest.
 
-Für die Übernahme liegt im Übergabepaket ein Patch gegen die oben genannte Basis. Zuerst `git apply --check oscan-verbund.patch` im Repository ausführen, dann den Patch im eigenen Arbeitszweig anwenden. Das vollständige Projekt im ZIP kann alternativ direkt geprüft werden. Alex entscheidet nach der Prüfung, wie der Versuch in seine Hauptentwicklung einfließt.
+Für die gemeinsame Übernahme von Verbund und Systemversuch gilt die aktuelle Systemübergabe. Alex entscheidet nach der Prüfung, wie die Erweiterungen in seine Hauptentwicklung einfließen.
