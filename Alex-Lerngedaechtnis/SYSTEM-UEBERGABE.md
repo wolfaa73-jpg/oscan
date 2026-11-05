@@ -1,6 +1,6 @@
 # OSCan: Vom Gedächtnis zur Systementscheidung
 
-Stand 5. November 2026. Grundlage: OSCan 0.4 einschließlich Alex’ Ergänzung „Körper unter Last“, Commit `d226cc95c823efbeb454fe497581bad6638ded01` in `wolfaa73-jpg/oscan`. Alex’ Lernkern und Firmware bleiben die Vergleichsbasis. Eigener Arbeitszweig: `codex/systemversuch-1`.
+Stand 5. November 2026. Grundlage: OSCan 0.4 einschließlich Alex’ Ergänzung „Vokabular, Fassung 1, und weiter Blick“, Commit `8d81287aea19bd7b325876ed0ff074607258f457` in `wolfaa73-jpg/oscan`. Alex’ Lernkern und Firmware bleiben die Vergleichsbasis. Eigener Arbeitszweig: `codex/systemversuch-1`.
 
 ## Was dieser Schritt für das Betriebssystem leistet
 
@@ -81,9 +81,15 @@ In der deterministischen Anpassungsprobe bestätigt Erbe + Kontext die Entwarnun
 
 ## Tatsächlich geprüfte Ausführung
 
-Alle 71 Tests bestanden: 42 Tests der aktuellen Basis, 15 Verbundtests und 14 neue Systemtests. Die Warnbilanz des neuen Ablaufs stimmt auf allen sechs Familien für jedes Verfahren mit Alex’ bisheriger Auswertung überein. Zusätzliche Prüfungen betreffen Kausalität, fehlendes Wissen, Taktlücken, Neustart, Zählergrenzen, unveränderten Zustand nach ungültigen Eingaben und handgerechnete Kennzahlen. Der HTML-Bericht wurde bei 390 und 1150 Pixel Breite geprüft; die sechs Familientabellen und 120 ausklappbaren Kostenvergleiche sind vorhanden und die Seite läuft nicht horizontal über.
+Alle 77 Tests bestanden: 48 Tests der aktuellen Basis, 15 Verbundtests und 14 neue Systemtests. Die Warnbilanz des neuen Ablaufs stimmt auf allen sechs Familien für jedes Verfahren mit Alex’ bisheriger Auswertung überein. Zusätzliche Prüfungen betreffen Kausalität, fehlendes Wissen, Taktlücken, Neustart, Zählergrenzen, unveränderten Zustand nach ungültigen Eingaben und handgerechnete Kennzahlen. Der HTML-Bericht wurde bei 390 und 1150 Pixel Breite geprüft; die sechs Familientabellen und 120 ausklappbaren Kostenvergleiche sind vorhanden und die Seite läuft nicht horizontal über.
 
 Die Prozessprobe startet genau zwei eigene lokale Arbeiter. In 720 logischen Takten liefen 640 Aufträge auf dem Primär- und 74 auf dem Reserve-Arbeiter. Alle 714 Antworten wurden anhand der Auftragsnummer und ihres SHA-256-Ergebnisses geprüft. Sechs Aufträge wurden gemäß der Regel ausgesetzt; das sind keine fehlgeschlagenen Tests. Die Ressourcenverfügbarkeit stammt weiterhin aus der deterministischen Spur. Beide Prozesse sind bereits gestartet; Kosten für echtes Aufwecken, Energie oder einen realen Prozessausfall sind damit noch nicht gemessen. Beide Prozesse werden nach dem Versuch beendet.
+
+## Anschluss an Alex’ aktuelles Vokabular
+
+Alex’ neuer Stand enthält in `vokabular.py` zehn feste Wörter und ein Wortgedächtnis mit mehrtaktigem Horizont. Unser Disponent verwendet weiterhin die drei Oberbegriffe aus `kern.py` und plant genau einen Takt voraus. Die Ergebnisse dieses Systemversuchs vergleichen deshalb die bisherigen sechs Regeln, nicht das neue Wortgedächtnis. Dessen zusätzliche Tests sind Bestandteil der gemeinsamen 77 Prüfungen.
+
+Für die spätere Verbindung kann `vokabular.grob()` bestätigte Körperwörter auf die drei Zustände abbilden. Das OC-Datenformat dieses Verbundversuchs akzeptiert weiterhin nur Zustandsnummern 1 bis 3. Wörter ab Nummer 5 dürfen daher nicht ungeprüft als Zustand übertragen werden. Eine Warnung „binnen 30 Takten“ braucht außerdem einen eigenen Zeitvertrag für die Reservierung; sie darf nicht stillschweigend als Vorhersage für genau den nächsten Takt behandelt werden. Diese Adapter sind noch nicht implementiert.
 
 ## Verbindung zum bisherigen Verbund
 
