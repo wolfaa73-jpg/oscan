@@ -466,7 +466,7 @@ Jeder Befund trägt seine Herkunft: **synthetisch** (künstliche Spuren mit beka
 - **Vokabular:** Vier Token (OK, SCHWACH, AUSFALL, VORWARNUNG). Eine Meldung besteht aus vier Byte Takt und einem Byte Token.
 - **Herz:** Im Übertragungsversuch ein Herzschlag, der den aktuellen Zustand mitträgt.
 - **Erbe:** Seit Version 0.3 ein Verfahren mit drei festen Beobachtungen „SCHWACH → AUSFALL“ als Samen.
-- **Gerät:** Ein ESP32-Sketch für alle drei Lernregeln, auch mit Erbe, für den klassischen ESP32 und den ESP32-S3. Er sichert den Lernstand nur auf Befehl im NVS und schreibt nicht, wenn sich nichts geändert hat. Das Erbe gehört zur Firmware und steht nicht im gesicherten Stand.
+- **Gerät:** Ein ESP32-Sketch für alle drei Lernregeln, auch mit Erbe, für den klassischen ESP32 und den ESP32-S3. Seit Version 0.4 mit einem Körpermodus, in dem der Knoten sich selbst misst. Er sichert den Lernstand nur auf Befehl im NVS und schreibt nicht, wenn sich nichts geändert hat. Das Erbe gehört zur Firmware und steht nicht im gesicherten Stand.
 
 ## Befunde
 
@@ -476,6 +476,8 @@ Jeder Befund trägt seine Herkunft: **synthetisch** (künstliche Spuren mit beka
 - **Die Abhängigkeit vom Erbe sinkt, verschwindet aber nicht (berechnet).** Beim ersten schwachen Signal beruht die Schätzung ganz auf dem Erbe. Nach sechs eigenen Beobachtungen desselben Ausgangszustands trägt es noch rund 40 % des Belegs, nach zwanzig gut ein Viertel, und unter knapp 25 % sinkt es nicht. Das entspricht „Geburtshilfe statt Dauerkrücke“, nur bleibt das Erbe als feste Untergrenze. Offen ist, ob ein dauerhaft widersprochenes Erbe als „widerlegt“ markiert werden darf, obwohl es zum festen Kern gehört.
 - **Gesendet ist nicht empfangen (synthetisch).** Ein Ausfall dauert 20 Takte, und genau die erste Ausfallmeldung geht verloren. Wer nur Zustandswechsel meldet, verpasst dann den ganzen Ausfall. Mit einem Herzschlag alle fünf Takte erfährt die Gegenstelle nach fünf Takten davon, für 40 statt 15 Byte (Meldung in jedem Takt: 180 Byte). Bei völliger Funkstille bleibt der Gegenstelle nur „unbekannt“. Das Herz im Körperbild braucht also einen Herzschlag, der den Zustand mitträgt.
 - **Messpfad und Gerät (gemessen und Softwaretest).** Eine echte Loopback-Probe ergibt sechs OK und sechs AUSFALL nach einem absichtlichen Stopp. Das prüft die Erfassung, nicht die Vorhersage. Sketch und Python entscheiden im Hosttest identisch (57.840 Schritte je Variante, alle drei Lernregeln), und die Firmware lässt sich für den klassischen ESP32 und den ESP32-S3 bauen. Auf einem ESP32-S3-N16R8 entscheidet die Firmware in allen drei Varianten genauso wie Python (5. November, je 240 von 240 Antworten auf der Demo). Der Lernstand übersteht eine Stromtrennung. Die Erbe-Variante sicherte nach 99 Takten, war 5 s ohne Strom, und danach passten 141 von 141 Antworten zum durchgehenden Lauf. Offen ist eine Stromtrennung während des Schreibens.
+
+- **Erste Körperwahrnehmung (gemessen).** Seit dem 5. November misst der Knoten auf dem S3 in eigenem Takt seine Chiptemperatur, seinen freien Speicher und die Lücken seiner Hauptschleife. Er stuft sie mit Grenzen ein, die ihm der Rechner übergibt, und lernt damit. Auf dem Tisch zeigte er 35 bis 38 °C in ganzen Grad, konstanten Speicher und Lücken um 0,2 ms. Er lernt dort nur, dass auf OK wieder OK folgt, denn ein Körper ohne Ereignisse lehrt nichts. Neu ist die Herkunft der Signale: Sie stammen aus dem Gerät selbst und nicht mehr vom Rechner. Das ist der erste kleine Schritt zur „Körperwahrnehmung der Hardware“.
 
 ## Offen und zu entscheiden
 

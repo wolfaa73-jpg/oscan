@@ -1,6 +1,6 @@
 # Übergabe an Alex und Claude
 
-**Version 0.3 · Stand 5. November 2026**
+**Version 0.4 · Stand 5. November 2026**
 
 Alex’ Fernziel ist ein lokales System, dessen Gedächtnis die Arbeit vorhandener Geräte mitsteuert. Im Labor kann man den ersten Mechanismus isoliert untersuchen. Eine erlernte Vorhersage verändert die ausgehenden Meldungen. Der feste Ausfallreflex bleibt von jeder Lernregel unabhängig. Programmcode, ein Prüfsummenvergleich und das Erkennen des eigenen Gerätezustands sind drei unterschiedliche Dinge. Eine beglaubigte Startkette und ein integriertes Betriebssystem sind Forschungsarbeit für spätere Stufen.
 
@@ -19,6 +19,7 @@ Alex’ Fernziel ist ein lokales System, dessen Gedächtnis die Arbeit vorhanden
 | Wie funktioniert die Gegenstelle bei Paketverlust? | transport.py |
 | Wie bleibt ein Lernstand über zwei Läufe erhalten? | neustart.py, esp32/Lernknoten/Knoten.h |
 | Wo liegen Gerätesketch und serieller Referenzvergleich? | esp32/Lernknoten/Lernknoten.ino, esp32/platformio.ini, boardprobe.py, wiederanlauf.py |
+| Wie nimmt der Knoten seinen eigenen Zustand wahr? | esp32/Lernknoten/Koerper.h, koerper.py |
 | Welche Nachweise sind automatisiert? | test_versuch.py, test_labor.py |
 
 ## Referenzlauf und Aussagegrenzen
@@ -120,6 +121,27 @@ python3 wiederanlauf.py laden --port /dev/PORT --regel erbe --grenze N
 ```
 
 Der Hosttest spielt beide Teile in zwei getrennten Prozessen mit Dateibackend durch, auch mit falscher Grenze. Der Zustand nach einem Abbruch **während** des Schreibens steht noch aus.
+
+## Körpersignale
+
+Seit 0.4 misst sich der Knoten auf Wunsch selbst. Im Körpermodus liest er in eigenem Takt die Chiptemperatur, den freien internen Speicher und die größte Lücke zwischen zwei Durchläufen von `loop()` seit dem letzten Takt. Die eigene Messung und Ausgabe zählen dabei mit. Daraus stuft er den Takt als OK, SCHWACH oder AUSFALL ein, der schlechteste der drei Werte zählt. Mit dieser Einstufung lernt er wie im Replay. Eine nicht lesbare Temperatur steht als „-“ in der Ausgabe und zählt nicht mit.
+
+Die Firmware hat keine eigenen Grenzwerte. `GRENZEN` übergibt sie in Zehntelgrad, Byte und Mikrosekunden, `KOERPER <ms>` startet den Modus, `STOP` beendet ihn. Jeder Takt antwortet mit `K,takt,zustand,sofort,vorwarnung,temp_dc,heap,luecke_us`. `MESSWERT` speist Rohwerte von außen ein und nimmt denselben Weg durch Einstufung und Lernen. Darüber vergleicht der Hosttest beides mit Python.
+
+```bash
+python3 koerper.py aufnahme messungen/koerper.csv --port /dev/PORT --regel erbe --takte 3600
+python3 koerper.py pruefen messungen/koerper.csv
+python3 koerper.py spur messungen/koerper.csv --grenzen 450 550 65536 16384 20000 200000 > spur.csv
+```
+
+`aufnahme` schreibt neben die CSV eine JSON mit Regel, Intervall und Grenzen. `pruefen` rechnet jede Einstufung und jede Entscheidung des Geräts nach und fasst die Werte zusammen. `spur` stuft die Rohwerte wahlweise mit anderen Grenzen neu ein, als Eingabe für `versuch.py`. Die Grenzen der ersten Aufnahme (`ERKUNDUNG` in koerper.py: 50 und 60 °C, 64 und 16 KiB frei, 20 und 200 ms Lücke) sind vorläufige Erkundungswerte ohne Datenblattbezug. Eigene Aufnahmen liegen in `messungen/`, das nicht ins Repo geht.
+
+**Erster Lauf am 5. November.** 30 Takte à 1 s auf dem ESP32-S3:
+- Chiptemperatur 35 bis 38 °C in ganzen Grad, direkt nach dem Aufspielen fallend
+- freier Speicher konstant 371.820 Byte
+- Schleifenlücke meist 209 µs, höchstens 655 µs
+
+Alle Takte waren OK, keine Vorwarnung, und alle Einstufungen und Entscheidungen stimmten mit Python überein. Wie erwartet lernt der Knoten auf dem Tisch nur, dass auf OK wieder OK folgt. Am selben Tag begann ein Mitschnitt über 12 Stunden.
 
 ## Kommunikationsversuch und nächste Entscheidung
 

@@ -1,6 +1,6 @@
 # Alex’ Lernlabor
 
-**Stand 0.3 · 5. November 2026 · Arbeitsprojekt für Alex und Claude**
+**Stand 0.4 · 5. November 2026 · Arbeitsprojekt für Alex und Claude**
 
 Wann sollte ein kleiner Knoten eine Erfahrung vergessen? Dieses Labor setzt drei Gedanken aus Alex’ Entwurf zusammen. Ein fester Reflex meldet einen beobachteten Ausfall. Neun veränderliche Gewichte lernen, welcher Zustand auf welchen folgt. Ein zweiter Knoten kann über kurze Zustandsmeldungen erfahren, was der erste beobachtet hat. Seit Version 0.3 bringt ein siebtes Verfahren ein kleines festes Erbe mit, das eigene Erfahrung überstimmen kann.
 
@@ -45,7 +45,8 @@ Die Schwierigkeit beim Vergessen ist die Wahl des richtigen Maßstabs. Eine lang
 - **Eine eigene Messung.** Ein Python-Werkzeug prüft die TCP-Erreichbarkeit eines eigenen Dienstes und speichert Zeit, Verbindungsdauer und Ergebnis. Die beigefügte lokale Aufzeichnung enthält sechs erfolgreiche und sechs abgelehnte Verbindungen nach einem absichtlichen Stopp.
 - **Ein Gedächtnis mit Neustart.** Alle drei Lernregeln (Zeit, Kontext, Erbe) können ihren Zustand auf dem Rechner sichern und mit absoluten Takten fortsetzen. Messlücken erzeugen keine erfundenen Übergänge. Der ESP32-Sketch hat eigene Befehle zum Sichern und Laden. Das Erbe gehört zur Regel. Ein Stand mit abweichendem Erbe wird beim Laden abgewiesen.
 - **Drei übersetzte Firmwarevarianten.** Zeit, Kontext und Erbe wurden für den klassischen ESP32 (`esp32dev`) und für Alex’ ESP32-S3-N16R8 (`esp32s3`) gebaut. Der identische Sketchcode wurde im Hosttest pro Variante über 57.840 Beobachtungen mit Python verglichen. Für einen physischen Lauf liegt ein serieller Prüfer bei. Seit 0.3 übersteht er einen langsamen Start, bei dem das Board wiederholte Neustartbefehle alle beantwortet. Auf Alex’ ESP32-S3 bestanden alle drei Varianten am 5. November die Demo mit 240 von 240 Antworten. Die Erbe-Variante behielt ihren Lernstand über eine Stromtrennung.
-- **Ein reproduzierbarer Übergabestand.** 36 automatisierte Tests waren erfolgreich. Der Versuchsbericht läuft offline. Quellcode, Messdateien und eine eingefrorene Kopie der Originalnotizen liegen im Ordner, die Lieferungen 0.1 und 0.2 unter `../archiv`.
+- **Körpersignale.** Seit 0.4 misst der S3 im Körpermodus in eigenem Takt Chiptemperatur, freien Speicher und Schleifenlücke, stuft sie ein und lernt damit. `koerper.py` zeichnet auf und rechnet jede Entscheidung nach. Auf dem Tisch ist bisher alles OK.
+- **Ein reproduzierbarer Übergabestand.** 41 automatisierte Tests waren erfolgreich. Der Versuchsbericht läuft offline. Quellcode, Messdateien und eine eingefrorene Kopie der Originalnotizen liegen im Ordner, die Lieferungen 0.1 und 0.2 unter `../archiv`.
 
 ## Womit Alex und Claude weitermachen sollten
 

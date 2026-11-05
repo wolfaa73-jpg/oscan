@@ -1,5 +1,6 @@
-# Lieferungen 0.1 und 0.2 sowie Sicherungen bleiben lokal.
+# Lieferungen 0.1 und 0.2 sowie Sicherungen bleiben lokal, ebenso eigene Messungen.
 archiv/
+Alex-Lerngedaechtnis/messungen/
 .DS_Store
 .pio/
 __pycache__/

@@ -11,6 +11,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+import koerper
 import wiederanlauf
 from boardprobe import antwort, vergleiche_board
 from kern import Erbgedaechtnis, Gedaechtnis, Kontextgedaechtnis, Knoten, MAX_TAKT, REGELN, ZUSTAENDE
@@ -262,6 +263,65 @@ class PrueferTests(unittest.TestCase):
         self.assertEqual(antwort(Port(), frist=3.0), b"GESICHERT")
 
 
+class KoerperTests(unittest.TestCase):
+    G = koerper.ERKUNDUNG
+    # Temperatur steigt über SCHWACH zu AUSFALL, dann fehlt der Messwert bei langer Lücke.
+    ROH = [(410, 300000, 60), (480, 300000, 70), (520, 299000, 80), (610, 298000, 90),
+           (None, 298000, 250000), (430, 300000, 60)]
+
+    @staticmethod
+    def geraetezeilen(roh, g, regel):
+        """So antwortet das Gerät, wenn es wie Python einstuft und entscheidet."""
+        k = Knoten(REGELN[regel]())
+        zeilen = []
+        for takt, (t, h, l) in enumerate(roh, 1):
+            z = koerper.einstufen(t, h, l, g)
+            s = k.schritt(takt, z)
+            zeilen.append(f"K,{takt},{z},{int(s.sofort)},{int(s.vorwarnung)},{'-' if t is None else t},{h},{l}")
+        return zeilen
+
+    def test_einstufung_nimmt_den_schlechtesten_wert(self):
+        e, g = koerper.einstufen, self.G
+        self.assertEqual(e(499, 65537, 19999, g), "OK")
+        for wert in ((500, 65537, 19999), (499, 65536, 19999), (499, 65537, 20000)):
+            self.assertEqual(e(*wert, g), "SCHWACH")
+        for wert in ((600, 65537, 19999), (499, 16384, 19999), (550, 300000, 200000)):
+            self.assertEqual(e(*wert, g), "AUSFALL")
+        self.assertEqual(e(None, 300000, 50, g), "OK")
+
+    def test_grenzen_muessen_geordnet_sein(self):
+        for falsch in ((600, 500, 65536, 16384, 1, 2), (500, 600, 100, 200, 1, 2),
+                       (500, 600, 200, 100, 2, 1), (500, 600.0, 200, 100, 1, 2)):
+            with self.subTest(grenzen=falsch):
+                with self.assertRaises(ValueError):
+                    koerper.Grenzen(*falsch)
+        self.assertEqual(self.G.befehl(), b"GRENZEN 500 600 65536 16384 20000 200000")
+
+    def test_aufnahme_pruefung_und_neue_einstufung(self):
+        antworten = [b"BEREIT,ERBE", b"GRENZEN,ok", b"KOERPER,an",
+                     *(z.encode() for z in self.geraetezeilen(self.ROH, self.G, "erbe"))]
+        zeilen, gesendet = iter(a + b"\r\n" for a in antworten), []
+        class Port:
+            def write(self, daten):
+                gesendet.append(daten)
+            def readline(self):
+                return next(zeilen, b"")
+        with tempfile.TemporaryDirectory() as ort:
+            ziel = Path(ort, "koerper.csv")
+            self.assertEqual(koerper.aufnehmen(Port(), "erbe", self.G, 1000, len(self.ROH), ziel), 6)
+            self.assertEqual(gesendet[-1], b"STOP\n")
+            meta, werte = koerper.pruefen(ziel)
+            self.assertEqual([w["zustand"] for w in werte], ["OK", "OK", "SCHWACH", "AUSFALL", "AUSFALL", "OK"])
+            locker = koerper.Grenzen(550, 700, 65536, 16384, 20000, 300000)
+            self.assertEqual([z for _, z in koerper.neu_einstufen(werte, locker)],
+                             ["OK", "OK", "OK", "SCHWACH", "SCHWACH", "OK"])
+            with self.assertRaises(ValueError):
+                koerper.aufnehmen(Port(), "erbe", self.G, 1000, 1, ziel)
+            ziel.write_text(ziel.read_text().replace(",SCHWACH,0,1", ",SCHWACH,0,0"))
+            with self.assertRaises(ValueError):
+                koerper.pruefen(ziel)
+
+
 @unittest.skipUnless(shutil.which("c++"), "Hostvergleich benötigt einen C++11-Compiler")
 class SketchTests(unittest.TestCase):
     @classmethod
@@ -296,7 +356,7 @@ class SketchTests(unittest.TestCase):
             self.assertEqual(res.stdout.splitlines(), erwartet)
 
     def test_sketch_behaelt_zustand_bei_fehlerhaften_zeilen(self):
-        folge = b"1,OK\r\n1,SCHWACH\n4294967296,OK\n2,OK\x00x\n" + b"X"*40 + b"\n5,AUSFALL\n"
+        folge = b"1,OK\r\n1,SCHWACH\n4294967296,OK\n2,OK\x00x\n" + b"X"*80 + b"\n5,AUSFALL\n"
         for exe in self.binaries.values():
             r = subprocess.run([str(exe)], input=folge, capture_output=True, timeout=5, check=True)
             self.assertEqual(r.stdout.splitlines()[1:], [b"1,OK,0,0", *([b"FEHLER"]*4), b"5,AUSFALL,1,0"])
@@ -378,3 +438,18 @@ class SketchTests(unittest.TestCase):
                 with self.subTest(grenze=falsch):
                     with self.assertRaises(ValueError):
                         lauf(wiederanlauf.laden, falsch)
+
+    def test_koerpertakt_wie_python(self):
+        g = koerper.ERKUNDUNG
+        roh = KoerperTests.ROH + [(599, 65536, 19999), (600, 16385, 0), (None, 16384, 0)]
+        befehle = ["MESSWERT 400 1 1", "GRENZEN 600 500 1 2 3 4", g.befehl().decode()]
+        befehle += [f"MESSWERT {'-' if t is None else t} {h} {l}" for t, h, l in roh]
+        befehle += ["MESSWERT -5 1 1", "KOERPER 1000", "STOP"]
+        for regel, exe in self.binaries.items():
+            with self.subTest(regel=regel):
+                erwartet = ["FEHLER", "FEHLER", "GRENZEN,ok", *KoerperTests.geraetezeilen(roh, g, regel)]
+                # Negative Temperaturen gibt es nicht, den Körpermodus nur am Gerät.
+                erwartet += ["FEHLER", "FEHLER", "KOERPER,aus"]
+                r = subprocess.run([str(exe)], input="\n".join(befehle) + "\n", text=True,
+                                   capture_output=True, timeout=5, check=True)
+                self.assertEqual(r.stdout.splitlines()[1:], erwartet)

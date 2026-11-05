@@ -144,7 +144,7 @@ def als_html(summen, reihe, startseed):
     svg{{width:100%;height:auto;font:12px system-ui}} figcaption,footer{{font-size:.9rem}}
     table{{width:100%;border-collapse:collapse;background:white;font-size:.9rem}} td,th{{padding:.42rem;text-align:right;border-bottom:1px solid #cbd5cf}}
     th:first-child{{text-align:left}} section{{overflow-x:auto}} code{{font-size:.9em}}</style></head><body>
-    <main><p>Alex’ Lernlabor · Version 0.3</p><h1>Wann hilft es, zu vergessen?</h1>
+    <main><p>Alex’ Lernlabor · Version 0.4</p><h1>Wann hilft es, zu vergessen?</h1>
     <p>Ein Knoten schätzt nach jedem Signal, ob der Sensor im nächsten Takt ausfällt.
     Für die ursprüngliche Demo sinken die Fehlwarnungen durch Verblassen von elf auf fünf.
     Die richtigen Vorwarnungen sinken von 13 auf zwölf. Mit einem kleinen festen Erbe warnt der Knoten

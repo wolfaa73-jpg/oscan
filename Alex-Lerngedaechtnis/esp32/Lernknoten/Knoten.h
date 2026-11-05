@@ -62,6 +62,8 @@ public:
         return true;
     }
 
+    uint32_t takt() const { return letzterTakt; }
+
     void neuerLauf() {
         for (auto &zeile : gewichte) {
             for (double &wert : zeile) wert = 0.0;
