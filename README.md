@@ -16,3 +16,9 @@ Gebraucht werden Python 3.9 oder neuer, für die Sketch-Tests ein C++11-Compiler
 **Stand 0.4 vom 5. November 2026.** Die Firmware entscheidet auf einem ESP32-S3 in allen drei Lernregeln genauso wie Python und behält ihren Lernstand über eine Stromtrennung. Im Körpermodus misst sie ihre eigene Chiptemperatur, ihren freien Speicher und ihre Schleifenzeit. Alle Aussagen zur Güte der Regeln stammen aus synthetischen Spuren, nicht aus Messungen im Alltag.
 
 Lizenz: MIT, siehe [LICENSE](LICENSE).
+
+## Lokaler Verbundversuch
+
+Die Erweiterung im Arbeitszweig untersucht Sitzungen, mehrere Knoten und veraltete Meldungen.
+Der interaktive Offline-Bericht liegt unter [Verbund.html](Alex-Lerngedaechtnis/Verbund.html).
+Prüfkommandos, Annahmen und die Übernahme stehen in [VERBUND-UEBERGABE.md](Alex-Lerngedaechtnis/VERBUND-UEBERGABE.md).

@@ -1,0 +1,32 @@
+[
+  {
+    "name": "frage",
+    "hex": "4f430100000100112233445566778899aabbccddeeff0000000100000000000066c0debc",
+    "knoten": 1,
+    "sitzung": "00112233445566778899aabbccddeeff",
+    "runde": 1,
+    "takt": 0,
+    "token": 0,
+    "flags": 0
+  },
+  {
+    "name": "vorwarnung",
+    "hex": "4f430101000100112233445566778899aabbccddeeff0000000100000001020141343fbb",
+    "knoten": 1,
+    "sitzung": "00112233445566778899aabbccddeeff",
+    "runde": 1,
+    "takt": 1,
+    "token": 2,
+    "flags": 1
+  },
+  {
+    "name": "ausfall",
+    "hex": "4f430101000100112233445566778899aabbccddeeff00000002000000020302f288fb84",
+    "knoten": 1,
+    "sitzung": "00112233445566778899aabbccddeeff",
+    "runde": 2,
+    "takt": 2,
+    "token": 3,
+    "flags": 2
+  }
+]

@@ -1,0 +1,7 @@
+{
+  "herkunft": "UDP auf 127.0.0.1, zwei separate Knotenprozesse",
+  "passende_antworten": 480,
+  "erwartet": 480,
+  "protokoll_bytes": 34560,
+  "dauer_s": 0.11
+}

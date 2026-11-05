@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OSCan · Zwei Knoten, eine gemeinsame Sicht</title>
+<style>
+:root{font-family:system-ui,sans-serif;color:#172e31;background:#f3f5ef;font-size:17px;line-height:1.5}
+*{box-sizing:border-box}body{max-width:1150px;margin:0 auto;padding:2rem 1.3rem 3rem}h1{font-size:clamp(2rem,5vw,3.7rem);line-height:1.08;max-width:20ch;letter-spacing:-.04em;margin:.6rem 0 1.2rem}h2{font-size:1.35rem;line-height:1.2}h3{font-size:1rem;margin:1.3rem 0 .6rem}p{max-width:76ch}.eyebrow{font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:#436461}.intro{color:#47615e;font-size:1.1rem}.toolbar{display:flex;gap:1rem;align-items:center;flex-wrap:wrap;padding:1rem 0;border-block:1px solid #bacbc1;margin:2rem 0}button{padding:.6rem 1rem;border:1px solid #79978b;border-radius:5px;background:white;font:inherit;color:inherit;cursor:pointer}button[aria-pressed=true]{background:#155a53;color:white}input[type=range]{flex:1;min-width:150px;accent-color:#155a53}output{min-width:6rem;font-weight:700;font-variant-numeric:tabular-nums}button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid #a85512;outline-offset:3px}.timeline{display:flex;margin-bottom:1rem;gap:2px;height:20px}.timeline span{flex:1;background:#c4d4c9;border-radius:2px}.timeline .event{background:#d4aa54}.timeline .chosen{outline:2px solid #172e31;outline-offset:2px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.3rem}.card{padding:1.3rem;background:#fff;border:1px solid #c9d6ce;border-top:5px solid #246b61;border-radius:6px}.card.unknown{border-top-color:#b57626}.card h2{margin:0}.meta{font-size:.8rem;color:#61766c;margin:.4rem 0 1rem}.states{display:flex;gap:1.5rem;flex-wrap:wrap}.label{font-size:.78rem;color:#526b62}.value{font-size:1.55rem;font-weight:700}.unknown .remote{color:#92580d}.flag{min-height:1.5em;font-size:.88rem;color:#4e645e}.matrix{width:100%;border-collapse:separate;border-spacing:3px;table-layout:fixed;font-size:.82rem}.matrix th{font-weight:500;padding:.2rem}.matrix td{text-align:center;font-variant-numeric:tabular-nums;padding:.45rem;border-radius:3px}.note{font-size:.85rem;color:#526b62}.events{margin:1.5rem 0;padding:1rem 1.3rem;background:#e4ece3;border-radius:5px;min-height:5rem}.events ul{margin:.4rem 0;padding-left:1.2rem}.metrics{display:flex;gap:2rem;flex-wrap:wrap;padding:1rem 0}.metrics strong{display:block;font-size:1.6rem}details{border-top:1px solid #c6d1c7;padding:1rem 0}summary{cursor:pointer;font-weight:650}.scroll{overflow:auto}.log{width:100%;border-collapse:collapse;font-size:.9rem}.log td,.log th{padding:.6rem;border-bottom:1px solid #d5ddd4;text-align:left}code{font-size:.85em}footer{font-size:.85rem;color:#526b62;margin-top:2rem}@media(max-width:700px){.grid{grid-template-columns:1fr}.toolbar{gap:.6rem}body{padding:1.2rem .8rem}.card{padding:1rem}}
+</style>
+</head>
+<body>
+<header>
+<div class="eyebrow">OSCan · Verbundversuch 1 · auf Grundlage von 0.3</div>
+<h1>Zwei Knoten.<br>Was weiß die Gegenstelle?</h1>
+<p class="intro">Jeder Knoten sammelt eigene Erfahrung. Eine gemeinsame Anzeige muss erkennen, welche Meldung zu welchem Lauf gehört und wann ihr Wissen zu alt wird.</p>
+<p>Dieser aufgezeichnete Versuch enthält Verbindungsabbrüche, Neustarts, doppelte und verspätete Nachrichten. Über den Zeitregler lässt sich jeder Schritt nachlesen. Die Knoten nutzen Alex’ bestehende Lernregel mit Erbe.</p>
+</header>
+<div class="toolbar">
+<button id="play" type="button" aria-pressed="false">Abspielen</button>
+<button id="reset" type="button">Zum Anfang</button>
+<label for="takt">Versuchstakt</label>
+<input id="takt" type="range" min="1" max="60" value="1">
+<output id="position" for="takt"></output>
+</div>
+<div class="timeline" id="timeline" aria-hidden="true"></div>
+<div class="grid" id="nodes"></div>
+<div class="events" role="status" aria-live="polite" id="events"></div>
+<h2>Bilanz dieses Versuchs</h2>
+<div class="metrics" id="metrics"></div>
+<details><summary>Alle absichtlich eingebauten Störungen</summary><div class="scroll"><table class="log"><thead><tr><th>Takt</th><th>Ereignis</th><th>Ergebnis</th></tr></thead><tbody id="log"></tbody></table></div></details>
+<details><summary>Wie die Sitzung und die Fristen funktionieren</summary>
+<p>Die Zentrale ordnet jedem Knoten eine neue 128-Bit-Sitzung zu. Auf jede Abfrage passt genau eine Antwort dieser Sitzung und Runde. Eine Kopie aus einem früheren Lauf wird abgewiesen. Für einen Neustart der Zentrale werden neue Sitzungen vereinbart.</p>
+<p>Antworten müssen vor Ablauf von 0,75 Versuchseinheiten eintreffen. Ein bestätigter Zustand gilt drei Einheiten ab dem Versand der Abfrage. Damit kann eine verspätete Antwort das Wissen nicht künstlich verjüngen. Der lokale Messtakt darf zwischen Geräten unterschiedlich sein.</p>
+<p>Die Knotenzuordnung ist in diesem Versuch vorgegeben. Die Sitzungskennung erkennt verwechselte und alte Nachrichten. Für eine Anmeldung in einem offenen Netz fehlen noch Authentifizierung und ein übertragener Anmeldeablauf.</p>
+</details>
+<footer>
+<p>Herkunft der Daten ist eine deterministische Simulation mit 60 Takten. Die gemessene UDP-Probe zwischen zwei lokalen Prozessen wird gesondert protokolliert. Ein Datagramm trägt 36 Byte Protokolldaten. Jede reguläre Runde benötigt eine Frage und eine Antwort. IP-, UDP- und Funkrahmen kommen hinzu.</p>
+<p>Reproduzieren im Laborordner mit <code>python3 verbundlabor.py --bericht Verbund.html</code>. Die Anzeige liest die eingebettete Aufzeichnung. Die Gedächtnistabellen stammen aus dem lokalen Prüfprotokoll. Übertragen werden Zustand, Messtakt und Warnflags. Weitere Befunde und der Übergabeplan stehen in <code>VERBUND-UEBERGABE.md</code>.</p>
+</footer>
+<script>
+"use strict";
+const daten = /*DATEN*/;
+const slider = document.getElementById("takt");
+const play = document.getElementById("play");
+let timer = null;
+const namen = ["OK", "SCHWACH", "AUSFALL"];
+const label = {ANGENOMMEN:"angenommen", DOPPELT:"Duplikat verworfen", UNGUELTIG:"beschädigt, verworfen", ALTE_SITZUNG:"alte Sitzung verworfen", ALTE_RUNDE:"alte Runde verworfen", ZU_SPAET:"Frist überschritten", ANMELDUNG:"neu zugeordnet", KANAL:"Verbindungsstörung"};
+function el(tag, text, klasse) {
+  const node = document.createElement(tag);
+  if (text !== undefined) node.textContent = text;
+  if (klasse) node.className = klasse;
+  return node;
+}
+function matrix(werte, erbe) {
+  const table = el("table", undefined, "matrix");
+  const caption = el("caption", "Prüfblick ins lokale Gedächtnis · Ausgang → Folge");
+  table.append(caption);
+  const head = el("tr");
+  head.append(el("th", "→"));
+  for (const name of namen) head.append(el("th", name));
+  table.append(head);
+  for (let i=0;i<3;i++) {
+    const row = el("tr");row.append(el("th", namen[i]));
+    for (let j=0;j<3;j++) {
+      const cell = el("td", werte[i][j].toFixed(1));
+      cell.style.background = "rgba(36,107,97," + (0.06 + Math.min(werte[i][j]/12, 1)*0.65) + ")";
+      cell.title = namen[i]+" → "+namen[j]+", Erfahrung "+werte[i][j].toFixed(3)+", Erbe "+erbe[i][j];
+      row.append(cell);
+    }
+    table.append(row);
+  }
+  return table;
+}
+const timeline = document.getElementById("timeline");
+for (const frame of daten.verlauf) timeline.append(el("span", undefined, frame.ereignisse.length ? "event" : ""));
+function render() {
+  const index = Number(slider.value)-1;
+  const frame = daten.verlauf[index];
+  document.getElementById("position").textContent = frame.takt+" / "+daten.verlauf.length;
+  [...timeline.children].forEach((c,i)=>c.classList.toggle("chosen",i===index));
+  const nodes = document.getElementById("nodes");nodes.replaceChildren();
+  for (const node of frame.knoten) {
+    const s = node.sicht;
+    const card = el("article", undefined, "card"+(s.zustand===null?" unknown":""));
+    card.append(el("h2","Knoten "+node.nummer));
+    card.append(el("p","Sitzung …"+node.sitzung.slice(-8)+" · Messtakt "+(s.takt===null?"unbekannt":s.takt),"meta"));
+    const states = el("div",undefined,"states");
+    for(const [title,value,klass] of [["Quelle im Versuch",node.quelle,"value"],["Wissen der Zentrale",s.zustand??"UNBEKANNT","value remote"]]){
+      const block = el("div");block.append(el("div",title,"label"),el("div",value,klass));states.append(block);
+    }
+    card.append(states);
+    card.append(el("p",s.zustand===null ? "Der Gegenstelle fehlt eine hinreichend aktuelle Meldung." :
+      (s.sofort ? "Der Knoten meldet einen beobachteten Ausfall." : s.vorwarnung ? "Der Knoten warnt vor dem nächsten Messtakt." : "Der Knoten gibt aktuell keine Vorwarnung."),"flag"));
+    card.append(el("p",s.alter===null?"Wartet auf die erste Antwort.":"Alter seit Abfrage "+s.alter.toFixed(1)+" · Grenze 3,0 Einheiten","note"));
+    card.append(matrix(node.erfahrung,node.erbe));
+    card.append(el("p","Festes Erbe zusätzlich zur Tabelle: drei Belege für SCHWACH → AUSFALL.","note"));
+    nodes.append(card);
+  }
+  const events=document.getElementById("events");events.replaceChildren(el("strong","Ereignisse in Takt "+frame.takt));
+  const list=el("ul");
+  for(const e of frame.ereignisse) list.append(el("li",e.text+" "+(label[e.ergebnis]??e.ergebnis)+"."));
+  if(!frame.ereignisse.length)list.append(el("li","Reguläre Abfrage beider Knoten."));
+  events.append(list);
+}
+const verworfen = ["DOPPELT","UNGUELTIG","ALTE_SITZUNG","ALTE_RUNDE","ZU_SPAET"].reduce((s,k)=>s+(daten.statistik[k]??0),0);
+for(const [wert,text] of [[daten.statistik.ANGENOMMEN,"gültige Antworten"],[verworfen,"gezielt verworfene Meldungen"],[daten.statistik.MODELL_NUTZBYTES,"Protokollbytes einschließlich Fehlerproben"]]){
+  const item=el("div");item.append(el("strong",wert.toLocaleString("de-DE")),el("span",text));document.getElementById("metrics").append(item);
+}
+for(const e of daten.ereignisse){const row=el("tr");row.append(el("td",e.takt),el("td",e.text),el("td",label[e.ergebnis]??e.ergebnis));document.getElementById("log").append(row);}
+function stop(){clearInterval(timer);timer=null;play.textContent="Abspielen";play.setAttribute("aria-pressed","false");}
+play.addEventListener("click",()=>{
+  if(timer){stop();return;}
+  if(Number(slider.value)===daten.verlauf.length)slider.value="1";
+  play.textContent="Pause";play.setAttribute("aria-pressed","true");
+  timer=setInterval(()=>{slider.value=String(Number(slider.value)+1);render();if(Number(slider.value)===daten.verlauf.length)stop();},650);
+});
+slider.addEventListener("input",()=>{stop();render();});
+document.getElementById("reset").addEventListener("click",()=>{stop();slider.value="1";render();});
+const start = Number(new URLSearchParams(location.hash.slice(1)).get("takt"));
+if(Number.isInteger(start) && start>=1 && start<=daten.verlauf.length)slider.value=String(start);
+render();
+</script>
+</body>
+</html>
