@@ -6,7 +6,7 @@ Alex’ Fernziel ist ein lokales System, dessen Gedächtnis die Arbeit vorhanden
 
 ## Einstieg für Claude
 
-> Lies START-HIER.md, diese Übergabe und den Abschnitt „Versuchsstand“ in Alex’ Ideensammlung eine Ebene höher. Führe die Tests aus und gleiche die Kontrollwerte mit der beigefügten CSV ab. Kläre mit Alex einen eigenen Messendpunkt, eine mögliche Handlung innerhalb eines Takts und das Verhältnis der Kosten einer Fehlwarnung zu einem verpassten Ausfall. Halte Abtastintervall, Timeout und Schwach-Schwelle vor der Messung fest. Nimm zwei zeitlich getrennte Spuren auf. Verwende die erste zur Erkundung und die zweite für die Entscheidung mit eingefrorenen Einstellungen. Vergleiche alle sieben Verfahren, benenne konkrete Fehlentscheidungen mit Takt und vergleiche mit der einfachen festen Warnregel. Dokumentiere reale Ergebnisse getrennt von den synthetischen Kontrollen.
+> Lies START-HIER.md, diese Übergabe und den Abschnitt „Versuchsstand“ in Alex’ Ideensammlung eine Ebene höher, für Daniels Teilversuche zusätzlich SYSTEM-UEBERGABE.md und VERBUND-UEBERGABE.md. Führe die Tests aus und gleiche die Kontrollwerte mit der beigefügten CSV ab. Kläre mit Alex einen eigenen Messendpunkt, eine mögliche Handlung innerhalb eines Takts und das Verhältnis der Kosten einer Fehlwarnung zu einem verpassten Ausfall. Halte Abtastintervall, Timeout und Schwach-Schwelle vor der Messung fest. Nimm zwei zeitlich getrennte Spuren auf. Verwende die erste zur Erkundung und die zweite für die Entscheidung mit eingefrorenen Einstellungen. Vergleiche alle sieben Verfahren, benenne konkrete Fehlentscheidungen mit Takt und vergleiche mit der einfachen festen Warnregel. Dokumentiere reale Ergebnisse getrennt von den synthetischen Kontrollen.
 
 | Frage | Zuständige Dateien |
 |---|---|
@@ -21,7 +21,9 @@ Alex’ Fernziel ist ein lokales System, dessen Gedächtnis die Arbeit vorhanden
 | Wo liegen Gerätesketch und serieller Referenzvergleich? | esp32/Lernknoten/Lernknoten.ino, esp32/platformio.ini, boardprobe.py, wiederanlauf.py |
 | Wie nimmt der Knoten seinen eigenen Zustand wahr? | esp32/Lernknoten/Koerper.h, koerper.py |
 | Welche Wörter kennt er, und wie weit blickt er voraus? | vokabular.py |
-| Welche Nachweise sind automatisiert? | test_versuch.py, test_labor.py |
+| Wie erkennt eine Zentrale Absender, Sitzung und veraltete Meldungen? | verbund.py, verbundlabor.py, VERBUND-UEBERGABE.md (Daniel) |
+| Wie wird aus einer Vorwarnung eine Handlung? | systemkern.py, systemlabor.py, SYSTEM-UEBERGABE.md (Daniel) |
+| Welche Nachweise sind automatisiert? | test_versuch.py, test_labor.py, test_verbund.py, test_system.py |
 
 ## Referenzlauf und Aussagegrenzen
 
