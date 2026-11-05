@@ -13,4 +13,4 @@ python3 -B -m unittest -v
 
 Gebraucht werden Python 3.9 oder neuer, für die Sketch-Tests ein C++11-Compiler und für das Gerät PlatformIO.
 
-**Stand 0.3 vom 5. November 2026.** Die Firmware entscheidet auf einem ESP32-S3 in allen drei Lernregeln genauso wie Python. Alle Aussagen zur Güte der Regeln stammen aus synthetischen Spuren, nicht aus Messungen im Alltag.
+**Stand 0.3 vom 5. November 2026.** Die Firmware entscheidet auf einem ESP32-S3 in allen drei Lernregeln genauso wie Python und behält ihren Lernstand über eine Stromtrennung. Alle Aussagen zur Güte der Regeln stammen aus synthetischen Spuren, nicht aus Messungen im Alltag.
