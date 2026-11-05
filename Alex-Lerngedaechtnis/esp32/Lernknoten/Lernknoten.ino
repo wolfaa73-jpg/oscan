@@ -5,8 +5,14 @@
 #include <Preferences.h>
 #endif
 
-#ifdef ALEX_KONTEXT
-Knoten knoten(true);
+#if defined(ALEX_KONTEXT) && defined(ALEX_ERBE)
+#error "Pro Firmware nur eine Lernregel: ALEX_KONTEXT oder ALEX_ERBE"
+#elif defined(ALEX_ERBE)
+Knoten knoten(Regel::ERBE);
+const char *const bereit = "BEREIT,ERBE";
+const char *const standKey = "erbe";
+#elif defined(ALEX_KONTEXT)
+Knoten knoten(Regel::KONTEXT);
 const char *const bereit = "BEREIT,KONTEXT";
 const char *const standKey = "kontext";
 #else

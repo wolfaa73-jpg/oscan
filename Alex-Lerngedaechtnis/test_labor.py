@@ -11,8 +11,9 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from boardprobe import vergleiche_board
-from kern import Gedaechtnis, Kontextgedaechtnis, Knoten, MAX_TAKT, ZUSTAENDE
+import wiederanlauf
+from boardprobe import antwort, vergleiche_board
+from kern import Erbgedaechtnis, Gedaechtnis, Kontextgedaechtnis, Knoten, MAX_TAKT, REGELN, ZUSTAENDE
 from labor import FAMILIEN, generiere
 from messen import klassifizieren, probe
 from neustart import kodiert, laden, sichern
@@ -20,6 +21,20 @@ from transport import Empfaenger, kanal
 from versuch import RAHMEN, beispielspur, durchlauf, lies_spur, vergleiche
 
 ROOT = Path(__file__).resolve().parent
+
+
+class PipePort:
+    """Serielle Schnittstelle über die Pipes eines laufenden Hostsketches."""
+
+    def __init__(self, prozess):
+        self.prozess = prozess
+
+    def write(self, daten):
+        self.prozess.stdin.write(daten)
+        self.prozess.stdin.flush()
+
+    def readline(self):
+        return self.prozess.stdout.readline()
 
 
 class DatenTests(unittest.TestCase):
@@ -77,11 +92,43 @@ class DatenTests(unittest.TestCase):
                 self.assertEqual(b.nutzbytes, b.nachrichten * 5)
 
 
+class ErbeTests(unittest.TestCase):
+    def test_erbe_traegt_ab_dem_ersten_schwachen_signal(self):
+        self.assertTrue(Knoten(Erbgedaechtnis()).schritt(1, "SCHWACH").vorwarnung)
+        self.assertFalse(Knoten(Kontextgedaechtnis()).schritt(1, "SCHWACH").vorwarnung)
+
+    def test_drei_gegenbeispiele_ueberstimmen_das_erbe(self):
+        k = Knoten(Erbgedaechtnis())
+        warnt = [k.schritt(t, z).vorwarnung for t, z in enumerate(["SCHWACH", "OK"] * 4, 1)]
+        self.assertEqual(warnt[::2], [True, True, True, False])
+
+    def test_erbe_bleibt_fest_und_getrennt(self):
+        g = Erbgedaechtnis()
+        for _ in range(200):
+            g.beobachte("SCHWACH", "OK")
+            g.schaetze("SCHWACH")
+        self.assertEqual((g.erbe["SCHWACH"]["AUSFALL"], g.gewichte["SCHWACH"]["AUSFALL"]), (3, 0))
+        # Untergrenze: drei feste gegen höchstens 1 / (1 - 0,5^(1/6)) eigene Belege.
+        self.assertAlmostEqual(g.schaetze("SCHWACH")[0], 3 / (3 + 1 / (1 - 0.5 ** (1 / 6))))
+
+    def test_ohne_erbe_gleich_kontextregel(self):
+        spur = generiere("Rückkehr", 7)
+        self.assertEqual(durchlauf(spur, "x", Kontextgedaechtnis()),
+                         durchlauf(spur, "x", Erbgedaechtnis({("SCHWACH", "AUSFALL"): 0})))
+
+    def test_ungueltiges_erbe_wird_abgewiesen(self):
+        for erbe in ({("SCHWACH", "kaputt"): 1}, {("SCHWACH", "AUSFALL"): -1},
+                     {("SCHWACH", "AUSFALL"): float("nan")}):
+            with self.subTest(erbe=erbe):
+                with self.assertRaises(ValueError):
+                    Erbgedaechtnis(erbe)
+
+
 class NeustartTests(unittest.TestCase):
     def test_fortsetzung_ist_schrittweise_identisch_auch_an_luecken(self):
         spur = [(t, z) for t, z in enumerate(beispielspur(), 1) if t % 13 != 0]
         with tempfile.TemporaryDirectory() as ort:
-            for typ in (Gedaechtnis, Kontextgedaechtnis):
+            for typ in REGELN.values():
                 referenz = Knoten(typ())
                 erwartet = [referenz.schritt(t, z) for t, z in spur]
                 for grenze in (1, 12, 51, 119, len(spur)-1):
@@ -104,7 +151,8 @@ class NeustartTests(unittest.TestCase):
                 sichern(p, "B", k)
             original = json.loads(p.read_bytes())
             for key, val in [("format", "v99"), ("takt", True), ("gewichte", [[-1, 0, 0]] * 3),
-                             ("regel", "x"), ("vokabular", list(reversed(ZUSTAENDE)))]:
+                             ("regel", "x"), ("vokabular", list(reversed(ZUSTAENDE))),
+                             ("erbe", [[0, 0, 0], [0, 0, 3.0], [0, 0, 0]])]:
                 d = dict(original["daten"], **{key: val})
                 p.write_bytes(kodiert(dict(daten=d, sha256=hashlib.sha256(kodiert(d)).hexdigest())))
                 with self.assertRaises(ValueError):
@@ -123,6 +171,33 @@ class NeustartTests(unittest.TestCase):
                 with self.assertRaises(OSError):
                     sichern(p, "A", k)
             self.assertEqual(list(Path(ort).iterdir()), [])
+
+    def test_erbe_wird_mitgesichert_und_geprueft(self):
+        with tempfile.TemporaryDirectory() as ort:
+            k = Knoten(Erbgedaechtnis())
+            k.schritt(1, "SCHWACH")
+            sichern(Path(ort, "erbe"), "A", k)
+            restauriert = laden(Path(ort, "erbe"), "A")
+            self.assertIs(type(restauriert.gedaechtnis), Erbgedaechtnis)
+            # Nach einer Lücke trägt allein das Erbe die Warnung.
+            self.assertTrue(restauriert.schritt(3, "SCHWACH").vorwarnung)
+            anders = Knoten(Erbgedaechtnis({("SCHWACH", "AUSFALL"): 0}))
+            anders.schritt(1, "OK")
+            sichern(Path(ort, "anders"), "A", anders)
+            with self.assertRaises(ValueError):
+                laden(Path(ort, "anders"), "A")
+
+    def test_stand_ohne_erbe_aus_version_02_bleibt_ladbar(self):
+        with tempfile.TemporaryDirectory() as ort:
+            p = Path(ort, "stand")
+            k = Knoten(Kontextgedaechtnis())
+            k.schritt(1, "SCHWACH")
+            k.schritt(2, "AUSFALL")
+            sichern(p, "A", k)
+            d = json.loads(p.read_bytes())["daten"]
+            del d["erbe"]
+            p.write_bytes(kodiert(dict(daten=d, sha256=hashlib.sha256(kodiert(d)).hexdigest())))
+            self.assertEqual(laden(p, "A").gedaechtnis.gewichte["SCHWACH"]["AUSFALL"], 1)
 
 
 class MessTests(unittest.TestCase):
@@ -167,15 +242,35 @@ class TransportTests(unittest.TestCase):
         self.assertIsNone(e.sicht(18, 10))
 
 
+class PrueferTests(unittest.TestCase):
+    def test_langsamer_start_beantwortet_beide_neustartbefehle(self):
+        # Der Prüfer hat NEUER_LAUF wiederholt. Die zweite Bereitmeldung steht vor der ersten Antwort.
+        zeilen = iter([b"BEREIT,ZEIT\n", b"BEREIT,ZEIT\n", b"1,OK,0,0\n", b"2,AUSFALL,1,0\n"])
+        class Port:
+            def write(self, daten):
+                pass
+            def readline(self):
+                return next(zeilen)
+        self.assertEqual(vergleiche_board(Port(), ["OK", "AUSFALL"], "zeit"), 2)
+
+    def test_langsamer_flashzugriff_wird_abgewartet(self):
+        # Leere Zeilen sind abgelaufene Lesefristen der seriellen Schnittstelle.
+        zeilen = iter([b"", b"", b"GESICHERT\r\n"])
+        class Port:
+            def readline(self):
+                return next(zeilen)
+        self.assertEqual(antwort(Port(), frist=3.0), b"GESICHERT")
+
+
 @unittest.skipUnless(shutil.which("c++"), "Hostvergleich benötigt einen C++11-Compiler")
 class SketchTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.tmp = tempfile.TemporaryDirectory()
         cls.binaries = {}
-        for regel in ("zeit", "kontext"):
+        for regel in REGELN:
             out = Path(cls.tmp.name, regel)
-            flags = ["-DALEX_KONTEXT"] if regel == "kontext" else []
+            flags = [] if regel == "zeit" else [f"-DALEX_{regel.upper()}"]
             subprocess.run(["c++", "-std=c++11", "-Wall", "-Wextra", "-Werror", "-pedantic",
                             *flags, str(ROOT / "esp32/host.cpp"), "-o", str(out)], check=True)
             cls.binaries[regel] = out
@@ -189,7 +284,7 @@ class SketchTests(unittest.TestCase):
             eingabe, erwartet = [], ["takt,zustand,sofort,vorwarnung"]
             spuren = [beispielspur()] + [generiere(f, seed) for f in FAMILIEN for seed in range(1000,1020)]
             for spur in spuren:
-                k = Knoten(Kontextgedaechtnis() if regel == "kontext" else Gedaechtnis())
+                k = Knoten(REGELN[regel]())
                 eingabe.append("NEUER_LAUF")
                 erwartet.append("BEREIT," + regel.upper())
                 for t, z in enumerate(spur, 1):
@@ -224,10 +319,10 @@ class SketchTests(unittest.TestCase):
                 daten = bytearray(p.read_bytes())
                 self.assertEqual(len(daten), 86)
                 self.assertEqual(daten[:4], b"AG01")
+                self.assertEqual(daten[4], {"zeit": 1, "kontext": 2, "erbe": 3}[regel])
                 self.assertEqual(int.from_bytes(daten[82:], "little"), zlib.crc32(daten[:82]))
                 self.assertEqual(int.from_bytes(daten[6:10], "little"), 121)
-                typ = Kontextgedaechtnis if regel == "kontext" else Gedaechtnis
-                k = Knoten(typ())
+                k = Knoten(REGELN[regel]())
                 for t, z in enumerate(spur[:121], 1):
                     k.schritt(t, z)
                 for i, wert in enumerate(struct.unpack_from("<9d", daten, 10)):
@@ -241,17 +336,45 @@ class SketchTests(unittest.TestCase):
                 p.write_bytes(daten)
                 self.assertEqual(replay(["LADEN", "1,OK"]), ["FEHLER", "1,OK,0,0"])
 
+    def test_geraetestand_einer_anderen_regel_wird_abgewiesen(self):
+        teile = [f"{t},{z}" for t, z in enumerate(beispielspur()[:30], 1)]
+        with tempfile.TemporaryDirectory() as ort:
+            p = Path(ort, "stand")
+            def replay(regel, befehle):
+                proc = subprocess.run([str(self.binaries[regel])], input="\n".join(befehle)+"\n", text=True,
+                                      capture_output=True, timeout=5, check=True,
+                                      env=dict(os.environ, ALEX_TEST_NVS=str(p)))
+                return proc.stdout.splitlines()[1:]
+            self.assertEqual(replay("kontext", teile + ["SICHERN"])[-1], "GESICHERT")
+            self.assertEqual(replay("erbe", ["LADEN"]), ["FEHLER"])
+            self.assertEqual(replay("kontext", ["LADEN"]), ["GELADEN"])
+
     def test_boardpruefer_mit_echtem_sketch_ueber_pipes(self):
         for regel, exe in self.binaries.items():
             with subprocess.Popen([str(exe)], stdin=subprocess.PIPE, stdout=subprocess.PIPE) as prozess:
-                class Port:
-                    def write(self, daten):
-                        prozess.stdin.write(daten)
-                        prozess.stdin.flush()
-                    def readline(self):
-                        return prozess.stdout.readline()
                 try:
-                    self.assertEqual(vergleiche_board(Port(), beispielspur(), regel), 240)
+                    self.assertEqual(vergleiche_board(PipePort(prozess), beispielspur(), regel), 240)
                 finally:
                     prozess.stdin.close()
                     prozess.wait(timeout=5)
+
+    def test_wiederanlauf_ueber_zwei_prozesse(self):
+        spur = beispielspur()
+        with tempfile.TemporaryDirectory() as ort:
+            env = dict(os.environ, ALEX_TEST_NVS=str(Path(ort, "nvs")))
+            def lauf(teil, grenze):
+                # Jeder Teil ist ein eigener Prozess, das entspricht einem Neustart des Geräts.
+                with subprocess.Popen([str(self.binaries["erbe"])], stdin=subprocess.PIPE,
+                                      stdout=subprocess.PIPE, env=env) as prozess:
+                    try:
+                        return teil(PipePort(prozess), spur, "erbe", grenze)
+                    finally:
+                        prozess.stdin.close()
+                        prozess.wait(timeout=5)
+            lauf(wiederanlauf.sichern, 100)
+            self.assertEqual(lauf(wiederanlauf.laden, 100), 140)
+            # Ein Stand, der nicht genau an der angegebenen Grenze endet, fällt auf.
+            for falsch in (90, 110):
+                with self.subTest(grenze=falsch):
+                    with self.assertRaises(ValueError):
+                        lauf(wiederanlauf.laden, falsch)

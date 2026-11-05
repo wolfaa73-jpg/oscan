@@ -15,6 +15,8 @@ class Gedaechtnis:
         self.halbwertszeit = halbwertszeit
         self.faktor = 1.0 if halbwertszeit is None else 0.5 ** (1 / halbwertszeit)
         self.gewichte = {z: Counter() for z in ZUSTAENDE}
+        # Festes Vorwissen, getrennt von eigener Erfahrung. Nur Erbgedaechtnis füllt es.
+        self.erbe = {z: Counter() for z in ZUSTAENDE}
 
     def beobachte(self, vorher, jetzt, schritte=1):
         faktor = self.faktor ** schritte
@@ -25,17 +27,17 @@ class Gedaechtnis:
             self.gewichte[vorher][jetzt] += 1
 
     def schaetze(self, zustand):
-        zeile = self.gewichte[zustand]
-        beleg = sum(zeile[z] for z in ZUSTAENDE)
-        anteil = zeile["AUSFALL"] / beleg if beleg else 0.0
+        zeile, erbe = self.gewichte[zustand], self.erbe[zustand]
+        beleg = sum(zeile[z] + erbe[z] for z in ZUSTAENDE)
+        anteil = (zeile["AUSFALL"] + erbe["AUSFALL"]) / beleg if beleg else 0.0
         return anteil, beleg
 
 
 class Kontextgedaechtnis(Gedaechtnis):
     """Halbwertszeit in beobachteten Folgen desselben Ausgangszustands."""
 
-    def __init__(self):
-        super().__init__(6.0)
+    def __init__(self, halbwertszeit=6.0):
+        super().__init__(halbwertszeit)
 
     def beobachte(self, vorher, jetzt, schritte=1):
         if vorher is None:
@@ -44,6 +46,27 @@ class Kontextgedaechtnis(Gedaechtnis):
         for folge in zeile:
             zeile[folge] *= self.faktor
         zeile[jetzt] += 1
+
+
+# Vorwissen von außen als feste Beobachtungen je Übergang. Drei entsprechen dem
+# Mindestbeleg einer Warnung. Das Erbe trägt also schon beim ersten schwachen Signal.
+ERBE = {("SCHWACH", "AUSFALL"): 3.0}
+
+
+class Erbgedaechtnis(Kontextgedaechtnis):
+    """Festes Erbe und Kontextregel. Erbe und eigene Erfahrung liegen getrennt, das Erbe verblasst nie."""
+
+    def __init__(self, erbe=None):
+        super().__init__()
+        for (vorher, folge), wert in (ERBE if erbe is None else erbe).items():
+            if vorher not in ZUSTAENDE or folge not in ZUSTAENDE or not math.isfinite(wert) or wert < 0:
+                raise ValueError("Das Erbe braucht bekannte Zustände und endliche Werte ab null.")
+            self.erbe[vorher][folge] = wert
+
+
+# Name je Lernregel, gilt für Sicherungsformat, Firmwarevariante und Prüfer.
+# Im Gerätestand AG01 stehen sie als Regelbyte 1, 2 und 3.
+REGELN = {"zeit": Gedaechtnis, "kontext": Kontextgedaechtnis, "erbe": Erbgedaechtnis}
 
 
 @dataclass(frozen=True)

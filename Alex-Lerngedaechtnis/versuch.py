@@ -4,7 +4,7 @@ import csv
 import struct
 from dataclasses import dataclass
 from pathlib import Path
-from kern import Gedaechtnis, Kontextgedaechtnis, Knoten, MAX_TAKT, ZUSTAENDE
+from kern import Erbgedaechtnis, Gedaechtnis, Kontextgedaechtnis, Knoten, MAX_TAKT, ZUSTAENDE
 
 
 # Feste Bedeutung der Token. Jede Nachricht enthält Takt (uint32) und Token (uint8).
@@ -115,6 +115,7 @@ def vergleiche(spur, beobachter=None):
         durchlauf(spur, "Lernen ohne Verblassen", Gedaechtnis(None)),
         durchlauf(spur, "Lernen mit Verblassen", Gedaechtnis(), beobachter=beobachter),
         durchlauf(spur, "Verblassen je Kontext", Kontextgedaechtnis()),
+        durchlauf(spur, "Erbe und Kontext", Erbgedaechtnis()),
     ]
 
 

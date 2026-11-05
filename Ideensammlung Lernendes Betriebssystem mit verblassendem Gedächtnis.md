@@ -2,6 +2,8 @@
 
 Stand: 3. November 2026. Gedankensammlung aus einem langen Gespräch, noch keine Ausführung. Vieles ist Spekulation und als solche gekennzeichnet.
 
+**Versuche:** Zum ersten Schritt gibt es ein Lernlabor mit Code im Ordner `Alex-Lerngedaechtnis`. Was dort geprüft wurde, steht am Ende unter „Versuchsstand“, jeweils mit seiner Herkunft.
+
 **Leitgedanke:** Vorhandene Hardware soll durch eine schlankere interne Kommunikation in die Lage versetzt werden, sich über die bestehenden Geräte weiter auszubreiten, ohne dass neue Chips nötig sind. Der Gewinn liegt dort, wo heute Zeit in Warten, Kopieren und Abstimmen verloren geht (Protokolle, Datenformate, die Frage, was überhaupt übertragen werden muss). Die Grenze setzt die Bandbreite und Laufzeit der Leitung selbst. Alle weiteren Ideen in diesem Dokument hängen an diesem Gedanken.
 
 **Kerngedanke:** Es gibt kein Modell, das auf einem Betriebssystem läuft, sondern ein Betriebssystem, das selbst denkt. Das Modell steckt im Betriebssystem, es gibt nur ein Ding. Damit entfällt die Schnittstelle zwischen Modell und Betriebssystem, und die einzige Grenze, über die gesprochen werden muss, ist die zur Hardware.
@@ -450,3 +452,34 @@ Aus der Assimilationsidee folgt, dass fünf Dinge nicht verwechselt werden dürf
 ## Randnotiz: Nebengespräch
 
 Im selben Gespräch ging es auch um lokale KI-Hardware (Mac mini M5 Pro mit 48 oder 64 GB, gebrauchte RTX 3090, Strix Halo, Radeon AI PRO R9700). Das ist nicht Teil dieser Ideensammlung.
+
+# Versuchsstand: Lernlabor (Stand 5. November 2026)
+
+Das Lernlabor im Ordner `Alex-Lerngedaechtnis` prüft den Schritt aus „Erster Test auf dem ESP32: die einfache Variante“: einen festen Reflex und eine kleine lernende Tabelle, deren Gewichte durch Beobachtung steigen und sonst verblassen. Es entstand in einem eigenen Zweig auf Grundlage dieser Sammlung, noch ohne die Ergänzungen aus dem zweiten Konzeptdokument. Am 5. November wurde es mit ihr zusammengeführt (Version 0.3, die Lieferungen 0.1 und 0.2 liegen im Ordner `archiv`).
+
+Jeder Befund trägt seine Herkunft: **synthetisch** (künstliche Spuren mit bekannten Regeln), **gemessen** (echte Aufzeichnung), **Softwaretest** (Code gegen Code) oder **berechnet**. Synthetische Befunde zeigen, wie sich eine Regel unter ihren Annahmen verhält. Ob sie im Alltag trägt, zeigt erst eine Messung. Alle Zahlen lassen sich im Laborordner nachrechnen, etwa mit `python3 labor.py --erbe-reihe --halbwertszeiten`.
+
+## Was das Labor umsetzt
+
+- **Fester Kern:** Ein beobachteter Ausfall wird immer sofort gemeldet, keine Lernregel kann das ändern. Das ist die Sicherheitsgrenze aus „Sicherheit: fester Kern und lebendiges Gedächtnis“ im Kleinen.
+- **Lernende Tabelle:** Neun Gewichte für die Übergänge zwischen OK, SCHWACH und AUSFALL. Daraus schätzt der Knoten, ob im nächsten Takt ein Ausfall folgt. Er warnt ab 60 % Ausfallanteil, wenn mindestens drei gewichtete Beobachtungen vorliegen.
+- **Vokabular:** Vier Token (OK, SCHWACH, AUSFALL, VORWARNUNG). Eine Meldung besteht aus vier Byte Takt und einem Byte Token.
+- **Herz:** Im Übertragungsversuch ein Herzschlag, der den aktuellen Zustand mitträgt.
+- **Erbe:** Seit Version 0.3 ein Verfahren mit drei festen Beobachtungen „SCHWACH → AUSFALL“ als Samen.
+- **Gerät:** Ein ESP32-Sketch für alle drei Lernregeln, auch mit Erbe, für den klassischen ESP32 und den ESP32-S3. Er sichert den Lernstand nur auf Befehl im NVS und schreibt nicht, wenn sich nichts geändert hat. Das Erbe gehört zur Firmware und steht nicht im gesicherten Stand.
+
+## Befunde
+
+- **Vergessen durch Erfahrung statt nach der Uhr (synthetisch).** Verblasst ein Beleg mit der Zeit, löscht eine lange Pause das Wissen über seltene Ereignisse. Bei seltenem Vorzeichen bleibt der Knoten bis zu einer Halbwertszeit von 48 Takten praktisch stumm (0 bis 5 richtige Vorwarnungen), erst bei 192 Takten kommt er auf 83. Altert ein Beleg dagegen nur, wenn derselbe Ausgangszustand neu erlebt wird, liefert jede Halbwertszeit von 3 bis 24 fast dasselbe Ergebnis (82 bis 95). In der Gedächtnisforschung entspricht das dem Gegensatz zwischen Zerfall und Interferenz. Für „Vergessen als Eigenschaft des Stoffs“ heißt das: Neue Erfahrung überschreibt alte, die bloße Zeit nicht. Das passt zum Schlaf. Nach dieser Regel vergisst ein Knoten ohne neue Erlebnisse nichts, und die Nacht bleibt frei für das Verdichten.
+- **Die feste Regel ist schwer zu schlagen (synthetisch).** Solange der Zusammenhang stabil ist oder selten auftritt, liegt „bei SCHWACH immer warnen“ vorn. Lernen lohnt sich erst, wenn ein Vorzeichen seine Bedeutung ändert oder gar keine hat. Dann spart es bis zu 2119 Fehlwarnungen.
+- **Ein kleines Erbe reicht, ein großes wird zum Vorurteil (synthetisch).** Das Erbe besteht aus festen Beobachtungen, die nie verblassen und die eigene Erfahrung überstimmen kann. Drei davon entsprechen dem Mindestbeleg einer Warnung. Damit warnt der Knoten so oft richtig wie die feste Regel, wo das Erbe stimmt. Verliert das Vorzeichen seine Bedeutung, behält er 95 % ihrer richtigen Vorwarnungen bei einem Fünftel ihrer Fehlwarnungen. Ohne Vorzeichen kostet das Erbe 64 Fehlwarnungen. Mit zwölf festen Beobachtungen werden daraus 1325, das System streift das Erbe dann nicht mehr ab. Das ist die offene Frage „Wie viel Erbe ist genug?“ aus „Das Erbe: der Samen“ im Kleinen. Die Herkunft aus dem zweiten Konzeptdokument ist dabei schon angelegt, denn Erbe (von außen) und Erfahrung (selbst beobachtet) liegen in getrennten Tabellen.
+- **Die Abhängigkeit vom Erbe sinkt, verschwindet aber nicht (berechnet).** Beim ersten schwachen Signal beruht die Schätzung ganz auf dem Erbe. Nach sechs eigenen Beobachtungen desselben Ausgangszustands trägt es noch rund 40 % des Belegs, nach zwanzig gut ein Viertel, und unter knapp 25 % sinkt es nicht. Das entspricht „Geburtshilfe statt Dauerkrücke“, nur bleibt das Erbe als feste Untergrenze. Offen ist, ob ein dauerhaft widersprochenes Erbe als „widerlegt“ markiert werden darf, obwohl es zum festen Kern gehört.
+- **Gesendet ist nicht empfangen (synthetisch).** Ein Ausfall dauert 20 Takte, und genau die erste Ausfallmeldung geht verloren. Wer nur Zustandswechsel meldet, verpasst dann den ganzen Ausfall. Mit einem Herzschlag alle fünf Takte erfährt die Gegenstelle nach fünf Takten davon, für 40 statt 15 Byte (Meldung in jedem Takt: 180 Byte). Bei völliger Funkstille bleibt der Gegenstelle nur „unbekannt“. Das Herz im Körperbild braucht also einen Herzschlag, der den Zustand mitträgt.
+- **Messpfad und Gerät (gemessen und Softwaretest).** Eine echte Loopback-Probe ergibt sechs OK und sechs AUSFALL nach einem absichtlichen Stopp. Das prüft die Erfassung, nicht die Vorhersage. Sketch und Python entscheiden im Hosttest identisch (57.840 Schritte je Variante, alle drei Lernregeln), und die Firmware lässt sich für den klassischen ESP32 und den ESP32-S3 bauen. Auf einem ESP32-S3-N16R8 entscheidet die Firmware in allen drei Varianten genauso wie Python (5. November, je 240 von 240 Antworten auf der Demo). Offen sind der Wiederanlauf nach Stromtrennung und eine Stromtrennung während des Schreibens.
+
+## Offen und zu entscheiden
+
+- **Abruf (Entscheidung Alex):** Laut dieser Sammlung steigt die Stärke einer Erinnerung bei jedem Abruf, und der Abruf verändert den Inhalt. Im Labor verändert ein Abruf nichts, und ein eigener Alarm zählt nie als Lernbeispiel, damit sich das System nicht selbst bestätigt. **Vorschlag (Claude):** zwei Werte pro Eintrag, ein Beleg, der nur durch Beobachtung wächst, und ein Behalten, das durch Nutzung wachsen darf.
+- **Absender:** Die Fünf-Byte-Meldung kennt weder Sender noch Sitzung. Vor dem zweiten echten Knoten muss das geklärt sein (siehe „Identität, Hardware und Rolle“ und „Assimilation neuer Hardware“).
+- **Ein echter Fall:** Gebraucht wird ein Signal mit schleichendem Vorlauf, denn ein hart ausfallender Dienst liefert eine Spur ohne Vorzeichen. Ein Kandidat wäre die Signalstärke oder Latenz eines ESP zum Router vor einem WLAN-Abriss. Das entspräche „Verbindung langsam“ und „Verbindung weg“ aus dem Vokabularentwurf und wäre zugleich Körperwahrnehmung.
+- **Noch nicht berührt:** Abruf über Ähnlichkeit, das wachsende Vokabular, Verdichten über einzelne Übergänge hinaus und die Schlafphasen.

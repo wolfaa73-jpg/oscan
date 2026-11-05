@@ -6,11 +6,15 @@ from collections import defaultdict
 from html import escape
 from pathlib import Path
 
-from versuch import beispielspur, vergleiche
+from kern import Erbgedaechtnis, Gedaechtnis, Kontextgedaechtnis
+from versuch import beispielspur, durchlauf, vergleiche
 
 FAMILIEN = ("Stabil", "Bedeutungswechsel", "Rückkehr", "Selten", "Ohne Vorzeichen", "Stille und Wechsel")
 ANZAHL = 20
 TAKTE = 480
+ERBSTUFEN = (0, 1, 2, 3, 6, 12)
+ZEITSTUFEN = (12, 24, 48, 96, 192)
+KONTEXTSTUFEN = (3, 6, 12, 24)
 
 
 def generiere(familie, seed):
@@ -65,6 +69,31 @@ def summiere(zeilen):
     return summen
 
 
+def vergleichsreihe(verfahren, startseed=1000):
+    """Dieselben Spuren für Paare aus Bezeichnung und Gedächtnisfabrik, summiert je Familie."""
+    for bezeichnung, fabrik in verfahren:
+        for familie in FAMILIEN:
+            werte = [0, 0, 0]
+            for seed in range(startseed, startseed + ANZAHL):
+                b = durchlauf(generiere(familie, seed), str(bezeichnung), fabrik())
+                for i, wert in enumerate((b.treffer, b.fehlalarme, b.ohne_vorwarnung)):
+                    werte[i] += wert
+            yield bezeichnung, familie, werte
+
+
+def erbe_reihe(startseed=1000):
+    """Nur die Zahl fester Beobachtungen SCHWACH -> AUSFALL ändert sich."""
+    return vergleichsreihe([(s, lambda s=s: Erbgedaechtnis({("SCHWACH", "AUSFALL"): s}))
+                            for s in ERBSTUFEN], startseed)
+
+
+def halbwertszeit_reihe(startseed=1000):
+    """Zeit- und Kontextregel mit anderen Halbwertszeiten. 24 und 6 sind die Standardregeln."""
+    return vergleichsreihe([(f"Zeit {h}", lambda h=h: Gedaechtnis(h)) for h in ZEITSTUFEN]
+                           + [(f"Kontext {h}", lambda h=h: Kontextgedaechtnis(h)) for h in KONTEXTSTUFEN],
+                           startseed)
+
+
 def verlauf_svg():
     log = []
     vergleiche(beispielspur(), lambda t, z, p, n, w: log.append((t, z, p, w)))
@@ -91,7 +120,12 @@ def verlauf_svg():
     {''.join(elemente)}<text x="46" y="203">Takt 1</text><text x="{x(121)}" y="203">121</text><text x="700" y="203">240</text></svg>'''
 
 
-def als_html(summen, startseed):
+def als_html(summen, reihe, startseed):
+    erbzeilen = defaultdict(str)
+    for staerke, _familie, (treffer, fehl, _verpasst) in reihe:
+        erbzeilen[staerke] += f"<td>{treffer:,} / {fehl:,}</td>".replace(",", " ")
+    erbtabelle = "".join(f'<tr><th scope="row">{s}</th>{z}</tr>' for s, z in erbzeilen.items())
+    erbkopf = "".join(f"<th>{f}</th>" for f in FAMILIEN)
     tabellen = []
     for familie in FAMILIEN:
         zeilen = []
@@ -110,10 +144,11 @@ def als_html(summen, startseed):
     svg{{width:100%;height:auto;font:12px system-ui}} figcaption,footer{{font-size:.9rem}}
     table{{width:100%;border-collapse:collapse;background:white;font-size:.9rem}} td,th{{padding:.42rem;text-align:right;border-bottom:1px solid #cbd5cf}}
     th:first-child{{text-align:left}} section{{overflow-x:auto}} code{{font-size:.9em}}</style></head><body>
-    <main><p>Alex’ Lernlabor · Version 0.2</p><h1>Wann hilft es, zu vergessen?</h1>
+    <main><p>Alex’ Lernlabor · Version 0.3</p><h1>Wann hilft es, zu vergessen?</h1>
     <p>Ein Knoten schätzt nach jedem Signal, ob der Sensor im nächsten Takt ausfällt.
     Für die ursprüngliche Demo sinken die Fehlwarnungen durch Verblassen von elf auf fünf.
-    Die richtigen Vorwarnungen sinken von 13 auf zwölf.</p>
+    Die richtigen Vorwarnungen sinken von 13 auf zwölf. Mit einem kleinen festen Erbe warnt der Knoten
+    so oft richtig wie die feste Regel, 16-mal, und gibt acht statt 24 Fehlwarnungen.</p>
     <figure>{verlauf_svg()}<figcaption>Die Linie zeigt den gewichteten Ausfallanteil nach einem schwachen Signal.
     Punkte kennzeichnen tatsächlich ausgegebene Warnungen. Die Striche darunter markieren beobachtete Ausfälle.
     Zur Warnschwelle von 60 % kommen mindestens drei gewichtete Beobachtungen hinzu.</figcaption></figure>
@@ -122,9 +157,16 @@ def als_html(summen, startseed):
     „Verpasst“ zählt beobachtete Ausfallbeginne ohne Vorwarnung. Ein bereits beim Start laufender Ausfall bleibt davon ausgenommen.</p>
     <p>Stabil hält den Zusammenhang konstant. Bedeutungswechsel entwertet ihn auf halber Strecke.
     Bei Rückkehr gilt er im letzten Drittel erneut. Selten enthält nur wenige schwache Signale.
-    Ohne Vorzeichen entstehen die Ausfälle unabhängig vom vorherigen Zustand. Bei Stille und Wechsel fehlt das schwache Signal im mittleren Drittel und verliert danach seine Vorhersagekraft. Die Zusatzregel „Verblassen je Kontext“ halbiert alte Belege nach sechs neuen Beobachtungen desselben Ausgangszustands.</p>
-    <section>{''.join(tabellen)}</section><footer><p>Reproduzieren mit <code>python3 labor.py --satz {'kontrolle' if startseed == 1000 else 'entwicklung'} --bericht Bericht.html</code>.
-    Ergebnisse je Spur lassen sich mit <code>--csv</code> exportieren. Gezählt werden Modell-Nutzbytes pro Nachricht. Funkverkehr und Energieverbrauch müssen am Gerät gemessen werden.</p></footer></main></body></html>'''
+    Ohne Vorzeichen entstehen die Ausfälle unabhängig vom vorherigen Zustand. Bei Stille und Wechsel fehlt das schwache Signal im mittleren Drittel und verliert danach seine Vorhersagekraft. Die Zusatzregel „Verblassen je Kontext“ halbiert alte Belege nach sechs neuen Beobachtungen desselben Ausgangszustands.
+    „Erbe und Kontext“ rechnet zusätzlich mit drei festen Beobachtungen „SCHWACH → AUSFALL“. Sie verblassen nie, eigene Erfahrung kann sie überstimmen.</p>
+    <section>{''.join(tabellen)}</section>
+    <h2>Wie viel Erbe ist genug?</h2><p>Dieselben Spuren mit „Erbe und Kontext“. Nur die Zahl der festen Beobachtungen ändert sich.
+    Jede Zelle zeigt richtige Vorwarnungen / Fehlwarnungen. Null entspricht „Verblassen je Kontext“.
+    Drei ist der Mindestbeleg einer Warnung und die Einstellung des Verfahrens. Wo sich die Bedeutung ändert, bringt mehr Erbe
+    etwas mehr Vorwarnungen und deutlich mehr Fehlwarnungen. Ohne Vorzeichen wird es zum Vorurteil.</p>
+    <section><table><thead><tr><th>Erbe</th>{erbkopf}</tr></thead>
+    <tbody>{erbtabelle}</tbody></table></section><footer><p>Reproduzieren mit <code>python3 labor.py --satz {'kontrolle' if startseed == 1000 else 'entwicklung'} --bericht Bericht.html</code>.
+    Ergebnisse je Spur lassen sich mit <code>--csv</code> exportieren, die Erbe-Reihe mit <code>--erbe-reihe</code> im Terminal ausgeben. Gezählt werden Modell-Nutzbytes pro Nachricht. Funkverkehr und Energieverbrauch müssen am Gerät gemessen werden.</p></footer></main></body></html>'''
 
 
 def main():
@@ -133,12 +175,15 @@ def main():
     p.add_argument("--csv", type=Path, help="Alle Verfahren je Familie und Seed")
     p.add_argument("--demo-spur", type=Path, help="Dieselbe 240-Takt-Spur für den seriellen Prüfstand")
     p.add_argument("--satz", choices=("entwicklung", "kontrolle"), default="kontrolle")
+    p.add_argument("--erbe-reihe", action="store_true", help="Erbe von 0 bis 12 festen Beobachtungen vergleichen")
+    p.add_argument("--halbwertszeiten", action="store_true", help="Zeit- und Kontextregel mit anderen Halbwertszeiten")
     args = p.parse_args()
     startseed = 1000 if args.satz == "kontrolle" else 0
     zeilen = list(messreihe(startseed))
     summen = summiere(zeilen)
+    reihe = list(erbe_reihe(startseed)) if args.bericht or args.erbe_reihe else []
     if args.bericht:
-        args.bericht.write_text(als_html(summen, startseed), encoding="utf-8")
+        args.bericht.write_text(als_html(summen, reihe, startseed), encoding="utf-8")
     if args.csv:
         with args.csv.open("w", encoding="utf-8", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=list(zeilen[0]))
@@ -152,6 +197,14 @@ def main():
     print("Familie | Verfahren | Richtig vorher | Fehlwarnungen | Verpasst | Nutzbytes")
     for (familie, name), werte in summen.items():
         print(" | ".join(map(str, [familie, name, *werte])))
+    if args.erbe_reihe:
+        print("\nErbe | Familie | Richtig vorher | Fehlwarnungen | Verpasst")
+        for staerke, familie, werte in reihe:
+            print(" | ".join(map(str, [staerke, familie, *werte])))
+    if args.halbwertszeiten:
+        print("\nRegel und Halbwertszeit | Familie | Richtig vorher | Fehlwarnungen | Verpasst")
+        for regel, familie, werte in halbwertszeit_reihe(startseed):
+            print(" | ".join(map(str, [regel, familie, *werte])))
 
 
 if __name__ == "__main__":

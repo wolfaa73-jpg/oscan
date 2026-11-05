@@ -10,7 +10,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from kern import Gedaechtnis, Kontextgedaechtnis, Knoten, MAX_TAKT, ZUSTAENDE
+from kern import Knoten, MAX_TAKT, REGELN, ZUSTAENDE
 from versuch import lies_spur, messpunkte
 
 
@@ -19,13 +19,20 @@ def kodiert(daten):
                       allow_nan=False).encode("utf-8")
 
 
+def als_matrix(tabelle):
+    return [[tabelle[z][f] for f in ZUSTAENDE] for z in ZUSTAENDE]
+
+
 def sichern(pfad, quelle, knoten):
     g = knoten.gedaechtnis
-    regel = "kontext" if isinstance(g, Kontextgedaechtnis) else "zeit"
+    # Genau die benannten Regeln. Abweichende Einstellungen fallen beim Laden auf.
+    regel = next((name for name, typ in REGELN.items() if type(g) is typ), None)
+    if regel is None:
+        raise ValueError("Für diese Lernregel gibt es kein Sicherungsformat.")
     daten = dict(regel=regel, format="alex-knoten-v1", quelle=quelle, takt=knoten.takt,
                  zustand=knoten.zustand, halbwertszeit=g.halbwertszeit,
-                 vokabular=list(ZUSTAENDE),
-                 gewichte=[[g.gewichte[z][f] for f in ZUSTAENDE] for z in ZUSTAENDE])
+                 vokabular=list(ZUSTAENDE), erbe=als_matrix(g.erbe),
+                 gewichte=als_matrix(g.gewichte))
     umschlag = dict(daten=daten, sha256=hashlib.sha256(kodiert(daten)).hexdigest())
     # Eine neue Datei im selben Dateisystem veröffentlichen. link() scheitert
     # atomar, wenn ein anderer Schreiber den Namen schon veröffentlicht hat.
@@ -56,11 +63,14 @@ def laden(pfad, quelle):
             raise ValueError("Der Stand gehört zu einer anderen Messreihe.")
         if type(d["takt"]) is not int or not 1 <= d["takt"] <= MAX_TAKT or d["zustand"] not in ZUSTAENDE:
             raise ValueError("Ungültiger letzter Messpunkt.")
-        if d["regel"] not in ("zeit", "kontext"):
+        if d["regel"] not in REGELN:
             raise ValueError("Unbekannte Lernregel.")
-        g = Kontextgedaechtnis() if d["regel"] == "kontext" else Gedaechtnis()
+        g = REGELN[d["regel"]]()
         if d["halbwertszeit"] != g.halbwertszeit:
             raise ValueError("Halbwertszeit passt nicht zur Regelversion.")
+        # Stände aus Version 0.2 tragen kein Erbe. Ihre Regeln hatten auch keines.
+        if d.get("erbe", [[0] * 3] * 3) != als_matrix(g.erbe):
+            raise ValueError("Erbe passt nicht zur Regelversion.")
         matrix = d["gewichte"]
         if not isinstance(matrix, list) or len(matrix) != 3:
             raise ValueError("Ungültige Gedächtnismatrix.")
@@ -86,7 +96,7 @@ def main():
     p.add_argument("--quelle", required=True, help="Kennung einer durchgehend nummerierten Messreihe")
     p.add_argument("--laden", type=Path)
     p.add_argument("--sichern", type=Path, help="Neuer Dateiname, bestehende Stände bleiben erhalten")
-    p.add_argument("--regel", choices=("zeit", "kontext"), help="Regel für einen neuen Lernstand")
+    p.add_argument("--regel", choices=tuple(REGELN), help="Regel für einen neuen Lernstand")
     a = p.parse_args()
     try:
         spur = lies_spur(a.spur, minimum=1)
@@ -97,7 +107,7 @@ def main():
         if a.laden:
             k = laden(a.laden, a.quelle)
         else:
-            k = Knoten(Kontextgedaechtnis() if a.regel == "kontext" else Gedaechtnis())
+            k = Knoten(REGELN[a.regel or "zeit"]())
         log = csv.writer(sys.stdout, lineterminator="\n")
         log.writerow(("takt", "zustand", "sofort", "vorwarnung"))
         for t, z in messpunkte(spur):

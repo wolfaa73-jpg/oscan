@@ -1,5 +1,7 @@
 # Ideensammlung: Lernendes Betriebssystem mit verblassendem Gedächtnis
 
+> **Eingefrorene Kopie, Stand bei Übergabe am 4. November 2026.** Auf dieser Fassung baut das Lernlabor 0.2 auf. Die maßgebliche, weitergeführte Ideensammlung liegt eine Ordnerebene höher (`../Ideensammlung Lernendes Betriebssystem mit verblassendem Gedächtnis.md`). Dort stehen auch die Ergänzungen aus dem zweiten Konzeptdokument und der Versuchsstand.
+
 Stand: 3. November 2026. Gedankensammlung aus einem langen Gespräch, noch keine Ausführung. Vieles ist Spekulation und als solche gekennzeichnet.
 
 **Leitgedanke:** Vorhandene Hardware soll durch eine schlankere interne Kommunikation in die Lage versetzt werden, sich über die bestehenden Geräte weiter auszubreiten, ohne dass neue Chips nötig sind. Der Gewinn liegt dort, wo heute Zeit in Warten, Kopieren und Abstimmen verloren geht (Protokolle, Datenformate, die Frage, was überhaupt übertragen werden muss). Die Grenze setzt die Bandbreite und Laufzeit der Leitung selbst. Alle weiteren Ideen in diesem Dokument hängen an diesem Gedanken.

@@ -11,10 +11,16 @@ struct Entscheidung {
     bool warnung;
 };
 
+// Werte entsprechen dem Regelbyte im Format AG01 und REGELN in kern.py.
+enum class Regel : uint8_t { ZEIT = 1, KONTEXT = 2, ERBE = 3 };
+
 class Knoten {
 public:
-    explicit Knoten(bool jeKontext = false) : kontext(jeKontext),
-        faktor(pow(0.5, jeKontext ? 1.0 / 6.0 : 1.0 / 24.0)) {}
+    explicit Knoten(Regel r = Regel::ZEIT) : regel(r),
+        faktor(pow(0.5, r == Regel::ZEIT ? 1.0 / 24.0 : 1.0 / 6.0)) {
+        // Wie ERBE in kern.py: drei feste Beobachtungen SCHWACH -> AUSFALL.
+        if (r == Regel::ERBE) erbe[SCHWACH][AUSFALL] = 3.0;
+    }
 
     // Portables Format AG01. Die Zahlen werden einzeln in Little Endian kodiert.
     static constexpr unsigned standBytes = 86;
@@ -22,7 +28,7 @@ public:
         static_assert(sizeof(double) == 8 && DBL_MANT_DIG == 53, "binary64 erforderlich");
         if (!letzterTakt) return false;
         memcpy(p, "AG01", 4);
-        p[4] = kontext ? 2 : 1;
+        p[4] = static_cast<uint8_t>(regel);
         p[5] = static_cast<uint8_t>(letzterZustand) + 1;
         schreibe(p + 6, letzterTakt, 4);
         for (unsigned i = 0; i < 9; ++i) {
@@ -35,7 +41,7 @@ public:
     }
 
     bool importiere(const uint8_t *p) {
-        if (letzterTakt || memcmp(p, "AG01", 4) || p[4] != (kontext ? 2 : 1)
+        if (letzterTakt || memcmp(p, "AG01", 4) || p[4] != static_cast<uint8_t>(regel)
             || p[5] < 1 || p[5] > 3 || lese(p + 82, 4) != crc32(p, 82)) return false;
         const uint32_t takt = static_cast<uint32_t>(lese(p + 6, 4));
         if (!takt) return false;
@@ -68,7 +74,7 @@ public:
         if (takt <= letzterTakt || jetzt >= UNBEKANNT) return false;
         const uint32_t abstand = takt - letzterTakt;
         const Zustand vorher = abstand == 1 ? letzterZustand : UNBEKANNT;
-        if (kontext) {
+        if (regel != Regel::ZEIT) {
             if (vorher != UNBEKANNT) {
                 for (double &wert : gewichte[vorher]) wert *= faktor;
             }
@@ -79,10 +85,14 @@ public:
             }
         }
         if (vorher != UNBEKANNT) gewichte[vorher][jetzt] += 1.0;
+        // Summenfolge wie in Gedaechtnis.schaetze, damit beide Seiten bitgleich rechnen.
         const double *zeile = gewichte[jetzt];
-        const double beleg = zeile[OKAY] + zeile[SCHWACH] + zeile[AUSFALL];
+        const double *geerbt = erbe[jetzt];
+        const double beleg = (zeile[OKAY] + geerbt[OKAY]) + (zeile[SCHWACH] + geerbt[SCHWACH])
+                           + (zeile[AUSFALL] + geerbt[AUSFALL]);
         ausgabe.sofort = jetzt == AUSFALL && vorher != AUSFALL;
-        ausgabe.warnung = jetzt != AUSFALL && beleg >= 3.0 && zeile[AUSFALL] / beleg >= 0.6;
+        ausgabe.warnung = jetzt != AUSFALL && beleg >= 3.0
+                       && (zeile[AUSFALL] + geerbt[AUSFALL]) / beleg >= 0.6;
         letzterTakt = takt;
         letzterZustand = jetzt;
         return true;
@@ -107,7 +117,8 @@ private:
         return ~crc;
     }
     double gewichte[3][3] = {};
-    const bool kontext;
+    double erbe[3][3] = {};  // fester Teil der Regel, nie im Gerätestand gespeichert
+    const Regel regel;
     const double faktor;
     uint32_t letzterTakt = 0;
     Zustand letzterZustand = UNBEKANNT;
