@@ -31,3 +31,7 @@ python3 -B systemlabor.py kontrolle
 ```
 
 Das sind Laufzeitexperimente auf dem vorhandenen Betriebssystem. Die Vergleichszahlen beruhen auf modellierten Arbeitsbedingungen; sie belegen noch keinen Vorteil eines vollständigen Betriebssystems im Alltag.
+
+## Verbund und Arbeitsvergabe gemeinsam ausführen
+
+[Anschluss und Auftragslebensdauer](Alex-Lerngedaechtnis/ANSCHLUSS-UEBERGABE.md) beschreibt die Verbindung: neue Statusmeldungen steuern den festen Disponenten; ein begrenztes Register verhindert doppelte Arbeit unter derselben Kennung. Der gemeinsame Versuch läuft mit `python3 -B verbundsystem.py` im Laborordner und verwendet zwei echte lokale Arbeiter. Er prüft insbesondere Verlust, Sitzungswechsel und ablaufende Arbeitsfreigaben.

@@ -33,6 +33,28 @@ class Plan:
     grund: str
 
 
+def disponiere(takt, zustand, vorwarnung, reserve_bereit):
+    """Feste Disposition ohne Lernen; benutzt lokale oder bestätigte externe Prognosen."""
+    if type(takt) is not int or not 1 <= takt <= MAX_TAKT:
+        raise ValueError("Ungültiger Dispositionstakt.")
+    if zustand is not None and zustand not in ZUSTAENDE:
+        raise ValueError("Unbekannter Zustand.")
+    if type(vorwarnung) is not bool or type(reserve_bereit) is not bool:
+        raise ValueError("Warnung und Bereitschaft müssen boolesch sein.")
+    if vorwarnung and zustand in (None, "AUSFALL"):
+        raise ValueError("Eine Vorwarnung braucht einen bekannten, nicht ausgefallenen Zustand.")
+    reflex = zustand == "AUSFALL"
+    if zustand is None:
+        ziel, grund = "WARTEN", "Kein aktueller Zustand; Reservierung verwerfen"
+    elif reflex:
+        ziel = "RESERVE" if reserve_bereit else "WARTEN"
+        grund = "Primär gesperrt; Reserve bereit" if reserve_bereit else "Primär gesperrt; Reserve fehlt"
+    else:
+        ziel, grund = "PRIMAER", "Primär aktuell verfügbar"
+    reserve = takt + 1 if (vorwarnung or reflex) and takt < MAX_TAKT else None
+    return Plan(takt, zustand, ziel, reserve, vorwarnung, reflex, grund)
+
+
 class Systemkern:
     """Eine Beobachtung, höchstens ein Auftrag und eine Reservierung je Takt.
 
@@ -51,23 +73,10 @@ class Systemkern:
             raise ValueError("Takte müssen positiv, aufsteigend und kleiner als 2^32 sein.")
         if zustand is not None and zustand not in ZUSTAENDE:
             raise ValueError("Unbekannter Zustand.")
-        bereit = self.reserve_fuer == takt
-        warnung = reflex = False
-        if zustand is None:
-            ziel, grund = "WARTEN", "Kein aktueller Zustand; Reservierung verwerfen"
-        else:
-            s = self.knoten.schritt(takt, zustand)
-            warnung = s.vorwarnung
-            reflex = zustand == "AUSFALL"
-            if reflex:
-                ziel = "RESERVE" if bereit else "WARTEN"
-                grund = "Primär gesperrt; Reserve bereit" if bereit else "Primär gesperrt; Reserve fehlt"
-            else:
-                ziel, grund = "PRIMAER", "Primär aktuell verfügbar"
-        # Ein kritischer Ist-Zustand reserviert unabhängig von der Lernregel.
-        reserve = takt + 1 if (warnung or reflex) and takt < MAX_TAKT else None
-        self.takt, self.reserve_fuer = takt, reserve
-        return Plan(takt, zustand, ziel, reserve, warnung, reflex, grund)
+        warnung = False if zustand is None else self.knoten.schritt(takt, zustand).vorwarnung
+        plan = disponiere(takt, zustand, warnung, self.reserve_fuer == takt)
+        self.takt, self.reserve_fuer = takt, plan.reserve_fuer
+        return plan
 
 
 def _arbeiter(kanal):
@@ -111,18 +120,21 @@ class Arbeitsprozesse:
             raise
         return self
 
-    def ausfuehren(self, plan):
+    def ausfuehren(self, plan, *, sitzung=None):
+        if sitzung is not None and (type(sitzung) is not bytes or len(sitzung) != 16 or not any(sitzung)):
+            raise ValueError("Ungültige Auftragssitzung.")
         if plan.ziel == "WARTEN":
             return None
         if plan.ziel not in self.arbeiter:
             raise ValueError("Unzulässiges Arbeitsziel.")
         daten = f"OSCan-Auftrag:{plan.takt}".encode("ascii")
         kanal, _ = self.arbeiter[plan.ziel]
-        kanal.send((plan.takt, daten))
+        kennung = plan.takt if sitzung is None else (sitzung, plan.takt)
+        kanal.send((kennung, daten))
         if not kanal.poll(5):
             raise TimeoutError("Arbeiter antwortet nicht innerhalb der Prüffrist.")
         antwort = kanal.recv()
-        if antwort != (plan.takt, hashlib.sha256(daten).hexdigest()):
+        if antwort != (kennung, hashlib.sha256(daten).hexdigest()):
             raise ValueError("Falscher Auftrag oder falsches Arbeitsergebnis.")
         return antwort[1]
 
