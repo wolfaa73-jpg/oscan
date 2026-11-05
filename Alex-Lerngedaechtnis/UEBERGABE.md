@@ -124,12 +124,16 @@ Der Hosttest spielt beide Teile in zwei getrennten Prozessen mit Dateibackend du
 
 ## Körpersignale
 
-Seit 0.4 misst sich der Knoten auf Wunsch selbst. Im Körpermodus liest er in eigenem Takt die Chiptemperatur, den freien internen Speicher und die größte Lücke zwischen zwei Durchläufen von `loop()` seit dem letzten Takt. Die eigene Messung und Ausgabe zählen dabei mit. Daraus stuft er den Takt als OK, SCHWACH oder AUSFALL ein, der schlechteste der drei Werte zählt. Mit dieser Einstufung lernt er wie im Replay. Eine nicht lesbare Temperatur steht als „-“ in der Ausgabe und zählt nicht mit.
+Seit 0.4 misst sich der Knoten auf Wunsch selbst. Im Körpermodus liest er in eigenem Takt die Chiptemperatur, den freien internen Speicher und die größte Lücke zwischen zwei Durchläufen von `loop()` seit dem letzten Takt. Durchläufe mit eigener Arbeit, also Messung, Ausgabe und LED, zählen dabei nicht mit, gemessen wird nur fremde Wartezeit. Daraus stuft er den Takt als OK, SCHWACH oder AUSFALL ein, der schlechteste der drei Werte zählt. Mit dieser Einstufung lernt er wie im Replay. Eine nicht lesbare Temperatur steht als „-“ in der Ausgabe und zählt nicht mit.
 
-Die Firmware hat keine eigenen Grenzwerte. `GRENZEN` übergibt sie in Zehntelgrad, Byte und Mikrosekunden, `KOERPER <ms>` startet den Modus, `STOP` beendet ihn. Jeder Takt antwortet mit `K,takt,zustand,sofort,vorwarnung,temp_dc,heap,luecke_us`. `MESSWERT` speist Rohwerte von außen ein und nimmt denselben Weg durch Einstufung und Lernen. Darüber vergleicht der Hosttest beides mit Python.
+Die Firmware hat keine eigenen Grenzwerte. `GRENZEN` übergibt sie in Zehntelgrad, Byte und Mikrosekunden, `KOERPER <ms>` startet den Modus, `STOP` beendet ihn. Jeder Takt antwortet mit `K,takt,zustand,sofort,vorwarnung,temp_dc,heap,luecke_us,last`. `MESSWERT` speist Rohwerte von außen ein und nimmt denselben Weg durch Einstufung und Lernen. Darüber vergleicht der Hosttest beides mit Python.
+
+**Eine Veränderung mitgeben.** `LAST <an_s> <aus_s>` lässt Kern 0 im vorgegebenen Rhythmus arbeiten und ruhen, die Hauptschleife läuft auf Kern 1. Die Arbeit gibt alle 10 ms kurz ab, damit der Task-Wachhund nicht anschlägt und keine Meldung ins Protokoll schreibt. `LAST 0 0`, `STOP` und `NEUER_LAUF` beenden die Last. Das letzte Feld der Körperzeile vermerkt die Phase nur für die Auswertung. Die Einstufung kennt sie nicht, der Knoten spürt die Last allein über seine Messwerte.
+
+**LED.** Ist `ALEX_RGB_PIN` gesetzt (S3-Profile: GPIO48 laut Core-Variante DevKitC-1 v1.0), zeigt die eingebaute RGB-LED den Zustand: grün OK, gelb SCHWACH, rot AUSFALL, schwach weiß bereit und kurz blau bei einer Vorwarnung. Die LED-Arbeit zählt nicht zur Lücke. Ihr Treiber belegt 2.872 Byte Speicher.
 
 ```bash
-python3 koerper.py aufnahme messungen/koerper.csv --port /dev/PORT --regel erbe --takte 3600
+python3 koerper.py aufnahme messungen/koerper.csv --port /dev/PORT --regel erbe --takte 3600 --last 120 120
 python3 koerper.py pruefen messungen/koerper.csv
 python3 koerper.py spur messungen/koerper.csv --grenzen 450 550 65536 16384 20000 200000 > spur.csv
 ```
@@ -141,7 +145,29 @@ python3 koerper.py spur messungen/koerper.csv --grenzen 450 550 65536 16384 2000
 - freier Speicher konstant 371.820 Byte
 - Schleifenlücke meist 209 µs, höchstens 655 µs
 
-Alle Takte waren OK, keine Vorwarnung, und alle Einstufungen und Entscheidungen stimmten mit Python überein. Wie erwartet lernt der Knoten auf dem Tisch nur, dass auf OK wieder OK folgt. Am selben Tag begann ein Mitschnitt über 12 Stunden.
+Alle Takte waren OK, keine Vorwarnung, und alle Einstufungen und Entscheidungen stimmten mit Python überein. Wie erwartet lernt der Knoten auf dem Tisch nur, dass auf OK wieder OK folgt.
+
+**Mitschnitt über drei Stunden, und was er zeigte.** 11.159 Takte ab 10:11:
+- Der Median der Temperatur sank von 36 auf 35 °C.
+- Der Speicher änderte sich um kein Byte.
+- Alle 11.159 Entscheidungen stimmten mit Python überein.
+- Ab Takt 41 war die Zeile „nach OK“ gesättigt (Gewicht 9,166). Danach lernte der Knoten nichts mehr, das Erbe blieb unberührt.
+
+Die Lücke lag in 96 % der Takte bei genau 209 µs. Das war ein Fehler im Entwurf: Jedes Fenster enthielt den Durchlauf mit der vorigen Messung, gemessen wurde also der eigene Aufwand. Seit der Korrektur liegt die Lücke in Ruhe bei 16 µs.
+
+**Erkundung mit Last, 5. November 13:23.** 540 Takte, Kern 0 im Rhythmus 120 s Arbeit und 120 s Ruhe:
+
+| | Ruhe | Last |
+|---|---:|---:|
+| Temperatur, Median | 36 °C | 38 °C |
+| Temperatur, Spitze | – | 39 °C |
+| Lücke, Median | 16 µs | 17 µs |
+
+Unter Last steigt der Chip binnen etwa einer Minute auf 38 °C, an der Spitze auf 39 °C. In der Ruhe kühlt er in rund zwei Minuten auf 35 bis 36 °C zurück. Die Hauptschleife auf Kern 1 merkt von der Last fast nichts. Der Speicher sank beim Start der Last einmalig um 3.448 Byte, das sind Stapel und Verwaltung der Lastaufgabe.
+
+Probeweise neu eingestuft (SCHWACH ab 37, AUSFALL ab 39 °C) zeigte die Erkundung: Auf ein warmes Signal folgte im nächsten Takt nur in 6 von 351 Fällen ein heißes. Die feste Regel hätte 345 Fehlwarnungen gegeben. „Erbe und Kontext“ warnte dreimal, dann hatte die eigene Erfahrung das Erbe überstimmt. Für ein so träges Signal ist ein Takt Vorhersage zu kurz.
+
+Für den Mitschnitt gelten die auf der Erkundung gewählten Grenzen, danach eingefroren: SCHWACH ab 38 °C, AUSFALL ab 39 °C, Speicher und Lücke wie in `ERKUNDUNG`. Auf der Erkundung ergab das 67 % OK, 27 % SCHWACH und 6 % AUSFALL. Der Mitschnitt mit demselben Lastrhythmus begann um 13:34 und ist auf 12 Stunden angelegt.
 
 ## Kommunikationsversuch und nächste Entscheidung
 

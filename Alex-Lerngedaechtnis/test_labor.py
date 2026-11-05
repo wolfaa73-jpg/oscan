@@ -1,5 +1,6 @@
 import errno
 import hashlib
+from dataclasses import asdict as dataclasses_asdict
 import json
 import os
 import shutil
@@ -270,14 +271,15 @@ class KoerperTests(unittest.TestCase):
            (None, 298000, 250000), (430, 300000, 60)]
 
     @staticmethod
-    def geraetezeilen(roh, g, regel):
+    def geraetezeilen(roh, g, regel, last=None):
         """So antwortet das Gerät, wenn es wie Python einstuft und entscheidet."""
         k = Knoten(REGELN[regel]())
         zeilen = []
-        for takt, (t, h, l) in enumerate(roh, 1):
+        for takt, ((t, h, l), phase) in enumerate(zip(roh, last or [0] * len(roh)), 1):
             z = koerper.einstufen(t, h, l, g)
             s = k.schritt(takt, z)
-            zeilen.append(f"K,{takt},{z},{int(s.sofort)},{int(s.vorwarnung)},{'-' if t is None else t},{h},{l}")
+            zeilen.append(f"K,{takt},{z},{int(s.sofort)},{int(s.vorwarnung)},"
+                          f"{'-' if t is None else t},{h},{l},{phase}")
         return zeilen
 
     def test_einstufung_nimmt_den_schlechtesten_wert(self):
@@ -298,8 +300,9 @@ class KoerperTests(unittest.TestCase):
         self.assertEqual(self.G.befehl(), b"GRENZEN 500 600 65536 16384 20000 200000")
 
     def test_aufnahme_pruefung_und_neue_einstufung(self):
-        antworten = [b"BEREIT,ERBE", b"GRENZEN,ok", b"KOERPER,an",
-                     *(z.encode() for z in self.geraetezeilen(self.ROH, self.G, "erbe"))]
+        phasen = [1, 1, 1, 0, 0, 0]
+        antworten = [b"BEREIT,ERBE", b"GRENZEN,ok", b"LAST,ok", b"KOERPER,an",
+                     *(z.encode() for z in self.geraetezeilen(self.ROH, self.G, "erbe", phasen))]
         zeilen, gesendet = iter(a + b"\r\n" for a in antworten), []
         class Port:
             def write(self, daten):
@@ -308,18 +311,32 @@ class KoerperTests(unittest.TestCase):
                 return next(zeilen, b"")
         with tempfile.TemporaryDirectory() as ort:
             ziel = Path(ort, "koerper.csv")
-            self.assertEqual(koerper.aufnehmen(Port(), "erbe", self.G, 1000, len(self.ROH), ziel), 6)
+            self.assertEqual(koerper.aufnehmen(Port(), "erbe", self.G, 1000, len(self.ROH), ziel, (3, 3)), 6)
+            # Die Last startet vor dem Körpermodus, STOP beendet beides.
+            self.assertLess(gesendet.index(b"LAST 3 3\n"), gesendet.index(b"KOERPER 1000\n"))
             self.assertEqual(gesendet[-1], b"STOP\n")
             meta, werte = koerper.pruefen(ziel)
+            self.assertEqual(meta["last"], [3, 3])
             self.assertEqual([w["zustand"] for w in werte], ["OK", "OK", "SCHWACH", "AUSFALL", "AUSFALL", "OK"])
+            self.assertEqual([w["last"] for w in werte], phasen)
+            self.assertIn("Unter Last (3 Takte)", koerper.bericht(meta, werte))
             locker = koerper.Grenzen(550, 700, 65536, 16384, 20000, 300000)
             self.assertEqual([z for _, z in koerper.neu_einstufen(werte, locker)],
                              ["OK", "OK", "OK", "SCHWACH", "SCHWACH", "OK"])
             with self.assertRaises(ValueError):
                 koerper.aufnehmen(Port(), "erbe", self.G, 1000, 1, ziel)
-            ziel.write_text(ziel.read_text().replace(",SCHWACH,0,1", ",SCHWACH,0,0"))
+            ziel.write_text(ziel.read_text().replace(",SCHWACH,0,1,1", ",SCHWACH,0,0,1"))
             with self.assertRaises(ValueError):
                 koerper.pruefen(ziel)
+
+    def test_aufnahme_ohne_lastspalte_bleibt_lesbar(self):
+        with tempfile.TemporaryDirectory() as ort:
+            ziel = Path(ort, "alt.csv")
+            ziel.with_suffix(".json").write_text(json.dumps(dict(
+                regel="erbe", intervall_ms=1000, grenzen=dataclasses_asdict(self.G), beginn="2026-11-05 10:11")))
+            ziel.write_text(",".join(koerper.KOPF_ALT) + "\n1,1001,380,371820,326,OK,0,0\n")
+            meta, werte = koerper.pruefen(ziel)
+            self.assertEqual((werte[0]["last"], werte[0]["temp_dc"]), (0, 380))
 
 
 @unittest.skipUnless(shutil.which("c++"), "Hostvergleich benötigt einen C++11-Compiler")
@@ -444,12 +461,12 @@ class SketchTests(unittest.TestCase):
         roh = KoerperTests.ROH + [(599, 65536, 19999), (600, 16385, 0), (None, 16384, 0)]
         befehle = ["MESSWERT 400 1 1", "GRENZEN 600 500 1 2 3 4", g.befehl().decode()]
         befehle += [f"MESSWERT {'-' if t is None else t} {h} {l}" for t, h, l in roh]
-        befehle += ["MESSWERT -5 1 1", "KOERPER 1000", "STOP"]
+        befehle += ["MESSWERT -5 1 1", "KOERPER 1000", "LAST 1 1", "STOP"]
         for regel, exe in self.binaries.items():
             with self.subTest(regel=regel):
                 erwartet = ["FEHLER", "FEHLER", "GRENZEN,ok", *KoerperTests.geraetezeilen(roh, g, regel)]
-                # Negative Temperaturen gibt es nicht, den Körpermodus nur am Gerät.
-                erwartet += ["FEHLER", "FEHLER", "KOERPER,aus"]
+                # Negative Temperaturen gibt es nicht, Körpermodus und Last nur am Gerät.
+                erwartet += ["FEHLER", "FEHLER", "FEHLER", "KOERPER,aus"]
                 r = subprocess.run([str(exe)], input="\n".join(befehle) + "\n", text=True,
                                    capture_output=True, timeout=5, check=True)
                 self.assertEqual(r.stdout.splitlines()[1:], erwartet)

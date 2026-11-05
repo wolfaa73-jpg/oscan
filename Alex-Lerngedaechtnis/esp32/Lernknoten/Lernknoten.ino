@@ -59,6 +59,78 @@ bool befehl(const char *name, const char *&rest) {
     return true;
 }
 
+#ifdef ARDUINO_ARCH_ESP32
+// Durchläufe mit eigener Arbeit (Messung, Ausgabe, LED) zählen nicht zur Lücke.
+bool eigeneArbeit = false;
+
+// Last auf Kern 0 im Rhythmus des Rechners. Der Knoten erfährt davon nur über
+// seine Messwerte, die Ausgabe vermerkt die Phase nur für die Auswertung.
+volatile bool lastAktiv = false;
+volatile uint32_t lastAnMs = 0;
+volatile uint32_t lastAusMs = 0;
+TaskHandle_t lastTask = nullptr;
+volatile uint32_t lastSenke = 0;
+
+void lastSchleife(void *) {
+    uint32_t x = 1;
+    for (;;) {
+        if (!lastAnMs) {
+            lastAktiv = false;
+            vTaskDelay(pdMS_TO_TICKS(100));
+            continue;
+        }
+        lastAktiv = true;
+        const uint32_t ende = millis() + lastAnMs;
+        while (lastAnMs && static_cast<int32_t>(millis() - ende) < 0) {
+            const uint32_t stueck = millis() + 10;
+            while (static_cast<int32_t>(millis() - stueck) < 0) x = x * 1664525u + 1013904223u;
+            lastSenke = x;
+            vTaskDelay(1);  // Leerlauf von Kern 0 hält den Task-Wachhund ruhig
+        }
+        lastAktiv = false;
+        const uint32_t pause = millis() + lastAusMs;
+        while (lastAnMs && static_cast<int32_t>(millis() - pause) < 0) vTaskDelay(pdMS_TO_TICKS(100));
+    }
+}
+
+#ifdef ALEX_RGB_PIN
+bool blitzAn = false;
+uint32_t blitzEnde = 0;
+Zustand ledZustand = UNBEKANNT;
+
+// Grün OK, Gelb SCHWACH, Rot AUSFALL, schwaches Weiß bereit. Gedämpft, fürs Auge reicht das.
+void zeigeZustand(Zustand z) {
+    static const uint8_t farbe[4][3] = {{0, 6, 0}, {10, 5, 0}, {12, 0, 0}, {3, 3, 3}};
+    neopixelWrite(ALEX_RGB_PIN, farbe[z][0], farbe[z][1], farbe[z][2]);
+    ledZustand = z;
+    eigeneArbeit = true;
+}
+
+// Vorwarnung: kurz blau, danach wieder die Farbe des Zustands.
+void blitze(Zustand z) {
+    neopixelWrite(ALEX_RGB_PIN, 0, 0, 16);
+    ledZustand = z;
+    blitzAn = true;
+    blitzEnde = millis() + 150;
+    eigeneArbeit = true;
+}
+#endif
+#else
+const bool lastAktiv = false;
+#endif
+
+// Körpermodus und Last aus, die LED zurück auf bereit.
+void ruhe() {
+    koerperAn = false;
+#ifdef ARDUINO_ARCH_ESP32
+    lastAnMs = 0;
+#ifdef ALEX_RGB_PIN
+    blitzAn = false;
+    zeigeZustand(UNBEKANNT);
+#endif
+#endif
+}
+
 // Ein Körpertakt: einstufen, lernen, Rohwerte und Entscheidung ausgeben.
 bool koerperTakt(bool tempGueltig, int32_t temp, uint32_t heap, uint32_t luecke) {
     const Zustand zustand = einstufen(tempGueltig, temp, heap, luecke, grenzen);
@@ -76,7 +148,10 @@ bool koerperTakt(bool tempGueltig, int32_t temp, uint32_t heap, uint32_t luecke)
     Serial.print(heap);
     Serial.print(',');
     Serial.print(luecke);
-    Serial.println("");
+    Serial.println(lastAktiv ? ",1" : ",0");
+#if defined(ARDUINO_ARCH_ESP32) && defined(ALEX_RGB_PIN)
+    if (entscheidung.warnung) blitze(zustand); else zeigeZustand(zustand);
+#endif
     return true;
 }
 
@@ -87,19 +162,28 @@ uint32_t letzteRunde = 0;
 uint32_t luecke = 0;
 
 // Die Lücke ist der größte Abstand zwischen zwei Durchläufen von loop() seit dem
-// letzten Takt, die eigene Messung und Ausgabe eingeschlossen.
+// letzten Takt. Durchläufe mit eigener Arbeit zählen nicht mit, gemessen wird
+// also nur fremde Wartezeit.
 void koerperSchleife() {
     const uint32_t jetzt = micros();
-    if (jetzt - letzteRunde > luecke) luecke = jetzt - letzteRunde;
+    if (!eigeneArbeit && jetzt - letzteRunde > luecke) luecke = jetzt - letzteRunde;
+    eigeneArbeit = false;
     letzteRunde = jetzt;
+#ifdef ALEX_RGB_PIN
+    if (blitzAn && static_cast<int32_t>(millis() - blitzEnde) >= 0) {
+        blitzAn = false;
+        zeigeZustand(ledZustand);
+    }
+#endif
     if (!koerperAn || static_cast<int32_t>(millis() - naechsterTick) < 0) return;
     const float grad = temperatureRead();
     const bool gueltig = !isnan(grad);
     const int32_t temp = gueltig ? static_cast<int32_t>(lroundf(grad * 10.0f)) : 0;
     if (!koerperTakt(gueltig, temp, ESP.getFreeHeap(), luecke)) {
-        koerperAn = false;
+        ruhe();
         Serial.println("FEHLER");
     }
+    eigeneArbeit = true;
     luecke = 0;
     naechsterTick += intervallMs;
     // Nach einem Stillstand nicht nachholen, sondern ab jetzt neu takten.
@@ -134,12 +218,12 @@ bool verarbeiteZeile() {
     if (strcmp(zeile, "LADEN") == 0) return lernstand(false);
     if (strcmp(zeile, "NEUER_LAUF") == 0) {
         knoten.neuerLauf();
-        koerperAn = false;
+        ruhe();
         Serial.println(bereit);
         return true;
     }
     if (strcmp(zeile, "STOP") == 0) {
-        koerperAn = false;
+        ruhe();
         Serial.println("KOERPER,aus");
         return true;
     }
@@ -176,6 +260,17 @@ bool verarbeiteZeile() {
         Serial.println("KOERPER,an");
         return true;
     }
+    if (befehl("LAST", rest)) {
+        // Arbeitsphase und Pause in Sekunden, LAST 0 0 beendet die Last.
+        uint32_t w[2];
+        if (!felder(rest, w, 2) || w[0] > 3600 || w[1] > 3600) return false;
+        lastAusMs = w[1] * 1000;
+        lastAnMs = w[0] * 1000;
+        if (w[0] && !lastTask
+            && xTaskCreatePinnedToCore(lastSchleife, "last", 3072, nullptr, 1, &lastTask, 0) != pdPASS) return false;
+        Serial.println("LAST,ok");
+        return true;
+    }
 #endif
     if (koerperAn) return false;
     const char *text = zeile;
@@ -197,6 +292,9 @@ bool verarbeiteZeile() {
 
 void setup() {
     Serial.begin(115200);
+#if defined(ARDUINO_ARCH_ESP32) && defined(ALEX_RGB_PIN)
+    zeigeZustand(UNBEKANNT);
+#endif
     Serial.println("takt,zustand,sofort,vorwarnung");
 }
 
