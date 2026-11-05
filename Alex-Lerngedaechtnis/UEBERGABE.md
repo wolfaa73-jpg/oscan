@@ -130,7 +130,7 @@ Die Firmware hat keine eigenen Grenzwerte. `GRENZEN` übergibt sie in Zehntelgra
 
 **Eine Veränderung mitgeben.** `LAST <an_s> <aus_s>` lässt Kern 0 im vorgegebenen Rhythmus arbeiten und ruhen, die Hauptschleife läuft auf Kern 1. Die Arbeit gibt alle 10 ms kurz ab, damit der Task-Wachhund nicht anschlägt und keine Meldung ins Protokoll schreibt. `LAST 0 0`, `STOP` und `NEUER_LAUF` beenden die Last. Das letzte Feld der Körperzeile vermerkt die Phase nur für die Auswertung. Die Einstufung kennt sie nicht, der Knoten spürt die Last allein über seine Messwerte.
 
-**LED.** Ist `ALEX_RGB_PIN` gesetzt (S3-Profile: GPIO48 laut Core-Variante DevKitC-1 v1.0), zeigt die eingebaute RGB-LED den Zustand: grün OK, gelb SCHWACH, rot AUSFALL, schwach weiß bereit und kurz blau bei einer Vorwarnung. Die LED-Arbeit zählt nicht zur Lücke. Ihr Treiber belegt 2.872 Byte Speicher.
+**LED.** Ist `ALEX_RGB_PIN` gesetzt (S3-Profile: GPIO48 wie in der Core-Variante DevKitC-1 v1.0, am UICPAL-Board bestätigt), zeigt die eingebaute RGB-LED den Zustand: grün OK, gelb SCHWACH, rot AUSFALL, schwach weiß bereit und kurz blau bei einer Vorwarnung. Die LED-Arbeit zählt nicht zur Lücke. Ihr Treiber belegt 2.872 Byte Speicher.
 
 ```bash
 python3 koerper.py aufnahme messungen/koerper.csv --port /dev/PORT --regel erbe --takte 3600 --last 120 120
