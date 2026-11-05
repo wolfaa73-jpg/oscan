@@ -410,6 +410,27 @@ class KoerperTests(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         koerper.aufnehmen(self.port([], []), "erbe", self.G, 1000, 1, Path(ort, "x.csv"), **falsch)
 
+    def test_neustart_mitten_in_der_aufnahme_bleibt_erhalten(self):
+        # Statt der dritten Körperzeile kommen das Startbanner, der Grund aus dem ROM und der aus der Firmware.
+        start = [b"ESP-ROM:esp32s3-20210327", b"rst:0x1 (POWERON),boot:0x8 (SPI_FAST_FLASH_BOOT)",
+                 b"takt,zustand,sofort,vorwarnung", b"NEUSTART,1,EINSCHALTEN"]
+        antworten = [b"BEREIT,ERBE", b"GRENZEN,ok", b"BLICK,ok", b"KOERPER,an",
+                     *(z.encode() for z in self.geraetezeilen(self.ROH[:2], self.G, "erbe")), *start]
+        gesendet = []
+        with tempfile.TemporaryDirectory() as ort:
+            ziel = Path(ort, "reize.csv")
+            with self.assertRaises(ValueError) as fehler:
+                koerper.aufnehmen(self.port(antworten, gesendet), "erbe", self.G, 1000, 10, ziel)
+            for teil in ("nach 2 Takten", "rst:0x1 (POWERON)", "NEUSTART,1,EINSCHALTEN", "reize.abbruch.txt"):
+                self.assertIn(teil, str(fehler.exception))
+            self.assertEqual(Path(ort, "reize.abbruch.txt").read_text().splitlines(), [z.decode() for z in start])
+            self.assertEqual((gesendet[-1], len(koerper.pruefen(ziel)[1])), (b"STOP\n", 2))
+            # Eine zweite Aufnahme unter demselben Namen überschreibt nichts.
+            ziel.unlink()
+            ziel.with_suffix(".json").unlink()
+            with self.assertRaises(ValueError):
+                koerper.aufnehmen(self.port(antworten, []), "erbe", self.G, 1000, 10, ziel)
+
     def test_aeltere_aufnahmen_bleiben_lesbar(self):
         with tempfile.TemporaryDirectory() as ort:
             ziel = Path(ort, "alt.csv")

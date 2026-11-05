@@ -82,7 +82,7 @@ Der Sketch akzeptiert über die serielle Schnittstelle Zeilen wie `34,SCHWACH`. 
 
 Mit PlatformIO 6.1.18, Plattform espressif32 6.12.0 und dem Profil für den klassischen ESP32 Dev Module wurden alle drei Firmwareabbilder übersetzt. Das Profil ist eine Referenzwahl. Für Alex’ konkretes Board zuerst die genaue Chipfamilie, Flashgröße, Boardkennung und den seriellen Port bestimmen. [Boardprofil des Referenzgeräts](https://docs.platformio.org/en/latest/boards/espressif32/esp32dev.html)
 
-Seit 0.3 gibt es dieselben drei Varianten für Alex’ ESP32-S3-N16R8 (UICPAL, DevKitC-1-Klon): `esp32s3`, `esp32s3-kontext` und `esp32s3-erbe`. Die Speicherwerte stammen aus Alex’ Projekt `esp32-s3-audio`: Oktal-PSRAM (`qio_opi`), 16 MB Flash und die Tabelle `default_16MB.csv`. `Serial` ist UART0 am COM-Anschluss mit der CH343-Brücke, deshalb gilt `ARDUINO_USB_CDC_ON_BOOT=0`. Dort setzt das Öffnen des Ports das Board zurück wie beim klassischen ESP32, und der Prüfer rechnet damit. Am nativen USB-Anschluss müsste `ARDUINO_USB_CDC_ON_BOOT=1` gesetzt werden. Das ist nicht geprüft.
+Seit 0.3 gibt es dieselben drei Varianten für Alex’ ESP32-S3-N16R8 (UICPAL, DevKitC-1-Klon): `esp32s3`, `esp32s3-kontext` und `esp32s3-erbe`. Die Speicherwerte stammen aus Alex’ Projekt `esp32-s3-audio`: Oktal-PSRAM (`qio_opi`), 16 MB Flash und die Tabelle `default_16MB.csv`. `Serial` ist UART0 am COM-Anschluss mit der CH343-Brücke, deshalb gilt `ARDUINO_USB_CDC_ON_BOOT=0`. Dort kann das Öffnen des Ports das Board zurücksetzen wie beim klassischen ESP32, muss es aber nicht. Am Abend des 5. November tat es das nicht. Der Prüfer kommt mit beidem zurecht. Am nativen USB-Anschluss müsste `ARDUINO_USB_CDC_ON_BOOT=1` gesetzt werden. Das ist nicht geprüft.
 
 ```bash
 pio run -d esp32
@@ -90,12 +90,12 @@ pio run -d esp32
 
 | Gebaute Variante | Vom Linker gemeldete RAM-Belegung | Vom Build gemeldeter Flashbedarf |
 |---|---:|---:|
-| esp32dev · Zeit | 23.956 Byte | 287.401 Byte |
-| esp32dev-kontext · Kontext | 23.956 Byte | 287.417 Byte |
-| esp32dev-erbe · Erbe und Kontext | 23.956 Byte | 287.413 Byte |
-| esp32s3 · Zeit | 21.584 Byte | 300.001 Byte |
-| esp32s3-kontext · Kontext | 21.584 Byte | 300.001 Byte |
-| esp32s3-erbe · Erbe und Kontext | 21.584 Byte | 300.009 Byte |
+| esp32dev · Zeit | 23.956 Byte | 287.677 Byte |
+| esp32dev-kontext · Kontext | 23.956 Byte | 287.677 Byte |
+| esp32dev-erbe · Erbe und Kontext | 23.956 Byte | 287.689 Byte |
+| esp32s3 · Zeit | 21.584 Byte | 300.277 Byte |
+| esp32s3-kontext · Kontext | 21.584 Byte | 300.277 Byte |
+| esp32s3-erbe · Erbe und Kontext | 21.584 Byte | 300.285 Byte |
 
 Gebaut am 5. November mit Stand 0.5 auf Alex’ Mac. Die Zahlen umfassen das Arduino-Programm samt Framework. Die neun Gewichte und die Erbtabelle belegen je 72 Byte, die Tabelle für die Blöcke des Lecks 2.048 Byte. In 0.3, vor Körpermodus und Reizen, lag die RAM-Belegung beim S3 bei 18.872 Byte. Die Rechenzeit des weiten Blicks ist am Gerät gemessen (siehe „Weiter Blick im Gerät“), Stromaufnahme und tatsächlich beanspruchte Flashzyklen noch nicht. Der Hosttest führt je Variante den identischen Sketch auf der Demo und allen 120 Kontrollspuren aus. Alle 57.840 Antworten pro Variante stimmen bei Takt, Zustand, Sofortmeldung und Vorwarnung mit Python überein.
 
@@ -131,6 +131,8 @@ Seit 0.4 misst sich der Knoten auf Wunsch selbst. Im Körpermodus liest er in ei
 
 Die Firmware hat keine eigenen Grenzwerte. `GRENZEN` übergibt sie in Zehntelgrad, Byte und Mikrosekunden, `KOERPER <ms>` startet den Modus, `STOP` beendet ihn. Jeder Takt antwortet mit `K,takt,zustand,sofort,vorwarnung,temp_dc,heap,luecke_us,reiz`. Das letzte Feld hält in Bits fest, welche Reize gerade wirken: 1 Last, 2 Leck, 4 Bremse. Bis 0.4 hieß es `last` und kannte nur die Last, solche Aufnahmen bleiben lesbar. `MESSWERT` speist Rohwerte von außen ein und nimmt denselben Weg durch Einstufung und Lernen. Darüber vergleicht der Hosttest beides mit Python.
 
+**Neustarts sichtbar machen.** Beim Start meldet die Firmware `NEUSTART,<nummer>,<grund>`, mit dem Grund aus `esp_reset_reason()`, etwa `PANIK`, `TASK_WACHHUND` oder `UNTERSPANNUNG`. Ein Puls auf der EN-Leitung, wie ihn die USB-Brücke gibt, sieht für den Chip aus wie echtes Einschalten: Das ROM schreibt `rst:0x1 (POWERON)`, die Firmware `NEUSTART,1,EINSCHALTEN`. Kommt während einer Aufnahme statt einer Körperzeile etwas anderes, hebt `aufnahme` diese Zeile und alles danach in `<name>.abbruch.txt` auf. Die Fehlermeldung nennt die Zeilen `rst:` und `NEUSTART,`. Geprüft ist das am S3 mit einem EN-Puls aus einem zweiten Prozess mitten in einer Aufnahme. Ein fremder Prozess am Port kann das Board also während einer Aufnahme zurücksetzen.
+
 **Eine Veränderung mitgeben.** `LAST <an_s> <aus_s>` lässt Kern 0 im vorgegebenen Rhythmus arbeiten und ruhen, die Hauptschleife läuft auf Kern 1. Die Arbeit gibt alle 10 ms kurz ab, damit der Task-Wachhund nicht anschlägt und keine Meldung ins Protokoll schreibt. `LAST 0 0`, `STOP` und `NEUER_LAUF` beenden die Last. Die Einstufung kennt die Phase nicht, der Knoten spürt die Last allein über seine Messwerte.
 
 **Speicher und Schleife reizen (seit 0.5).** Damit auch die Wörter für Speicher und Schleife Erfahrungen bekommen, gibt es zwei weitere Reize. Beide wirken im Takt des Körpers, ihr Ablauf steht in `Reize.h` und wird am Rechner geprüft:
@@ -152,7 +154,7 @@ Gegenüber 0.4 stehen 2.120 Byte weniger frei, davon 2.048 für die Blocktabelle
 - 21 Bremsrampen erreichten je 299,6 ms. Ohne Bremse lag die Lücke ab Takt 2 bei höchstens 18 µs.
 - 39 % der Takte waren AUSFALL, wie vor dem Start geschätzt.
 
-Der Neustart ist ungeklärt. Vor dem Startbanner kam keine Zeile, also weder Panik noch Wachhund noch Brownout, die alle vorher etwas ausgeben. In diesem Moment lief die Last, das Leck stand bei 42.644 Byte frei und damit weit über dem Boden, die Bremse ruhte. macOS verzeichnet zu dieser Zeit kein USB- und kein Schlafereignis. Ohne Meldung kommen vor allem ein Reset von außen über die EN-Leitung der USB-Brücke oder ein Einbruch der Versorgung in Frage, belegt ist keins von beiden. Für den nächsten Lauf sollte die Firmware beim Start den Grund ihres Neustarts melden, und der Rekorder sollte die Zeilen nach einer unerwarteten Zeile aufheben.
+Den Neustart hat ein anderes Programm ausgelöst. Eine zweite Claude-Sitzung auf demselben Mac suchte zur selben Zeit am USB nach einem anderen Gerät und öffnete dabei diesen Port. Sie las die Startzeile des S3 und das `KOERPER,aus`, mit dem er auf das `STOP` des Rekorders antwortete. Das passt zu allem, was die Aufnahme zeigte: Vor dem Startbanner kam keine Zeile, also weder Panik noch Wachhund noch Brownout, und das Leck stand in diesem Moment weit über dem Boden. Firmware und Versorgung sind damit entlastet. Seitdem meldet die Firmware den Grund ihres Neustarts, und der Rekorder hebt die Zeilen danach auf (siehe „Neustarts sichtbar machen“). Die Wiederholung mit denselben Einstellungen ab 21:49 lief die volle Stunde durch: 3.600 Takte, alle wie Python, 17 Lecks je zurück auf 363.380 Byte, 24 Bremsrampen je 299,7 ms, kein Neustart. Die Auswertung je Signal steht für diese Aufnahme noch aus.
 
 **Weiter Blick im Gerät (seit 0.5).** `BLICK <takte>` lässt die Vorwarnung bis zu 600 Takte vorausdenken, wie `blick_voraus` in kern.py. Blick 1 entscheidet wie bisher, ein neuer Lauf beginnt wieder damit. Während des Körpermodus nimmt das Gerät keinen neuen Blick an, sonst passte die Aufnahme nicht mehr zu ihrer Nachrechnung. Gerät und Python summieren in derselben Reihenfolge. Der Hosttest vergleicht beide bei Blick 2 und 60 für alle drei Lernregeln, absichtlich falsche Varianten fallen dabei auf (ein Schritt zu wenig: 7, ein vergessenes Erbe: 129 von 6.026 Antworten abweichend). Am Rechner verbietet eine Pragma-Zeile dem Compiler, Multiplikation und Addition zu verschmelzen. Auf den geprüften Spuren hätte das keine Entscheidung verändert, die Zeile ist Vorsorge.
 

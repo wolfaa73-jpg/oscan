@@ -7,6 +7,7 @@
 #ifdef ARDUINO_ARCH_ESP32
 #include <Preferences.h>
 #include <esp_heap_caps.h>
+#include <esp_system.h>
 #endif
 
 #if defined(ALEX_KONTEXT) && defined(ALEX_ERBE)
@@ -251,6 +252,21 @@ void koerperSchleife() {
 }
 #endif
 
+#ifdef ARDUINO_ARCH_ESP32
+// Warum das Gerät zuletzt neu gestartet ist, als Zahl und Name. Die Nummern sind die von
+// esp_reset_reason_t in ESP-IDF 4.4. Ein Neustart mitten in einer Aufnahme ist sonst nicht zu klären.
+void meldeNeustart() {
+    static const char *const gruende[] = {"UNBEKANNT", "EINSCHALTEN", "EXTERN", "SOFTWARE", "PANIK",
+                                          "INT_WACHHUND", "TASK_WACHHUND", "WACHHUND", "TIEFSCHLAF",
+                                          "UNTERSPANNUNG", "SDIO"};
+    const int grund = esp_reset_reason();
+    Serial.print("NEUSTART,");
+    Serial.print(grund);
+    Serial.print(',');
+    Serial.println(grund >= 0 && grund < static_cast<int>(sizeof(gruende) / sizeof(gruende[0])) ? gruende[grund] : "?");
+}
+#endif
+
 bool lernstand(bool speichern) {
     uint8_t daten[Knoten::standBytes];
     uint8_t alt[Knoten::standBytes];
@@ -386,6 +402,9 @@ void setup() {
     zeigeZustand(UNBEKANNT);
 #endif
     Serial.println("takt,zustand,sofort,vorwarnung");
+#ifdef ARDUINO_ARCH_ESP32
+    meldeNeustart();
+#endif
 }
 
 void loop() {

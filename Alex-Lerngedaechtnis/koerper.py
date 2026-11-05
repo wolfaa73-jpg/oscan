@@ -70,13 +70,30 @@ def lies_koerperzeile(zeile):
                 sofort=sofort, vorwarnung=warnung, reiz=reiz)
 
 
+def nachlese(port, leer=4, hoechstens=8.0):
+    """Was nach einer unerwarteten Zeile noch kommt, etwa die Startmeldungen nach einem Neustart.
+    Liest, bis leer Lesefristen in Folge nichts brachten (am Gerät je 0,6 s), höchstens hoechstens s."""
+    zeilen, stumm, ende = [], 0, time.monotonic() + hoechstens
+    while stumm < leer and time.monotonic() < ende:
+        zeile = port.readline().strip()
+        if zeile:
+            zeilen.append(zeile)
+            stumm = 0
+        else:
+            stumm += 1
+    return zeilen
+
+
 def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=1, leck=None, bremse=None):
     """Körpermodus starten und jede Zeile mitschreiben. Gibt die Zahl der Takte zurück.
 
     last=(an_s, aus_s) lässt Kern 0 in diesem Rhythmus arbeiten. leck=(byte, boden, halten,
     pause) belegt Speicher, bremse=(start, schritt, bis, halten, pause) hält die Hauptschleife
     an, beide wie LECK und BREMSE im Sketch. Der Knoten spürt alle Reize nur über seine
-    Messwerte. blick sind die Takte, die seine Vorwarnung vorausdenkt."""
+    Messwerte. blick sind die Takte, die seine Vorwarnung vorausdenkt.
+
+    Kommt statt einer Körperzeile etwas anderes, etwa das Startbanner nach einem Neustart,
+    hebt <name>.abbruch.txt diese Zeile und alles danach auf, mit dem Grund des Neustarts."""
     if not 100 <= intervall_ms < 2**32:
         raise ValueError("Das Intervall muss mindestens 100 ms betragen.")
     if last is not None and not all(type(s) is int and 0 <= s <= 3600 for s in last):
@@ -87,8 +104,9 @@ def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=
     for name, werte, anzahl in (("Leck", leck, 4), ("Bremse", bremse, 5)):
         if werte is not None and (len(werte) != anzahl or not all(type(w) is int and 0 <= w < 2**32 for w in werte)):
             raise ValueError(f"{name} braucht {anzahl} ganze Zahlen ab null.")
-    if ziel.exists() or ziel.with_suffix(".json").exists():
-        raise ValueError(f"{ziel} oder die zugehörige .json gibt es schon.")
+    abbruch = ziel.with_name(ziel.stem + ".abbruch.txt")
+    if ziel.exists() or ziel.with_suffix(".json").exists() or abbruch.exists():
+        raise ValueError(f"{ziel} oder eine zugehörige .json oder .abbruch.txt gibt es schon.")
     bereit(port, regel)
     anzahl = 0
     stille = 3 * intervall_ms / 1000 + 1
@@ -124,7 +142,15 @@ def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=
                     if time.monotonic() - letzte > stille:
                         raise ValueError(f"Seit {stille:.0f} s keine Körperzeile mehr.")
                     continue
-                k = lies_koerperzeile(zeile)
+                try:
+                    k = lies_koerperzeile(zeile)
+                except ValueError:
+                    text = [z.decode("ascii", "replace") for z in [zeile] + nachlese(port)]
+                    with abbruch.open("x", encoding="utf-8") as aus:
+                        aus.write("\n".join(text) + "\n")
+                    grund = [z for z in text if z.startswith(("rst:", "NEUSTART,"))]
+                    raise ValueError(f"Unerwartete Zeile nach {anzahl} Takten: {text[0]!r}"
+                                     + "".join(f", {z}" for z in grund) + f". Alles Weitere in {abbruch.name}.")
                 letzte = time.monotonic()
                 k["zeit_ms"] = round((letzte - beginn) * 1000)
                 k["temp_dc"] = "-" if k["temp_dc"] is None else k["temp_dc"]
