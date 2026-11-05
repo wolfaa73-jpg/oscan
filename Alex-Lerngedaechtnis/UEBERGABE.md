@@ -154,7 +154,7 @@ Gegenüber 0.4 stehen 2.120 Byte weniger frei, davon 2.048 für die Blocktabelle
 - 21 Bremsrampen erreichten je 299,6 ms. Ohne Bremse lag die Lücke ab Takt 2 bei höchstens 18 µs.
 - 39 % der Takte waren AUSFALL, wie vor dem Start geschätzt.
 
-Den Neustart hat ein anderes Programm ausgelöst. Eine zweite Claude-Sitzung auf demselben Mac suchte zur selben Zeit am USB nach einem anderen Gerät und öffnete dabei diesen Port. Sie las die Startzeile des S3 und das `KOERPER,aus`, mit dem er auf das `STOP` des Rekorders antwortete. Das passt zu allem, was die Aufnahme zeigte: Vor dem Startbanner kam keine Zeile, also weder Panik noch Wachhund noch Brownout, und das Leck stand in diesem Moment weit über dem Boden. Firmware und Versorgung sind damit entlastet. Seitdem meldet die Firmware den Grund ihres Neustarts, und der Rekorder hebt die Zeilen danach auf (siehe „Neustarts sichtbar machen“). Die Wiederholung mit denselben Einstellungen ab 21:49 lief die volle Stunde durch: 3.600 Takte, alle wie Python, 17 Lecks je zurück auf 363.380 Byte, 24 Bremsrampen je 299,7 ms, kein Neustart. Die Auswertung je Signal steht für diese Aufnahme noch aus.
+Den Neustart hat ein anderes Programm ausgelöst. Eine zweite Claude-Sitzung auf demselben Mac suchte zur selben Zeit am USB nach einem anderen Gerät und öffnete dabei diesen Port. Sie las die Startzeile des S3 und das `KOERPER,aus`, mit dem er auf das `STOP` des Rekorders antwortete. Das passt zu allem, was die Aufnahme zeigte: Vor dem Startbanner kam keine Zeile, also weder Panik noch Wachhund noch Brownout, und das Leck stand in diesem Moment weit über dem Boden. Firmware und Versorgung sind damit entlastet. Seitdem meldet die Firmware den Grund ihres Neustarts, und der Rekorder hebt die Zeilen danach auf (siehe „Neustarts sichtbar machen“). Die Wiederholung mit denselben Einstellungen ab 21:49 lief die volle Stunde durch: 3.600 Takte, alle wie Python, 17 Lecks je zurück auf 363.380 Byte, 24 Bremsrampen je 299,7 ms, kein Neustart. Je Signal bestätigt sie die erste Stunde (siehe „Drei Reize, je Signal gezählt“ unter Vokabular).
 
 **Weiter Blick im Gerät (seit 0.5).** `BLICK <takte>` lässt die Vorwarnung bis zu 600 Takte vorausdenken, wie `blick_voraus` in kern.py. Blick 1 entscheidet wie bisher, ein neuer Lauf beginnt wieder damit. Während des Körpermodus nimmt das Gerät keinen neuen Blick an, sonst passte die Aufnahme nicht mehr zu ihrer Nachrechnung. Gerät und Python summieren in derselben Reihenfolge. Der Hosttest vergleicht beide bei Blick 2 und 60 für alle drei Lernregeln, absichtlich falsche Varianten fallen dabei auf (ein Schritt zu wenig: 7, ein vergessenes Erbe: 129 von 6.026 Antworten abweichend). Am Rechner verbietet eine Pragma-Zeile dem Compiler, Multiplikation und Addition zu verschmelzen. Auf den geprüften Spuren hätte das keine Entscheidung verändert, die Zeile ist Vorsorge.
 
@@ -291,8 +291,14 @@ Feste Regel, grober und feiner Blick warnen bei jedem hohen Wort und kommen desh
 - **Ein Wort je Takt verdeckt ein zweites Signal.** Die eine Bremsphase ohne Vorwarnung hatte 18 zähe Takte vor sich, doch der Chip war zugleich heiß. Dann zählt das schwerere Wort TEMP_KRITISCH, und im Ausfall warnt der Knoten nicht. Bei 30 s Blick traf das zwei Lecks und drei Bremsphasen. Wer wissen will, was als Nächstes ausfällt, braucht einen Zustand je Signal.
 - **Im OK-Zustand trifft der Blick nur die Grundrate.** Er warnt in 74 % der OK-Takte und trifft zu 77 %, genau wie immer warnen. Insgesamt trifft die feste Regel zu 88 % bei 59 % Warnanteil, der Blick zu 84 % bei 89 %. Weil 39 % der Takte AUSFALL waren, liegt die Grundrate schon bei 83 %.
 
+**Die Wiederholung bestätigt das.** Die volle Stunde ab 21:49, wieder bei 60 s:
+- **Je Signal:** Temperatur 20 von 20 Phasen vorgewarnt, Treffer bei TEMP_HOCH 58 %. Speicher 17 von 17 und Schleife 24 von 24, beide mit 100 % Treffern. Bei 30 s blieben je zwei Lecks und Bremsphasen ohne Vorwarnung.
+- **Im OK-Zustand:** Der Blick warnt in 72 % der Takte und trifft zu 69 %, immer warnen träfe 72 %.
+- **Insgesamt:** Die feste Regel trifft zu 90 % bei 55 % Warnanteil, der Blick zu 82 % bei 87 %, die Grundrate liegt bei 82 %. Das feine Vokabular weicht nur in einem Alarm vom groben ab.
+
 ```bash
 python3 vokabular.py auswertung messungen/koerper-reize-2026-11-05.csv --horizont 30 60
+python3 vokabular.py auswertung messungen/koerper-reize-wdh-2026-11-05.csv --horizont 30 60
 ```
 
 ## Kommunikationsversuch und nächste Entscheidung
