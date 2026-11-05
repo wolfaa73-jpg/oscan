@@ -35,3 +35,7 @@ Das sind Laufzeitexperimente auf dem vorhandenen Betriebssystem. Die Vergleichsz
 ## Verbund und Arbeitsvergabe gemeinsam ausführen
 
 [Anschluss und Auftragslebensdauer](Alex-Lerngedaechtnis/ANSCHLUSS-UEBERGABE.md) beschreibt die Verbindung: neue Statusmeldungen steuern den festen Disponenten; ein begrenztes Register verhindert doppelte Arbeit unter derselben Kennung. Der gemeinsame Versuch läuft mit `python3 -B verbundsystem.py` im Laborordner und verwendet zwei echte lokale Arbeiter. Er prüft insbesondere Verlust, Sitzungswechsel und ablaufende Arbeitsfreigaben.
+
+## Aufträge nach einem Absturz wiederfinden
+
+Das optionale [dauerhafte Auftragsjournal](Alex-Lerngedaechtnis/JOURNAL-UEBERGABE.md) erhält Quittungen über Prozessneustarts. Angefangene Arbeit ohne bestätigten Abschluss bleibt ungeklärt und wird unter derselben Kennung nicht erneut ausgeführt. `python3 -B neustartlabor.py` prüft drei harte Abbrüche eigener Prozesse und wiederholte Anfragen. Die Erweiterung benötigt macOS oder Linux; ihre Testwirkung ist eine Dateizeile. Eine atomare Wirkung auf einem echten Gerät oder ein Schutz über gelöschte bzw. zurückgesetzte Journale hinweg ist damit nicht belegt.
