@@ -1,0 +1,30 @@
+{
+  "dateien": {
+    "bericht.md": "ff2a40c6ef20ff439c70f7e31d1d764d658420c7fc18d0449f6a292d9599fb8c",
+    "spuren.csv": "6d7304a02cf7032faaced33b124d4f23ed88d623d91f22c56197aaa9f2b20c8a",
+    "vergleich.csv": "b2a7e902aeb14569e008a5a18ec6df1dbeee8709f19d8cc29a244bb4c98c271a"
+  },
+  "freeze": null,
+  "parameter": {
+    "halbwertszeit": 6,
+    "horizont": 30,
+    "schwelle": 0.6
+  },
+  "quellen": {
+    "VERWEILDAUER-PLAN.md": "34397bb0a3e6e83840e181dfeadbae50b2436d26aede625e903b929c5927fd25",
+    "kern.py": "5c285af1cf53b68ad7536d9640213362a10db1ce07ba6129481e433e58cf07cd",
+    "signallabor.py": "802ad62b2e67ad852f54981b7e85b8503eac68f06cf02d63603d72a22618eced",
+    "test_verweildauer.py": "bacf0f194d472702efaede55893b6e5890b8875d28430d9669576bf03bcd6ab1",
+    "test_verweildauerlabor.py": "cbb0ec0d6d8ee5037a5065b6a99bd50e90526211f4bd70826de66781490206d4",
+    "verweildauer.py": "726b20dd073c0b177b7be261f87b5c5a5a410b390e05fc45f7d110b8e8e7cad7",
+    "verweildauerlabor.py": "197e13009f70ce9ab2dc3d554312805e19ca3bb2b537dc57c5b38a4b70ffed3d",
+    "vokabular.py": "f0543a0e8586ef7be9261eeb371a433f6af6160223bcf983630c8ec09160b868"
+  },
+  "satz": "entwicklung",
+  "seeds": {
+    "anzahl": 16,
+    "von": 300000
+  },
+  "status": "vollstaendig",
+  "version": 1
+}
