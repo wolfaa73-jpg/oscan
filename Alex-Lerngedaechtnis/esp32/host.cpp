@@ -11,8 +11,14 @@ struct Preferences {
         pfad = std::getenv("ALEX_TEST_NVS");
         return pfad != nullptr;
     }
-    size_t getBytesLength(const char *) {
+    bool isKey(const char *) {
+        std::ifstream f(pfad, std::ios::binary);
+        return static_cast<bool>(f);
+    }
+    // Wie der Arduino-Kern 2.0.17: Ein fehlender Schlüssel landet als Fehlerzeile auf Serial.
+    size_t getBytesLength(const char *key) {
         std::ifstream f(pfad, std::ios::binary | std::ios::ate);
+        if (!f) std::cout << "[E][Preferences.cpp:503] getBytesLength(): nvs_get_blob len fail: " << key << " NOT_FOUND\n";
         return f ? static_cast<size_t>(f.tellg()) : 0;
     }
     size_t getBytes(const char *, void *p, size_t n) {

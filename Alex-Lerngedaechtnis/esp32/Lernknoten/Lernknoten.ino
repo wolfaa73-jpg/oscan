@@ -279,7 +279,9 @@ bool lernstand(bool speichern) {
     Preferences nvs;
     if (!nvs.begin("alex-lernlabor", !speichern)) return false;
     const char *key = standKey;
-    const bool lesbar = nvs.getBytesLength(key) == n && nvs.getBytes(key, alt, n) == n;
+    // isKey zuerst: getBytesLength meldet einen fehlenden Schlüssel selbst auf Serial und
+    // stünde dann vor GESICHERT oder FEHLER mitten im Protokoll.
+    const bool lesbar = nvs.isKey(key) && nvs.getBytesLength(key) == n && nvs.getBytes(key, alt, n) == n;
     bool ok;
     if (speichern) {
         ok = (lesbar && memcmp(daten, alt, n) == 0) || nvs.putBytes(key, daten, n) == n;

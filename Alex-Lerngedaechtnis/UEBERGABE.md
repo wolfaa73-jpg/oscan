@@ -92,16 +92,16 @@ pio run -d esp32
 
 | Gebaute Variante | Vom Linker gemeldete RAM-Belegung | Vom Build gemeldeter Flashbedarf |
 |---|---:|---:|
-| esp32dev · Zeit | 23.972 Byte | 288.309 Byte |
-| esp32dev-kontext · Kontext | 23.972 Byte | 288.325 Byte |
-| esp32dev-erbe · Erbe und Kontext | 23.972 Byte | 288.305 Byte |
-| esp32dev-startwert · Startwert | 23.972 Byte | 288.325 Byte |
-| esp32s3 · Zeit | 21.600 Byte | 300.925 Byte |
-| esp32s3-kontext · Kontext | 21.600 Byte | 300.925 Byte |
-| esp32s3-erbe · Erbe und Kontext | 21.600 Byte | 300.925 Byte |
-| esp32s3-startwert · Startwert | 21.600 Byte | 300.925 Byte |
+| esp32dev · Zeit | 23.972 Byte | 289.257 Byte |
+| esp32dev-kontext · Kontext | 23.972 Byte | 289.273 Byte |
+| esp32dev-erbe · Erbe und Kontext | 23.972 Byte | 289.253 Byte |
+| esp32dev-startwert · Startwert | 23.972 Byte | 289.273 Byte |
+| esp32s3 · Zeit | 21.600 Byte | 301.873 Byte |
+| esp32s3-kontext · Kontext | 21.600 Byte | 301.873 Byte |
+| esp32s3-erbe · Erbe und Kontext | 21.600 Byte | 301.873 Byte |
+| esp32s3-startwert · Startwert | 21.600 Byte | 301.873 Byte |
 
-Gebaut am 6. November mit Leckmuster und Startwert auf Alex’ Mac. Die Zahlen umfassen das Arduino-Programm samt Framework. Die neun Gewichte und die Erbtabelle belegen je 72 Byte, die Tabelle für die Blöcke des Lecks 2.048 Byte. In 0.3, vor Körpermodus und Reizen, lag die RAM-Belegung beim S3 bei 18.872 Byte. Die Rechenzeit des weiten Blicks ist am Gerät gemessen (siehe „Weiter Blick im Gerät“), Stromaufnahme und tatsächlich beanspruchte Flashzyklen noch nicht. Der Hosttest führt je Variante den identischen Sketch auf der Demo und allen 120 Kontrollspuren aus. Alle 57.840 Antworten pro Variante stimmen bei Takt, Zustand, Sofortmeldung und Vorwarnung mit Python überein.
+Gebaut am 6. November mit Leckmuster, Startwert und `isKey` auf Alex’ Mac. Die Zahlen umfassen das Arduino-Programm samt Framework. Die neun Gewichte und die Erbtabelle belegen je 72 Byte, die Tabelle für die Blöcke des Lecks 2.048 Byte. In 0.3, vor Körpermodus und Reizen, lag die RAM-Belegung beim S3 bei 18.872 Byte. Die Rechenzeit des weiten Blicks ist am Gerät gemessen (siehe „Weiter Blick im Gerät“), Stromaufnahme und tatsächlich beanspruchte Flashzyklen noch nicht. Der Hosttest führt je Variante den identischen Sketch auf der Demo und allen 120 Kontrollspuren aus. Alle 57.840 Antworten pro Variante stimmen bei Takt, Zustand, Sofortmeldung und Vorwarnung mit Python überein.
 
 **Erster Boardlauf.** Nach dem Aufspielen der zum Gerät passenden Variante den seriellen Monitor schließen und mit einem Python-Interpreter mit `pyserial` den Prüfer starten. Den Beispielport durch den tatsächlichen Port ersetzen. Der Prüfer startet bewusst einen leeren RAM-Lauf, sendet eine Zeile, wartet auf die Antwort und vergleicht jede Entscheidung. Erwartet werden 240 von 240 passende Antworten. Startet das Board langsam, sendet der Prüfer `NEUER_LAUF` mehrmals, und jede Wiederholung wird beantwortet. Seit 0.3 überspringt er diese späten Bereitmeldungen vor der ersten Antwort. Vorher schlug der Hosttest gelegentlich beim ersten Start frisch übersetzter Programme fehl.
 
@@ -116,7 +116,7 @@ pio run -d esp32 -e esp32s3-erbe -t upload --upload-port /dev/PORT
 python3 boardprobe.py --port /dev/PORT --regel erbe
 ```
 
-**Ergebnis am 5. November.** esptool bestätigte einen ESP32-S3 (QFN56) Revision v0.2 mit 16 MB Flash, 8 MB eingebettetem PSRAM und der erwarteten MAC. Aufgespielt wurde mit 230400 Baud, Bootloader, Partitionstabelle, otadata und App jeweils mit bestätigtem Hash. Zeit, Kontext und Erbe bestanden die Demo mit je 240 von 240 Antworten. Die Gegenprobe mit falscher `--regel` brach wie vorgesehen mit „Falsche Variante“ ab. Auf dem Board läuft seitdem `esp32s3-erbe`. Geprüft ist damit die Demo, die 120 Kontrollspuren liefen nur im Hosttest. Auch der Wiederanlauf nach Stromtrennung bestand. Die Erbe-Variante sicherte nach 99 Takten, war 5 s ohne Strom und lud danach ihren Stand. Takt 99 wurde abgewiesen, Takt 100 angenommen, und die übrigen 141 Antworten entsprachen dem durchgehenden Lauf. Ein erster Versuch war beim Sichern abgebrochen, ohne dass sichtbar wurde, was statt `GESICHERT` ankam. Vermutlich brauchte der erste Flashzugriff nach dem Aufspielen länger als die 0,6 s Lesefrist. Belegt ist das nicht. Seitdem wartet `wiederanlauf.py` bis zu 3 s und nennt im Fehlerfall die erhaltene Zeile.
+**Ergebnis am 5. November.** esptool bestätigte einen ESP32-S3 (QFN56) Revision v0.2 mit 16 MB Flash, 8 MB eingebettetem PSRAM und der erwarteten MAC. Aufgespielt wurde mit 230400 Baud, Bootloader, Partitionstabelle, otadata und App jeweils mit bestätigtem Hash. Zeit, Kontext und Erbe bestanden die Demo mit je 240 von 240 Antworten. Die Gegenprobe mit falscher `--regel` brach wie vorgesehen mit „Falsche Variante“ ab. Auf dem Board lief danach `esp32s3-erbe`, seit dem 6. November läuft `esp32s3-startwert`. Geprüft ist damit die Demo, die 120 Kontrollspuren liefen nur im Hosttest. Auch der Wiederanlauf nach Stromtrennung bestand. Die Erbe-Variante sicherte nach 99 Takten, war 5 s ohne Strom und lud danach ihren Stand. Takt 99 wurde abgewiesen, Takt 100 angenommen, und die übrigen 141 Antworten entsprachen dem durchgehenden Lauf. Ein erster Versuch war beim Sichern abgebrochen, ohne dass sichtbar wurde, was statt `GESICHERT` ankam. Vermutlich brauchte der erste Flashzugriff nach dem Aufspielen länger als die 0,6 s Lesefrist. Belegt ist das nicht. Seitdem wartet `wiederanlauf.py` bis zu 3 s und nennt im Fehlerfall die erhaltene Zeile. Am 6. November nannte es die Zeile. Gibt es den Schlüssel im NVS noch nicht, schreibt der Arduino-Kern beim ersten Sichern vor `GESICHERT` eine eigene Fehlerzeile auf die serielle Leitung: `[E][Preferences.cpp:503] getBytesLength(): nvs_get_blob len fail: startwert NOT_FOUND`. Das zweite Sichern lief sauber, weil der Schlüssel dann existierte. Wahrscheinlich war das auch am 5. November die Ursache, nicht die Lesefrist. Seitdem prüft der Sketch den Schlüssel zuerst mit `Preferences::isKey`, das nichts meldet. Die Ersatz-Preferences im Hosttest schreiben dieselbe Fehlerzeile wie der Kern. Ohne `isKey` schlägt der Test deshalb an. Am Gerät lief danach das erste Sichern unter `kontext` sauber durch, ein Schlüssel, der auf diesem Board vorher nie gesichert worden war.
 
 **Neustart auf dem Board.** `SICHERN` legt den aktuellen Stand im NVS-Namensraum `alex-lernlabor` ab. Jede Regel hat ihren eigenen Schlüssel: `zeit`, `kontext`, `erbe` und `startwert`. Nur dieser explizite Befehl schreibt den Lernstand. Bereits identische Nutzdaten werden erkannt. `NEUER_LAUF` setzt das RAM zurück. `LADEN` übernimmt einen gültigen Stand in einen leeren Knoten. Das binäre Format hat genau 86 Byte. Es enthält die Kennung `AG01`, Regel (1 Zeit, 2 Kontext, 3 Erbe) und Zustand als je ein Byte, den Takt als uint32, neun binary64-Gewichte in Zeilenfolge OK/SCHWACH/AUSFALL und eine CRC32 über die ersten 82 Byte. Mehrbyte-Werte werden in Little Endian gespeichert. Die Prüfung erkennt Beschädigungen und verweigert ungültige Werte. Sie authentifiziert keinen Absender. Bei Zeit, Kontext und Erbe steht das Erbe nicht im Stand, es gehört zur Firmware. Der Startwert (Regel 4) verblasst, sein Stand heißt deshalb `AG02` und hat 158 Byte. Hinter den Gewichten folgen die neun Werte des Erbes in derselben Zeilenfolge, die CRC32 deckt die ersten 154 Byte. Ein geladenes Erbe darf nicht über seinen Anfang wachsen und nicht dort entstehen, wo die Regel keines hat. Einen Stand einer anderen Regel weist `LADEN` ab. [Espressif-Dokumentation zu Preferences und NVS](https://docs.espressif.com/projects/arduino-esp32/en/latest/api/preferences.html)
 
@@ -348,7 +348,7 @@ Bei 60 s ändert sich nur die Zeile ohne Erbe, auf 88 %, 14 % und 87 %. Die Gege
 
 **Entschieden am 6. November: Das Erbe wird ein verblassender Startwert.** Offen standen zwei Wege: das Erbe als Startwert, der mit eigenen Ausgängen schwindet, oder Verweildauer und Richtung getrennt lernen. Alex wählte den ersten, der zweite ist nicht verworfen, nur nicht gewählt. Die neue Regel `startwert` beginnt mit demselben Erbe von drei Beobachtungen. Mit jedem eigenen Ausgang aus seinem Zustand verblasst es um den Faktor der Kontextregel, also mit einer Halbwertszeit von sechs Ausgängen. Bleiben zählt nicht, es sagt nichts darüber, wohin der Zustand führt. Auch ein Ausgang in den Ausfall zählt, dann trägt eigene Erfahrung die Warnung. Die Sechs ist von der Kontextregel übernommen und nicht an diese Aufnahme angepasst. Die Regel `erbe` bleibt, wie sie war. Daniels Verbund und Systemversuch rechnen weiter mit ihr.
 
-- **Umgesetzt** in kern.py als `Startwertgedaechtnis` (Regel 4), im Sketch als Variante `esp32s3-startwert` mit dem Gerätestand `AG02` und in vokabular.py als `Wortgedaechtnis(..., startwert=True)`. Die Auswertung zeigt dafür die Zeilen „Grob, Startwert“ und „Je Signal, Startwert“. Der Hosttest rechnet alle vier Regeln bitgleich mit Python, auch über einen Neustart. Als Gegenprobe übersprang eine Firmware probehalber das gesicherte Erbe beim Laden, der Vergleich mit dem durchgehenden Lauf schlug an. 94 Tests grün. Die Variante ist für den S3 gebaut, aber noch nicht aufgespielt.
+- **Umgesetzt** in kern.py als `Startwertgedaechtnis` (Regel 4), im Sketch als Variante `esp32s3-startwert` mit dem Gerätestand `AG02` und in vokabular.py als `Wortgedaechtnis(..., startwert=True)`. Die Auswertung zeigt dafür die Zeilen „Grob, Startwert“ und „Je Signal, Startwert“. Der Hosttest rechnet alle vier Regeln bitgleich mit Python, auch über einen Neustart. Als Gegenprobe übersprang eine Firmware probehalber das gesicherte Erbe beim Laden, der Vergleich mit dem durchgehenden Lauf schlug an. 94 Tests grün. Auf dem S3 läuft die Variante seit dem 6. November, Ergebnis unten unter „Am Gerät, 30 Minuten“.
 - **Nachgerechnet an derselben Aufnahme**, eine unabhängige Bestätigung ist das nicht:
 
 | Verfahren, 30 s | vorgewarnt | Warnanteil | Trefferquote | Wärme | Speicher | Schleife |
@@ -366,8 +366,28 @@ Bei 60 s warnt die feste Regel in 44 % der Takte und trifft zu 83 %. Je Signal m
 - **Im groben Blick des Geräts kostet der Startwert.** SCHWACH steht dort für warm, knapp und zäh zugleich. Ohne festes Erbe mischt die Zeile die meist harmlose Wärme mit der Bremse, die immer bis zum Stillstand geht. So sind nur 81 von 141 Bremsphasen vorgewarnt. Der Startwert zahlt sich erst mit einem Gedächtnis je Signal aus, und das rechnet bisher nur der Rechner.
 - **Die Wiederholung der Reizstunde** (3.600 Takte, jedes Leck tief) zeigt dasselbe. Je Signal mit Startwert sind bei 30 s Speicher und Schleife vollständig vorgewarnt, die Wärme in 7 von 20 Phasen, insgesamt 30 von 36 bei 52 % Warnanteil und 69 % Treffern. Die feste Regel warnt 36 von 36 vor, bei 55 % und 73 %.
 
+**Am Gerät, 30 Minuten.** Am 6. November von 07:59 bis 08:29 lief `esp32s3-startwert` auf dem S3 mit den Reizen des 6-Stunden-Laufs, nur 1.800 statt 21.600 Takte. Vorher bestand er die Demo mit 240 von 240 Antworten. Alle 1.800 Einstufungen und Entscheidungen stimmen mit Python überein, einen Neustart gab es nicht. Die neun Lecks liefen nach Muster, acht tief und eines flach, danach waren je 363.364 Byte frei. Die zwölf Bremsrampen erreichten je 299,8 ms, der Chip lag bei 35 bis 39 °C. Gezählt bei 60 s, dem Blick des Geräts:
+
+| Verfahren, 60 s | vorgewarnt | Fehlalarme / Alarme | Warnanteil | Trefferquote |
+|---|---:|---:|---:|---:|
+| Gerät mit Startwert | 24 / 24 | 7 / 35 | 59 % | 77 % |
+| Festes Erbe, an derselben Aufnahme nachgerechnet | 24 / 24 | 7 / 34 | 73 % | 79 % |
+| Feste Regel | 24 / 24 | 5 / 32 | 50 % | 91 % |
+| Immer warnen | 24 / 24 | 1 / 25 | 100 % | 74 % |
+
+Das Gerät warnte 886-mal. In den ersten 30 Minuten des 6-Stunden-Laufs mit festem Erbe waren es 1.160 Warnungen. Die Nachrechnung hatte dieselbe Richtung vorhergesagt: an jener halben Stunde 66 statt 79 % Warnanteil bei 81 statt 84 % Treffern. In einer halben Stunde ist das Erbe erst wenig verblasst, und der Speicher hatte nur einen flachen Durchgang. Was der Startwert über Stunden bringt und kostet, zeigt erst ein längerer Lauf.
+
+**Wiederanlauf mit `AG02`.** Danach sicherte das Gerät nach 111 Takten der Demo. Dort steht das Erbe bei 0,375, und ein beim Laden auf 3 hängengebliebenes Erbe würde eine spätere Entscheidung ändern. Das trifft auf 102 der 161 möglichen Grenzen zu, ein auf null gefallenes Erbe auf keine. Nach einer Stromtrennung lud es den Stand und wies Takt 111 ab. Die übrigen 129 Antworten entsprachen dem durchgehenden Lauf.
+
+```bash
+python3 koerper.py pruefen messungen/koerper-startwert-30min-2026-11-06.csv
+python3 vokabular.py auswertung messungen/koerper-startwert-30min-2026-11-06.csv --horizont 30 60
+python3 wiederanlauf.py sichern --port /dev/PORT --regel startwert --grenze 111
+python3 wiederanlauf.py laden --port /dev/PORT --regel startwert --grenze 111
+```
+
 **Offen: Wie geht es mit dem Gerät weiter?** Drei Möglichkeiten, noch nicht gewählt:
-- Den Startwert aufspielen und laufen lassen, wie er ist. Das prüft die Firmware am Gerät und die Nachrechnung unabhängig. Laut Nachrechnung warnt das Gerät damit aber schlechter als heute.
+- Den Startwert länger laufen lassen, wie er ist. Das prüft die Nachrechnung unabhängig. Laut Nachrechnung warnt das Gerät damit über Stunden schlechter als heute.
 - Erst ein Gedächtnis je Signal ins Gerät bringen, jedes mit Startwert. Das ist ein größerer Umbau des Sketchs.
 - Die Wärme gesondert ansehen. Bei 38 % Folgewahrscheinlichkeit entscheidet allein die Schwelle von 60 %, ob gewarnt wird.
 

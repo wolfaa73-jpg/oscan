@@ -777,8 +777,9 @@ int main() {
                                           env=dict(os.environ, ALEX_TEST_NVS=str(p)))
                     return proc.stdout.splitlines()[1:]
                 voll = replay(teile)
-                self.assertEqual(replay(teile[:121]+["SICHERN", "SICHERN", "LADEN"])[-3:],
-                                 ["GESICHERT", "GESICHERT", "FEHLER"])
+                # Ohne Schlüssel im NVS darf keine Meldung des Kerns zwischen die Antworten geraten.
+                self.assertEqual(replay(teile[:121]+["LADEN", "SICHERN", "SICHERN", "LADEN"]),
+                                 voll[:121] + ["FEHLER", "GESICHERT", "GESICHERT", "FEHLER"])
                 self.assertEqual(replay(["LADEN"]+teile[121:]), ["GELADEN"] + voll[121:])
                 daten = bytearray(p.read_bytes())
                 # Der Startwert trägt sein verblasstes Erbe als AG02 hinter den Gewichten.
