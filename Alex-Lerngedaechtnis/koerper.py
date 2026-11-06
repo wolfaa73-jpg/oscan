@@ -70,6 +70,15 @@ def lies_koerperzeile(zeile):
                 sofort=sofort, vorwarnung=warnung, reiz=reiz)
 
 
+def exklusiv(port):
+    """Belegt den seriellen Port für diesen Prozess allein, bis er geschlossen wird. Jedes weitere
+    Öffnen scheitert dann mit EBUSY, auch das eines fremden Programms, das sonst über DTR/RTS das
+    Gerät mitten in der Aufnahme zurücksetzen könnte. So geschah es am 5. November."""
+    import fcntl
+    import termios
+    fcntl.ioctl(port.fileno(), termios.TIOCEXCL)
+
+
 def nachlese(port, leer=4, hoechstens=8.0):
     """Was nach einer unerwarteten Zeile noch kommt, etwa die Startmeldungen nach einem Neustart.
     Liest, bis leer Lesefristen in Folge nichts brachten (am Gerät je 0,6 s), höchstens hoechstens s."""
@@ -88,8 +97,8 @@ def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=
     """Körpermodus starten und jede Zeile mitschreiben. Gibt die Zahl der Takte zurück.
 
     last=(an_s, aus_s) lässt Kern 0 in diesem Rhythmus arbeiten. leck=(byte, boden, halten,
-    pause) belegt Speicher, bremse=(start, schritt, bis, halten, pause) hält die Hauptschleife
-    an, beide wie LECK und BREMSE im Sketch. Der Knoten spürt alle Reize nur über seine
+    pause), wahlweise mit flachem Boden und Muster, belegt Speicher, bremse=(start, schritt, bis,
+    halten, pause) hält die Hauptschleife an, beide wie LECK und BREMSE im Sketch. Der Knoten spürt alle Reize nur über seine
     Messwerte. blick sind die Takte, die seine Vorwarnung vorausdenkt.
 
     Kommt statt einer Körperzeile etwas anderes, etwa das Startbanner nach einem Neustart,
@@ -101,9 +110,9 @@ def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=
     if type(blick) is not int or not 1 <= blick <= MAX_BLICK:
         raise ValueError(f"Der Blick muss 1 bis {MAX_BLICK} Takte betragen.")
     # Die Bereiche von Leck und Bremse prüft das Gerät, hier nur die Form.
-    for name, werte, anzahl in (("Leck", leck, 4), ("Bremse", bremse, 5)):
-        if werte is not None and (len(werte) != anzahl or not all(type(w) is int and 0 <= w < 2**32 for w in werte)):
-            raise ValueError(f"{name} braucht {anzahl} ganze Zahlen ab null.")
+    for name, werte, anzahl in (("Leck", leck, (4, 6)), ("Bremse", bremse, (5,))):
+        if werte is not None and (len(werte) not in anzahl or not all(type(w) is int and 0 <= w < 2**32 for w in werte)):
+            raise ValueError(f"{name} braucht {' oder '.join(map(str, anzahl))} ganze Zahlen ab null.")
     abbruch = ziel.with_name(ziel.stem + ".abbruch.txt")
     if ziel.exists() or ziel.with_suffix(".json").exists() or abbruch.exists():
         raise ValueError(f"{ziel} oder eine zugehörige .json oder .abbruch.txt gibt es schon.")
@@ -263,9 +272,10 @@ def main():
                    "Speicher schwach ausfall (Byte), Lücke schwach ausfall (µs)")
     a.add_argument("--last", type=int, nargs=2, metavar=("AN", "AUS"), help="Kern 0 arbeitet AN s, ruht AUS s")
     a.add_argument("--blick", type=int, default=1, help=f"Takte, die die Vorwarnung vorausdenkt, 1 bis {MAX_BLICK}")
-    a.add_argument("--leck", type=int, nargs=4, metavar=("BYTE", "BODEN", "HALTEN", "PAUSE"),
-                   help="Speicherleck: BYTE je Takt, bis nur noch BODEN Byte frei sind, HALTEN Takte am Boden, "
-                        "dann PAUSE Takte frei")
+    a.add_argument("--leck", type=int, nargs="+", metavar="N",
+                   help="Speicherleck BYTE BODEN HALTEN PAUSE [FLACH MUSTER]: BYTE je Takt, bis nur noch BODEN Byte "
+                        "frei sind, HALTEN Takte am Boden, dann PAUSE Takte frei. Durchgänge, deren Bit im MUSTER "
+                        "gesetzt ist, halten schon bei FLACH Byte an")
     a.add_argument("--bremse", type=int, nargs=5, metavar=("START", "SCHRITT", "BIS", "HALTEN", "PAUSE"),
                    help="Hauptschleife steht je Takt START, START+SCHRITT … bis BIS ms still, HALTEN Takte bei BIS, "
                         "dann PAUSE Takte nicht")
@@ -284,6 +294,7 @@ def main():
             signal.signal(signal.SIGTERM, abbrechen)
             grenzen = Grenzen(*arg.grenzen) if arg.grenzen else ERKUNDUNG
             with serial.Serial(arg.port, 115200, timeout=0.6, write_timeout=2) as port:
+                exklusiv(port)
                 anzahl = aufnehmen(port, arg.regel, grenzen, arg.intervall_ms, arg.takte, arg.datei,
                                    tuple(arg.last) if arg.last else None, arg.blick,
                                    tuple(arg.leck) if arg.leck else None, tuple(arg.bremse) if arg.bremse else None)

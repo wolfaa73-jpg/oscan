@@ -9,17 +9,28 @@ inline bool reizTakte(uint32_t n) { return n >= 1 && n <= 3600; }
 // Leck: belegt je Takt einen Block, bis der Sketch meldet, dass kein Block mehr über den
 // Boden passt. Dieser Takt ist der erste von halten Takten am Boden. Im Takt danach gibt
 // es alles frei, das ist der erste von pause Takten ohne Leck. Dann wächst es wieder.
+//
+// Mit flach und muster hat nicht jeder Durchgang denselben Boden. Bit n des Musters gilt für
+// Durchgang n, nach 32 Durchgängen von vorn. Ein gesetztes Bit hält schon am flachen Boden an.
+// So ändert ein Vorzeichen seine Bedeutung: Mal folgt auf knappen Speicher voller, mal nicht.
 struct Leck {
     enum Aktion : uint8_t { NICHTS, BELEGEN, FREIGEBEN };
     // Blöcke ab 1 KiB, damit 512 Blöcke für jeden Speicher reichen. Mindestens 8 KiB bleiben
     // frei für Ausgabe, LED und Lastaufgabe. Das ist eine gewählte Reserve, keine gemessene.
     static constexpr uint32_t minBlock = 1024, maxBlock = 65536, minBoden = 8192;
-    uint32_t block = 0, boden = 0;  // Byte je Block, Byte, die mindestens frei bleiben
+    uint32_t block = 0, boden = 0;  // Byte je Block, Byte, die in diesem Durchgang frei bleiben
 
-    bool starte(uint32_t b, uint32_t untergrenze, uint32_t h, uint32_t p) {
-        if (b < minBlock || b > maxBlock || untergrenze < minBoden || !reizTakte(h) || !reizTakte(p)) return false;
+    // flach 0 heißt: jeder Durchgang geht bis untergrenze.
+    bool starte(uint32_t b, uint32_t untergrenze, uint32_t h, uint32_t p, uint32_t f = 0, uint32_t m = 0) {
+        if (!f) f = untergrenze;
+        if (b < minBlock || b > maxBlock || untergrenze < minBoden || f < untergrenze
+            || !reizTakte(h) || !reizTakte(p)) return false;
         block = b;
-        boden = untergrenze;
+        tief = untergrenze;
+        flach = f;
+        muster = m;
+        durchgang = 0;
+        boden = waehle();
         halten = h;
         pause = p;
         rest = 0;
@@ -28,7 +39,11 @@ struct Leck {
     }
 
     Aktion takt() {
-        if (phase == RUHT && !rest) phase = WAECHST;
+        if (phase == RUHT && !rest) {
+            phase = WAECHST;
+            durchgang = (durchgang + 1) % 32;
+            boden = waehle();
+        }
         switch (phase) {
         case WAECHST:
             return BELEGEN;
@@ -57,8 +72,9 @@ struct Leck {
 
 private:
     enum Phase : uint8_t { AUS, WAECHST, HAELT, RUHT };
+    uint32_t waehle() const { return (muster >> durchgang) & 1u ? flach : tief; }
     Phase phase = AUS;
-    uint32_t halten = 0, pause = 0, rest = 0;
+    uint32_t halten = 0, pause = 0, rest = 0, tief = 0, flach = 0, muster = 0, durchgang = 0;
 };
 
 // Bremse: Die Hauptschleife steht je Takt einmal still, start, start + schritt, ... ms.

@@ -356,11 +356,15 @@ bool verarbeiteZeile() {
         return true;
     }
     if (befehl("LECK", rest)) {
-        // Byte je Takt, Boden in Byte, Takte am Boden, Takte Pause. LECK 0 0 0 0 beendet und gibt frei.
-        uint32_t w[4];
-        if (!felder(rest, w, 4)) return false;
+        // Byte je Takt, Boden in Byte, Takte am Boden, Takte Pause, wahlweise ein flacher Boden und das
+        // Muster der Durchgänge, die schon an ihm anhalten. LECK 0 0 0 0 beendet und gibt frei.
+        uint32_t w[6] = {};
+        if (!felder(rest, w, 6)) {
+            w[4] = w[5] = 0;
+            if (!felder(rest, w, 4)) return false;
+        }
         Leck neu;
-        if ((w[0] | w[1] | w[2] | w[3]) && !neu.starte(w[0], w[1], w[2], w[3])) return false;
+        if ((w[0] | w[1] | w[2] | w[3] | w[4] | w[5]) && !neu.starte(w[0], w[1], w[2], w[3], w[4], w[5])) return false;
         leckFrei();
         leck = neu;
         Serial.println("LECK,ok");

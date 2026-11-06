@@ -389,13 +389,13 @@ class KoerperTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as ort:
             ziel = Path(ort, "reize.csv")
             koerper.aufnehmen(self.port(antworten, gesendet), "erbe", self.G, 1000, len(roh), ziel,
-                              blick=5, leck=(4096, 12288, 3, 60), bremse=(10, 10, 300, 5, 60))
+                              blick=5, leck=(4096, 12288, 3, 60, 32768, 4278255360), bremse=(10, 10, 300, 5, 60))
             reihe = [gesendet.index(b) for b in (b"GRENZEN 500 600 65536 16384 20000 200000\n", b"BLICK 5\n",
-                                                b"LECK 4096 12288 3 60\n", b"BREMSE 10 10 300 5 60\n",
+                                                b"LECK 4096 12288 3 60 32768 4278255360\n", b"BREMSE 10 10 300 5 60\n",
                                                 b"KOERPER 1000\n")]
             self.assertEqual(reihe, sorted(reihe))
             meta, werte = koerper.pruefen(ziel)
-            self.assertEqual((meta["blick"], meta["leck"], meta["bremse"]), (5, [4096, 12288, 3, 60], [10, 10, 300, 5, 60]))
+            self.assertEqual((meta["blick"], meta["leck"], meta["bremse"]), (5, [4096, 12288, 3, 60, 32768, 4278255360], [10, 10, 300, 5, 60]))
             bericht = koerper.bericht(meta, werte)
             for teil in ("Blick 5 Takte", "Mit Leck (8 Takte): Temperatur", "Speicher ab 16.000 Byte",
                          "Mit Bremse (8 Takte)", "größte 250.000 µs", "In Ruhe (8 Takte)"):
@@ -405,7 +405,7 @@ class KoerperTests(unittest.TestCase):
             ziel.with_suffix(".json").write_text(json.dumps(dict(daten, blick=1)))
             with self.assertRaises(ValueError):
                 koerper.pruefen(ziel)
-            for falsch in (dict(blick=0), dict(blick=601), dict(leck=(1, 2, 3)), dict(bremse=(1, 2, 3, 4, -5))):
+            for falsch in (dict(blick=0), dict(blick=601), dict(leck=(1, 2, 3)), dict(leck=(1, 2, 3, 4, 5)), dict(bremse=(1, 2, 3, 4, -5))):
                 with self.subTest(falsch=falsch):
                     with self.assertRaises(ValueError):
                         koerper.aufnehmen(self.port([], []), "erbe", self.G, 1000, 1, Path(ort, "x.csv"), **falsch)
@@ -430,6 +430,18 @@ class KoerperTests(unittest.TestCase):
             ziel.with_suffix(".json").unlink()
             with self.assertRaises(ValueError):
                 koerper.aufnehmen(self.port(antworten, []), "erbe", self.G, 1000, 10, ziel)
+
+    def test_aufnahme_belegt_den_port_allein(self):
+        # Am echten Port lässt TIOCEXCL jedes weitere Öffnen scheitern, ein Pseudoterminal unter macOS
+        # kennt das nicht. Hier wird deshalb nur geprüft, dass der Rekorder darum bittet.
+        import termios
+
+        class Port:
+            def fileno(self):
+                return 7
+        with patch("fcntl.ioctl") as ioctl:
+            koerper.exklusiv(Port())
+        ioctl.assert_called_once_with(7, termios.TIOCEXCL)
 
     def test_aeltere_aufnahmen_bleiben_lesbar(self):
         with tempfile.TemporaryDirectory() as ort:
@@ -513,6 +525,23 @@ class VokabularTests(unittest.TestCase):
         self.assertEqual((immer["warnanteil"], immer["trefferquote"], immer["grundrate"]), (1.0, 2 / 7, 2 / 7))
         b = vokabular.bewerte(woerter, [False, False, True, False, False, True, False, False], 2)
         self.assertEqual((b["warnanteil"], b["trefferquote"]), (2 / 7, 0.5))
+
+    def test_gedaechtnis_je_signal_sieht_verdeckte_vorzeichen(self):
+        # Der Speicher wird knapp, während der Chip heiß ist. Das Wort des Takts ist dann TEMP_KRITISCH,
+        # die feste Regel sieht das Vorzeichen nie, ein eigenes Gedächtnis für den Speicher schon.
+        g = koerper.ERKUNDUNG
+        roh = ([(400, 300000, 50)] * 15 + [(610, 60000, 50)] * 3 + [(610, 15000, 50)] * 2) * 4
+        woerter = [vokabular.koerperwort(t, h, l, g) for t, h, l in roh]
+        stufen = [vokabular.stufen_je_signal(t, h, l, g) for t, h, l in roh]
+        self.assertEqual(set(woerter), {"OK", "TEMP_KRITISCH"})
+        liste = {name: (warn, je) for name, warn, je in vokabular.verfahren(woerter, [t for t, _, _ in roh], 5, 20, stufen)}
+        fest = vokabular.bewerte_je_signal(woerter, stufen, liste["Feste Regel"][0], 5)
+        warn, je = liste["Je Signal, 5 Takte"]
+        eigen = vokabular.bewerte_je_signal(woerter, stufen, warn, 5, je_signal=je)
+        self.assertEqual((fest["speicher"]["phasen"], fest["speicher"]["vorgewarnt"], fest["speicher"]["warnanteil"]),
+                         (4, 0, 0.0))
+        self.assertEqual((eigen["speicher"]["vorgewarnt"], eigen["speicher"]["warnanteil"],
+                          eigen["speicher"]["trefferquote"]), (4, 1.0, 1.0))
 
     def test_stufen_je_signal_passen_zum_koerperwort(self):
         # Das Körperwort ist die schwerste Stufe, bei gleicher Schwere Temperatur vor Speicher vor Schleife.
@@ -648,6 +677,16 @@ int main() {
     Bremse aus;
     Leck still;
     std::printf("%u %d\n", static_cast<unsigned>(aus.takt()), static_cast<int>(still.takt()));
+    Leck m;  // Muster 2: nur Durchgang 1 hält am flachen Boden, jeder Durchgang ist sofort am Boden.
+    std::printf("%d", m.starte(4096, 8192, 1, 1, 16384, 2));
+    for (int i = 0; i < 9; ++i) {
+        const Leck::Aktion a = m.takt();
+        if (a == Leck::BELEGEN) m.voll();
+        std::printf(" %d:%u", static_cast<int>(a), static_cast<unsigned>(m.boden / 1024));
+    }
+    Leck z;
+    std::printf("\n%d%d%d\n", z.starte(4096, 8192, 1, 1, 8191, 1), z.starte(4096, 8192, 1, 1, 8192, 1),
+                z.starte(4096, 8192, 1, 1, 0, 0xFFFFFFFFu));
 }
 ''')
         exe = Path(self.tmp.name, "reize")
@@ -661,6 +700,10 @@ int main() {
         self.assertEqual(zeilen[2], "0000011 000001")
         # Ohne Start tut keiner etwas.
         self.assertEqual(zeilen[3], "0 0")
+        # Muster: Durchgang 0 bis 8 KiB, Durchgang 1 nur bis 16 KiB, danach wieder tief.
+        self.assertEqual(zeilen[4], "1 1:8 2:8 1:16 2:16 1:8 2:8 1:8 2:8 1:8")
+        # Ein flacher Boden unter dem tiefen ist ungültig, flach 0 heißt immer tief.
+        self.assertEqual(zeilen[5], "011")
 
     def test_sketch_behaelt_zustand_bei_fehlerhaften_zeilen(self):
         folge = b"1,OK\r\n1,SCHWACH\n4294967296,OK\n2,OK\x00x\n" + b"X"*80 + b"\n5,AUSFALL\n"
