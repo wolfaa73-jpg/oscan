@@ -1,0 +1,8 @@
+{
+  "freeze": "278ebad39ab3850ef8c7b4349e4a6e30b8a4b27d",
+  "control_sha256": "772a40f65b73e57da4634e0116476686b9bd1ed3b021a10c17e80e4efd198381",
+  "b_complete_unique_rows": 9600,
+  "c_rows": 252,
+  "source_hashes_match": true,
+  "raw_counts_and_rational_means_verified": true
+}
