@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "status": "vollstaendig",
+  "satz": "entwicklung",
+  "anzahl": 1000,
+  "familien": [
+    "bloecke",
+    "zufallsmaske",
+    "seltene_ausnahme",
+    "ueberlagerung"
+  ],
+  "einstellungen": {
+    "takte": 960,
+    "horizont": 30,
+    "waerme_p": 0.38,
+    "ausnahme_p": 0.05,
+    "schwelle": 0.6
+  },
+  "quellhashes": {
+    "signallabor.py": "644622fa56fd0cedbbc0b3977cd773a66f20556573c3418900f5c36ad0d9ac57",
+    "vokabular.py": "f0543a0e8586ef7be9261eeb371a433f6af6160223bcf983630c8ec09160b868",
+    "kern.py": "5c285af1cf53b68ad7536d9640213362a10db1ce07ba6129481e433e58cf07cd",
+    "SIGNAL-LABOR.md": "b67fb3aff3b0edca194faf9e33e0a83a7fceceb80997867ca7403d26d52bf51d"
+  },
+  "referenz": false,
+  "python": [
+    3,
+    9,
+    6
+  ],
+  "seedverfahren": "SHA256([version,satz,familie,seed,signal]), seed=0..anzahl-1",
+  "spuren": 4000,
+  "ergebnisse": {
+    "einzel.csv": "f1e7f225dd1433ccbcd37d80118c650f9c8a765e341aa83898d52b13dad1163e",
+    "summen.csv": "5ae8a6300f681b48228ae9626cde6411f5dd713ac745a952bd58d9e3976d9c65"
+  }
+}
