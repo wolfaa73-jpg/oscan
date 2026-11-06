@@ -112,14 +112,14 @@ def ganze_einheiten(werte, stufen, horizont):
             for art in ARTEN}
 
 
-def zaehlfunktion(woerter, warn, auswertbar, horizont):
-    """Feste Originalfolge einmal beschriften; Grenzen ändern keine Zielbezüge."""
+def zaehlfunktion(woerter, warn, auswertbar, horizont, vollstaendig=True):
+    """Feste Originalfolge beschriften; nur historisch auch verkürzte Vorfenster."""
     if len(woerter) != len(warn) or len(warn) != len(auswertbar):
         raise ValueError('Ungültige Bewertungsfolge.')
     ziel = binnen_vor([kritisch(w) for w in woerter], horizont)
-    beginne = {a for a, _ in phasen(woerter, 10) if a >= horizont}
+    beginne = {a for a, _ in phasen(woerter, 10) if not vollstaendig or a >= horizont}
     gewarnt = {a for a in beginne if any(warn[t] and not kritisch(woerter[t])
-                                       for t in range(a-horizont, a))}
+                                       for t in range(max(0, a-horizont), a))}
     prefix = {k: [0] for k in ZAHLEN}
     for t in range(len(warn)):
         values = (1, bool(auswertbar[t]), bool(auswertbar[t] and warn[t]),
@@ -134,8 +134,8 @@ def zaehlfunktion(woerter, warn, auswertbar, horizont):
     return count
 
 
-def zaehle(woerter, warn, auswertbar, horizont, von, bis):
-    return zaehlfunktion(woerter, warn, auswertbar, horizont)(von, bis)
+def zaehle(woerter, warn, auswertbar, horizont, von, bis, vollstaendig=True):
+    return zaehlfunktion(woerter, warn, auswertbar, horizont, vollstaendig)(von, bis)
 
 
 def vergleichsverfahren(stufen, horizont, geraet=None):
@@ -168,7 +168,7 @@ def auswerten(werte, stufen, horizont, geraet=None, wiederholungen=WIEDERHOLUNGE
     for signal in woerter:
         for name, (warn, je) in modelle.items():
             z = zaehle(woerter[signal], warn if signal == 'gesamt' else je[signal], masks[signal],
-                       horizont, 0, len(werte))
+                       horizont, 0, len(werte), vollstaendig=False)
             ganz.append(dict(signal=signal, verfahren=name, **z, **{m: quotient(z, m) for m in MASSE}))
     for art, bounds in grenzen.items():
         for nummer, (a, b) in enumerate(bounds, 1):

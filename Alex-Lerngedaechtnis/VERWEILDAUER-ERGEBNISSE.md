@@ -84,3 +84,14 @@ python3 -B einheitenbootstrap.py messungen/aufnahme-30min.csv --profil 30min --a
 Der zweite Dateiname ist ein neutraler Platzhalter, kein behaupteter vorhandener Mitschnitt. Die Quelle wird nicht verändert. Alte Ergebnisordner werden nicht überschrieben. Die Verarbeitung setzt koerper.pruefen voraus, weist Fortsetzungsketten zurück und liest keine als 24h benannte Aufnahme. Ein fehlendes oder undefiniertes Intervall bleibt sichtbar; es wird nicht durch null ersetzt.
 
 Geschützte Quellen und Firmware sind unverändert. Alex kann den Prototyp und das Bootstrapwerkzeug getrennt beurteilen; echte Bootstrapresultate bleiben bis zum Eingang der freigegebenen Daten offen.
+
+## Ergänzende unabhängige Randprüfung
+
+Ein zusätzlicher Review fand eine Abweichung allein in den ergänzenden historischen
+Phasenzählern: Frühe Phasen vor H fehlten dort, obwohl die historische Referenz
+sie mit verkürztem Vorfenster zählt. Die historische Ausgabe folgt jetzt dieser
+Referenz; die Bootstrapzählung verlangt weiterhin vollständige Vorfenster. Der
+Handfall Phase 5 / Warnung 4 / H=30 ergibt historisch 1/1, im Bootstrap 0/0.
+Alle 14 Bootstraptests bestehen. Die drei Taktquoten und die Bootstrapintervalle
+ändern sich durch diese Korrektur nicht. Der eingefrorene Verweildauer-Prototyp,
+sein Vergleichslabor und sämtliche Entwicklungs-/Kontrollzahlen blieben unverändert.

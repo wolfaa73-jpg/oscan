@@ -23,7 +23,12 @@ Warnungen werden einmal in chronologischer Reihenfolge über die vollständige
 Aufnahme berechnet. Die historische Punktwertung zählt wie vokabular.bewerte
 alle nichtkritischen Takte beziehungsweise hohe Takte des eigenen Signals.
 Sie kennzeichnet die unvollständige Zukunft am Aufnahmeende ausdrücklich.
+Auch ihre Phasenzähler folgen der historischen Wertung: Phasen mit beobachtetem
+Beginn vor H zählen mit, und ihr Vorwarnfenster beginnt frühestens bei Takt 0.
 Eine zweite, maßgebliche Bootstrapwertung schließt die letzten H Takte aus.
+Ihre Phasenzähler verlangen weiterhin ein vollständiges H-Takt-Vorfenster;
+Phasen mit Beginn vor H zählen dort nicht. Die Taktkennzahlen bleiben von dieser
+Unterscheidung der Phasenzähler unberührt.
 Kein synthetisches Zusammenkleben wiedergezogener Rohdaten, kein erneutes Lernen
 an künstlichen Übergängen. Intervalle sind damit bedingt auf die beobachtete
 Lerngeschichte und schätzen nicht die Unsicherheit einer neu trainierten Policy.

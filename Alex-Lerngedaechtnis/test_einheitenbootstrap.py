@@ -115,6 +115,27 @@ class EinheitenBootstrapTests(unittest.TestCase):
         r = b.zaehle(woerter,[False,True,True,False,False],[True,True,True,False,True],2,1,3)
         self.assertEqual((r['warntakte'], r['treffertakte']), (2,2))
 
+    def test_fruehe_phase_nur_historisch_mit_verkuerztem_vorfenster(self):
+        woerter = ['OK'] * 80
+        woerter[4:6] = ['SCHWACH', 'AUSFALL']
+        warn = [t == 4 for t in range(80)]
+        auswertbar = [w != 'AUSFALL' for w in woerter]
+        historisch = b.zaehle(woerter, warn, auswertbar, 30, 0, 80, vollstaendig=False)
+        voll = b.zaehle(woerter, warn, auswertbar, 30, 0, 80)
+        self.assertEqual((historisch['phasen'], historisch['vorgewarnt']), (1, 1))
+        self.assertEqual((voll['phasen'], voll['vorgewarnt']), (0, 0))
+        for mass in b.MASSE:
+            self.assertEqual(b.quotient(historisch, mass), b.quotient(voll, mass))
+        werte = [dict(takt=t+1, reiz=koerper.LECK if t in (1,40,70) else 0) for t in range(80)]
+        stufen = [dict(temperatur='TEMP_HOCH' if t == 4 else 'TEMP_KRITISCH' if t == 5 else 'OK',
+                       speicher='OK', schleife='OK') for t in range(80)]
+        ganz, punkte, _, _ = b.auswerten(werte, stufen, 30, wiederholungen=10)
+        historisch = next(r for r in ganz if r['signal'] == 'gesamt' and r['verfahren'] == 'Feste Regel')
+        voll = next(r for r in punkte if r['art'] == 'leck' and r['signal'] == 'gesamt'
+                    and r['verfahren'] == 'Feste Regel')
+        self.assertEqual((historisch['phasen'], historisch['vorgewarnt']), (1, 1))
+        self.assertEqual((voll['phasen'], voll['vorgewarnt']), (0, 0))
+
     def test_24h_wird_vor_lesen_oder_hashen_abgewiesen(self):
         with patch.object(Path,'read_bytes',side_effect=AssertionError('darf nicht lesen')):
             with self.assertRaises(ValueError):
