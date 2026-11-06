@@ -1,11 +1,16 @@
 # OSCan: 24 mögliche Richtungen und ihre Gegenproben
 
-6. November 2026 · Ideen für Alex und Claude · keine Umsetzung
+6. November 2026 · Fassung 0.2 · Ideen und Prüfentwürfe für Alex und Claude
 
 Antwort auf den [Ideenauftrag](IDEEN-AUFTRAG.md), gelesen am bereinigten
 Stand `6b5af19975b8c6c9fd0fc27c216887c28bcc94a2`. Diese Sammlung schlägt
 Hypothesen vor. Die Versuche sind **nicht ausgeführt**, die Wirkungen nicht
 nachgewiesen. Die 24-Stunden-Prüfaufnahme vom 6. November bleibt unangetastet.
+
+Lesepfade: [24 Ideen](#ideen) · [Gemeinsame Bausteine](#bausteine) ·
+[Plan A: Handlungsfolgen](#plan-a) · [Plan B: Wortspaltung](#plan-b) ·
+[Plan C: Verdichtung](#plan-c) · [Durchführung und Prüfung](#pruefvertrag) ·
+[Empfohlene Reihenfolge](#reihenfolge).
 
 Mein interessantestes Zielbild: **OSCan ist ein System, das aus Erfahrungen
 kleine, widerrufbare Erwartungen bildet und damit entscheidet, was es behalten,
@@ -36,6 +41,8 @@ einschließlich Metadaten, Kommunikation und abgelehnter Aufgaben. Ein einzelner
 Widerspruch kann eine zugesagte Eigenschaft widerlegen; ein bestandener Spielzeugtest
 belegt noch keinen Alltagsnutzen. Die bestehenden Kontrollberichte sind keine
 unberührte Bestätigung für neue, daraus abgeleitete Ideen.
+
+<a id="ideen"></a>
 
 ## 1. Das Gerät merkt, dass ihm ein Wort fehlt — offen
 
@@ -438,43 +445,718 @@ Beobachtungseffekt weg erklärt; erkannte Ausfälle und Fristverletzungen zähle
 **Falls es trägt:** „Körperwahrnehmung“ würde die eigene Tätigkeit einschließen.
 Ein späterer Gerätetest müsste diesen Aufwand tatsächlich messen.
 
-## Was ich zuerst prüfen würde — höchstens drei Versuche
 
-**1. Verhinderte Ausfälle, Idee 4.** Zuerst klären, was eine richtige Entscheidung
-ist, sobald sie Folgen hat. Ein kleines Tabellenmodell mit wirksamer, wirkungsloser
-und unnötiger Entlastung reicht als erste Gegenprobe; es kann einen grundlegenden
-Lernfehler sichtbar machen, bevor wir weitere Warnschwellen verbessern.
-Prüfgröße: tatsächlicher Aufgabenverlust plus Aufwand der Aktion, nicht bloß
-die nachträgliche Trefferquote der Warnung. Die verborgenen Alternativausgänge
-bleiben beim Prüfer; bei identischen beobachtbaren Verläufen ist eine unbestimmte
-Wirkung die richtige Antwort. Das wäre eine methodische Voraussetzung für spätere echte Aktionen.
+<a id="bausteine"></a>
 
-**2. Fehlende Wörter, Idee 1.** Das ist der größte unmittelbare Hebel zwischen
-dem heutigen kleinen Zustandsraum und Alex’ wachsender interner Sprache.
-Zuerst nur einen automatisch vorgeschlagenen Split zulassen und mit einer
-einfachen festen Kontexttabelle vergleichen. Drei neue Miniwelten vorsehen:
-brauchbares Merkmal, bedeutungsloses Merkmal, späterer Bedeutungswechsel.
-Ein Split zählt nur, wenn er auf neuen Folgen einen vorher festgelegten
-Entscheidungsverlust senkt und sein zusätzlicher Speicher im Budget bleibt.
-Ohne diesen Gewinn bleibt die feste Tabelle die bessere Lösung.
+## Ausarbeitung: Was die Ideen zu einem Betriebssystem verbinden könnte
 
-**3. Verdichten im Schlaf, Idee 3.** Das prüft am direktesten, ob verblassendes
-Gedächtnis mehr sein kann als eine andere Alterungsformel. Als Start genügen
-wenige von Hand konstruierte Episoden, eine vorgeschlagene Regel und geschützte
-Gegenbeispiele; noch kein lernender Compiler. Erst prüfen, ob diese Darstellung
-bei festem Bytebudget relevante Antworten besser erhält als Zähler und Ringpuffer.
-Scheitert diese handgebaute Kurzform, sollte genau diese Darstellung zunächst
-nicht automatisiert werden; andere Verdichtungsformen bleiben dadurch offen.
+**Arbeitsfassung der Entwürfe: 0.2.** Die folgenden Abschnitte vertiefen die
+24 Ideen zu Bausteinen, Verträgen und drei konkreten Prüfplänen. Zahlen in diesen
+Plänen sind vorgeschlagene Designkonstanten, keine Messergebnisse und keine
+empfohlenen Geräteeinstellungen. Es wurde dafür kein Experiment ausgeführt.
 
-Vor einem späteren Lauf jeweils schriftlich einfrieren: **beobachtbare Eingaben,
-Handlung und Ziel, Vergleichsregeln, Speicher-/Rechenbudget, Fehlerkosten,
-Abbruch-/Ablehnungskriterium und getrennte Entwicklungs- und Prüffälle**.
-Konkrete Zahlen werden vor der Durchführung gewählt, nicht nach dem Ergebnis;
-dieses Ideenpapier ist noch kein fertiger Versuchsplan. Die reservierte
-24-Stunden-Aufnahme wird durch keinen dieser Vorschläge zur Spielwiese.
+### Drei unterschiedliche Fragen, die nicht zusammenfallen dürfen
 
-Für alle drei reicht zunächst ein vom laufenden System getrenntes Gedanken-
-beziehungsweise Labormodell. Ein eigener Kernel wäre dafür noch kein Erkenntnisgewinn.
-Wenn diese kleinen Verträge tragen, könnten daraus später Betriebssystemfunktionen
-entstehen: **Beobachtung annehmen, passende Erfahrung abrufen, Geltung prüfen,
-Aufmerksamkeit vergeben, Handlung erlauben und Wissen gezielt vergessen.**
+1. **Korrektheit:** Zählt ein weitergereichter Beleg doppelt? Wird ein abgelaufener
+   Auftrag ausgeführt? Liest eine Vorhersage die Zukunft? Ein einziger passender
+   Gegenfall genügt, um die betreffende Zusage zu widerlegen.
+2. **Nutzen innerhalb einer Modellwelt:** Spart die zusätzliche Struktur unter
+   gleichen Bedingungen Aufgabenverluste, Bytes oder Arbeit gegenüber den
+   einfachen Gegnern? Das verlangt einen vollständigen Vergleich, einschließlich
+   der Fälle, in denen OSCan nichts weiß oder nichts tut.
+3. **Übertragbarkeit:** Funktioniert das auch mit anderen Lasten, neuen Geräten
+   und realen Handlungen? Weder eine korrekt ausgeführte Miniwelt noch eine
+   nachträglich passende Kennzahl beantwortet diese Frage.
+
+Die ersten Prüfpläne lösen hauptsächlich Frage 1 und einen eng begrenzten Teil
+von Frage 2. Ein späterer Test am Gerät wäre ein eigener Auftrag mit eigenem Plan.
+
+### Ein Zusammenhang statt 24 gleichzeitig einzubauender Funktionen
+
+Das gemeinsame Zentrum wäre ein **Gedächtnis mit Herkunft, Geltung und begrenztem
+Budget**. Es nimmt Beobachtungen an, bildet daraus Erwartungen, schlägt eine
+Entscheidung vor und bekommt später die tatsächlich beobachtete Folge zurück.
+Ein fester Ausführungsteil prüft vorher, ob eine vorgeschlagene Handlung erlaubt,
+noch rechtzeitig und einem berechtigten Auftrag zugeordnet ist.
+
+```mermaid
+flowchart LR
+    B[Beobachtung] --> G[Gedächtnis]
+    G --> V[Entscheidungsvorschlag]
+    V --> P[Feste Ausführungsprüfung]
+    P -->|erlaubt und rechtzeitig| H[Handlung]
+    H --> R[Beobachtete Rückmeldung]
+    P -->|abgelehnt| R
+    R --> G
+```
+
+Die Rückmeldung bestätigt nur, was tatsächlich beobachtet wurde; sie liefert
+keinen unsichtbaren Verlauf ohne Handlung mit.
+
+| Gegenstand | Kleinster sinnvoller Inhalt im Entwurf | Was daraus allein nicht folgt |
+|---|---|---|
+| Beobachtung | Quelle, Sitzung, Ereignisnummer, beobachtbarer Kontext, Zeitpunkt/Unklarheit, Wert | Dass eine Ursache bekannt ist oder eine Wiederholung einen neuen Beleg liefert |
+| Erwartung | Zielgröße und Horizont, Kontextversion, verwendete Belege, Erbanteil, Unsicherheitsstatus | Eine Erlaubnis zu handeln |
+| Entscheidung | Beobachtungsstand, verfügbare Alternativen, Kostenannahme, gewählte Alternative | Dass der Auftrag angekommen oder ausgeführt ist |
+| Ausführungsauftrag | Auftragsnummer, Ziel/Fähigkeit, Berechtigungsgeneration, Gültigkeitsgrenze | Dass die Wirkung genau einmal eingetreten ist |
+| Rückmeldung | Auftragsbezug, beobachtete Ausführung und Folge, bekannte Lücken | Was ohne die Handlung passiert wäre |
+| Zusammenfassung | Gültigkeitsbereich, kompakte Regel, Gegenbeispiele, Herkunft/Abhängigkeit | Dass alle ursprünglichen Details noch rekonstruierbar sind |
+
+Das sind **Entwurfsfelder, keine neue API** und keine Behauptung über vorhandene
+Dateiformate. Welche Felder fest im Datensatz stehen und welche ein gemeinsamer
+Kontext trägt, wäre Teil der späteren Größenrechnung. Besonders Herkunftslisten
+und Abhängigkeiten dürfen nicht als unbegrenzter kostenloser Speicher auftreten.
+
+Ein rein gedachter Ablauf macht die Trennung sichtbar: In Schritt 10 meldet ein
+virtueller Arbeiter knappen Speicher. Das Gedächtnis schlägt eine Reserve für
+Auftrag 7 vor, gültig bis Schritt 12. In Schritt 11 wird der Auftrag angenommen,
+später wird seine Ausführung bestätigt; eine verspätete Kopie in Schritt 13
+bekommt dadurch keine neue Gültigkeit. Der ursprüngliche Arbeiter bleibt gesund.
+Festgehalten werden Beobachtung, Entscheidung, bestätigte Ausführung und gesundes
+Ergebnis; „Ausfall verhindert“ bleibt ohne Vergleichsbeleg unbestimmt. Eine bloße
+Annahmebestätigung darf nicht als bestätigte Ausführung gespeichert werden.
+
+### Vier Spannungen im Konzept ausdrücklich auflösen
+
+**Erbe ist nicht gleich Schutzregel.** „Beim ersten knappen Zustand vorsichtig
+sein“ kann eine Handlungsregel oder eine anfängliche Erwartung sein. Nur die
+Erwartung wird durch Erfahrung berichtigt. Harte Ausführungsgrenzen werden nicht
+durch häufige Gegenbeobachtungen weggealtert. Die alte Formulierung „Erbe als fester
+Kern“ und der neue verblassende Startwert beschreiben deshalb nicht denselben
+Aufgabenteil. Diese Trennung ist ein Vorschlag für das weitere Konzept, kein
+nachträglicher Umbau der vorhandenen Regeln.
+
+**Nutzung ist nicht Bestätigung.** Abruf darf einen Eintrag verfügbar halten;
+eine neue unabhängige Beobachtung darf seine Beleglage ändern. Die Zahl der
+Abrufe, die Stärke einer Annahme und das Recht auf eine Aktion werden nicht aus
+demselben Gewicht abgeleitet. Auch ein falsch gewordenes, häufig benötigtes
+Beispiel kann als ausdrücklich falsches Beispiel nützlich bleiben.
+
+**Verdichtung und Widerruf haben einen Preis.** Wer aus tausend Ereignissen nur
+eine Summe behält, kann später nicht ohne Zusatzinformation den Beitrag eines
+bestimmten Ereignisses exakt entfernen. Der Entwurf muss wählen: Beiträge samt
+Zuordnung behalten, die betroffene Zusammenfassung bei Widerruf vollständig
+entwerten oder einen ausdrücklich begrenzten Widerruf zusagen. Das Papier
+bevorzugt zunächst vollständiges Entwerten einer betroffenen Kurzfassung statt
+einer unbelegten Behauptung exakter Rückrechnung. Für ausdrücklich zu löschende
+Inhalte reicht eine Entwertung allein allerdings nicht: Auch Inhalte und
+erkennbar personenbezogene Ableitungen müssen aus erreichbaren Kopien entfernt werden.
+
+**Ungewissheit über Wissen ist nicht Unklarheit über Zuständigkeit.** Zwei
+Knoten dürfen unterschiedliche Erfahrungen haben. Daraus folgt kein Recht, zwei
+widersprechende Befehle an denselben Aktor zu schicken. Gedächtnisabgleich und
+Vergabe der Aktionsberechtigung brauchen getrennte Regeln; ein Zustand ohne
+gesicherte Berechtigung kann zulässigerweise weniger Arbeit ausführen.
+
+### Für jede Idee der kleinste Baustein und seine härteste Grenze
+
+Diese Tabelle vertieft alle 24 Ansätze. Sie ist kein Auftrag, 24 Module zu bauen.
+Die Nummern verweisen auf die obige Sammlung; die konkreten Gegenproben dort bleiben bestehen.
+
+| Idee | Kleinster weiter auszuarbeitender Baustein | Zusage, die zuerst brechen können muss |
+|---|---|---|
+| 1 · Wörter | Versionierte Zuordnung beobachtbarer Merkmale zu höchstens zwei neuen Zuständen | Ein neues Wort darf keine zukünftige Folge oder geheime Weltkennung enthalten. |
+| 2 · Gegenbeispiele | Begrenzte Liste kostspieliger Fehlentscheidungen mit beobachtetem Kontext | Ein einzelner Messfehler darf weder ewig dominieren noch durch häufige Wiederholung wahr werden. |
+| 3 · Schlaf | Regel, Ausnahmen, Geltungsbereich und deklarierter Informationsverlust | Die Regel darf weder konkrete Prüffragen kennen noch Herkunft außerhalb des Budgets verstecken. |
+| 4 · Eingriffe | Getrennte Beobachtungs-, Aktions- und Ergebnisbezüge | Derselbe sichtbare Verlauf darf nicht je nach verborgenem Alternativausgang anders bewertet werden. |
+| 5 · Kommunikation | Bestätigter Basiszustand plus Sitzung, Sequenz und Wörterbuchversion | Ein verlorenes Delta darf nicht still zu einem angeblich bestätigten Folgezustand führen. |
+| 6 · Kontinuität | Übergabe einer Rolle mit am Aktor prüfbarer Generation | Neustart oder verspätete Nachrichten dürfen alte Berechtigung nicht wiederbeleben. |
+| 7 · Geteiltes Erbe | Herkunftskennung und Geltungsbereich eines Belegs | Ein Umlauf ist keine zusätzliche Beobachtung; eine Kennung ist noch kein Echtheitsnachweis. |
+| 8 · Träume | Eigene Warteschlange markierter Hypothesen | Eine intern erzeugte Geschichte darf keine Beobachtungsgewichte erhöhen. |
+| 9 · Ruhende Kontexte | Zwei begrenzte Erfahrungsräume mit sichtbarem Auswahlmerkmal | Alte Regeln dürfen nicht allein wegen oberflächlicher Ähnlichkeit wieder als gültig gelten. |
+| 10 · Denkabschluss | Änderungsprüfung mit hartem Rechen- und Zeitlimit | Kurzzeitige Ruhe darf nicht mit bewiesener Richtigkeit verwechselt werden. |
+| 11 · Wissen ruft Rechner | Begrenzte Anfrage mit Zuständigkeitsvorschlag und Rückfallziel | Trefferlisten, Weiterleitungen und Zusammenführung dürfen keinen versteckten Dauerverkehr erzeugen. |
+| 12 · Lernen pausiert | Auswahl zwischen einfacher Regel und Lerner, plus Kontrollbudget | Alle Fehler während der Ruhephase zählen; sie dürfen nicht wegen fehlender Messung verschwinden. |
+| 13 · Fragen planen | Beobachtungsauftrag mit geschätztem Entscheidungsnutzen und Preis | Überraschung allein genügt nicht; eine nicht gemessene Lage bleibt unbekannt. |
+| 14 · Nichtwissen | Ausdrücklicher Status mit Grund und definierter Rückfallhandlung | Enthaltung, Rückfrage und Warten bleiben in Aufgabe und Kosten enthalten. |
+| 15 · Uhren | Nachrichtenalter, Zustandsdauer und Zahl beobachteter Ausgänge | Uhrneustart, unbekannte Pausen und doppelte Messpunkte dürfen nicht still gleichgesetzt werden. |
+| 16 · Abruf | Getrennte Belegstärke und Aufbewahrungspriorität | Bei identischem Belegsatz verändert Wiederlesen allein keine Belegstärke. |
+| 17 · Lehrer | Externer Vorschlag mit Prüfbedingung und Herkunft | Der Lehrer darf nicht zugleich die unabhängige Wahrheit seines eigenen Tests erzeugen. |
+| 18 · Erklärung | Unveränderter Entscheidungsstand mit überprüfbarer Gegenänderung | Eine nachträgliche Erzählung darf keine damals ungenutzte Information als Grund ausgeben. |
+| 19 · Budget | Getrennte Zähler für Rechenarbeit, Datenverkehr, Speicher und Wartezeit | Eine Einheit darf nicht ohne Messmodell in eine andere umbenannt werden. |
+| 20 · Rechtzeitig handeln | Aufgabenfrist, Reserveanlauf und beobachtete Fertigstellung | Eine richtige Vorhersage nach der letzten Handlungsmöglichkeit zählt nicht als gerettete Aufgabe. |
+| 21 · Gemeinsame Aktion | Zuordnung mehrerer Hinweise zu Aktionen und betroffenen Aufgaben | Ein zusammengefasster Hinweis darf keine eigenständige notwendige Maßnahme verdecken. |
+| 22 · Neue Hardware | Befristete Fähigkeitszusage nach einer prüfbaren Probeaufgabe | Selbstauskunft und Erfolg bei einer leichten Probe sind keine Garantie unter anderer Last. |
+| 23 · Widerruf | Inhaltsarme Rücknahme und Entwertung erreichbarer abhängiger Kurzfassungen | Ein alter Stand darf gelöschte Inhalte nicht ohne Prüfung wieder als gültig einführen. |
+| 24 · Eigenbelastung | Kennzeichnung eigener Mess- und Verwaltungsarbeit | Ein eigener Lastanteil darf echte zusätzliche Fehler nicht pauschal erklären. |
+
+### Was ein negativer Befund jeweils retten würde
+
+Falls Wortspaltung keine feste Kontexttabelle schlägt, bleibt die feste Tabelle
+ein brauchbarer Baustein. Falls Verdichtung nicht gewinnt, bleiben Zähler oder
+Ringpuffer. Falls gemeinsames Vorwissen nach Wiederabgleich keinen Verkehr spart,
+bleibt ein einfaches zustandsbasiertes Protokoll. Falls der Lerner keine bessere
+Handlung auswählt, bleibt die feste Regel. Das verwirft jeweils einen behaupteten
+Zusatznutzen, nicht automatisch das gesamte Vorhaben.
+
+Ein anderer Fall ist fehlende Information: Lassen zwei Ursachen bei jeder
+zulässigen Beobachtung dieselben Daten entstehen, hilft keine zusätzliche
+Gedächtnisstärke beim Unterscheiden. Dann braucht es eine neue zulässige
+Beobachtung, eine andere Aufgabe oder die ausdrückliche Antwort „unbestimmt“.
+Mehr Varianten desselben Lerners wären dafür kein Ersatz.
+
+## Drei konkrete Prüfpläne für getrennte Miniwelten
+
+Die folgenden Pläne führen keine neue Hardwareaktion ein. Jeder beginnt mit
+einem kleinen Test auf Korrektheit; erst danach wäre der beschriebene Modellvergleich
+sinnvoll. Die vorhandenen echten Aufnahmen, insbesondere die reservierten
+24 Stunden, gehören zu keinem dieser Pläne. Einheiten, Grenzwerte und Zählregeln
+gelten ausschließlich für die jeweilige Miniwelt.
+
+<a id="plan-a"></a>
+
+### Prüfplan A: Handlungsfolgen, ohne erfundene Rettungserfolge
+
+**Behauptung:** Ein Gedächtnis kann beobachtete Ergebnisse nach Handlung trennen,
+unbeobachtete Alternativen ausdrücklich offenlassen und daraus unter eng
+festgelegten Modellannahmen eine Handlung wählen. Korrekte Trennung und günstige
+Handlungsauswahl sind zwei verschiedene Abnahmen.
+
+**Welt und Sichtbarkeit.** Jede Runde ist eine abgeschlossene Aufgabe ohne
+Nachwirkung auf die nächste. Vorher sichtbar ist `X=0` (ruhig) oder `X=1`
+(Vorzeichen). `A=1` bedeutet entlasten, `A=0` nichts tun; anschließend ist
+`Y=1` Scheitern, `Y=0` Erledigung. Bei `X=0` ist jede Aufgabe erfolgreich.
+Bei `X=1` gelten vier getrennte, innerhalb des Laufs unveränderte Welten:
+
+| Welt, nur dem Prüfer bekannt | Ergebnis ohne Entlastung Y(0) | Ergebnis mit Entlastung Y(1) |
+|---|---:|---:|
+| Hilfreich | 1 | 0 |
+| Unnötig | 0 | 0 |
+| Wirkungslos | 1 | 1 |
+| Schädlich | 0 | 1 |
+
+Das Verfahren sieht erst `X`, legt seine Entscheidung fest und erhält danach
+nur `A` und `Y(A)`. Es bekommt weder Weltkennung noch Kartenkennung noch den
+anderen Ausgang. Es darf seine eigenen Runden zählen. Die vier Weltdefinitionen
+sind der Öffentlichkeit des Plans zugänglich, ihre Zuordnung zum aktuellen Lauf
+nicht dem Verfahren. Eine Methode darf nicht anhand einer verräterischen
+Ausführungsreihenfolge erkennen, welche Welt gerade geprüft wird.
+Jede Welt beginnt mit leerem Zustand; Wissen aus dem vorherigen Weltlauf wird
+nicht übernommen.
+
+**A1 · Identifizierbarkeit.** Je Welt zwölf Aufgaben mit `X=1,A=1` aufzeichnen.
+„Hilfreich“ und „unnötig“ ergeben dieselben sichtbaren Erfolge; „wirkungslos“
+und „schädlich“ dieselben sichtbaren Fehlschläge. Bei gleichem Anfangszustand
+und gleicher Zufallsquelle muss das Verfahren auf bytegleichen sichtbaren
+Geschichten gleich reagieren. Es darf daraus keine Beobachtung für `A=0`
+erfinden. Eine Vermutung aus Vorwissen bleibt als solche gekennzeichnet.
+Diese Probe verlangt ausdrücklich nicht, die ununterscheidbaren Welten zu erraten.
+
+**A2 · Lernen bei identischer Aufzeichnung.** Mit leerem Zustand neu beginnen.
+Eine festgelegte Kalibrierfolge wiederholt viermal die vier Kombinationen
+`(X,A)=(0,0),(0,1),(1,0),(1,1)`: insgesamt 16 Aufgaben und vier Beobachtungen
+je Kombination. Verglichen werden ein naives Zusammenwerfen beider Handlungen
+innerhalb desselben X,
+getrennte Zähler und ein unveränderter Anfangsstand; sie steuern in A2 nicht
+selbst die Handlung. Der naive Ansatz dient als absichtlich schwacher Gegner
+für einen bestimmten Denkfehler, nicht als Nachweis gegen alle Lernverfahren.
+
+Der konkrete Kandidat hält je `(X,A)` zwei Zähler: Anzahl `n` und Fehlschläge `s`.
+Nur ein neu eingegangener, tatsächlich beobachteter Ausgang aktualisiert seine
+Zelle. Eine Empfehlung auf Grundlage beider Arme entsteht erst, wenn beide
+Zellen für das aktuelle `X` mindestens vier Beobachtungen besitzen; dann gilt
+in dieser **rauschfreien, stationären Miniwelt** `p=s/n`. Vier Beobachtungen
+sind hier eine Prüfkonvention, keine allgemeine Schwelle für verlässliches Wissen.
+Bei fehlender Abdeckung bleibt die Wirkung unbestimmt; die Rückfallhandlung
+ist `A=X`. Wiederlesen verändert keine Zähler.
+
+**A3 · Eingefrorene Handlungsauswahl.** Nach A2 werden die Zähler eingefroren.
+Es folgen 32 neue Aufgaben mit abwechselnd `X=0,1`, also je 16. Der Kandidat
+wählt das kleinere `A+5p(X,A)`; bei Gleichstand `A=0`. Gegner sind nie entlasten,
+immer entlasten und bei Vorzeichen entlasten. Alle erhalten dieselben äußeren
+Aufgaben; der Prüfer berechnet für ihre jeweilige Handlung den passenden Ausgang.
+Keine Methode bekommt das Ergebnis einer fremden Handlung als eigenes Ergebnis.
+
+**Kosten und zwei Bilanzen.** Pro tatsächlicher Aufgabe gilt `C=A+5Y(A)`.
+Unnötige und erfolglose Entlastungen kosten ebenfalls; Unbestimmtheit entfernt
+keine Aufgabe. Erstens den reinen A3-Vergleich berichten, bei dem die Lerndaten
+als bereitgestellt gelten. Zweitens den vollständigen Ablauf mit 16+32 Aufgaben:
+Der Kandidat führt im Präfix seine Kalibrierhandlungen aus; die festen Gegner
+führen dort ebenfalls ihre eigenen Regeln auf denselben `X` aus. Die festen
+Gegner dürfen nicht um 16 Aufgaben verkürzt werden, und dem Kandidaten dürfen
+seine Erhebungskosten nicht erlassen werden. Denk- und Speicherkosten sind in
+dieser einfachen Kostenformel noch nicht enthalten und separat auszuweisen.
+
+Die folgenden **algebraischen Sollwerte** folgen unmittelbar aus den
+Weltdefinitionen. Sie prüfen die spätere Kostenrechnung; sie sind keine
+ausgeführten Versuchsresultate und keine Aussage über echte Geräte:
+
+| Bilanz über alle vier gleich gewichteten Welten | Kandidat | Nie entlasten | Immer entlasten | Bei Vorzeichen |
+|---|---:|---:|---:|---:|
+| Nur 32 Bewertungsaufgaben je Welt | 96 | 160 | 288 | 224 |
+| Vollständig: 16 Kalibrier-/Präfixaufgaben + 32 Bewertung je Welt | 208 | 240 | 432 | 336 |
+| Kurze Nutzung: 16 Präfix + nur 8 Bewertung je Welt | 136 | 120 | 216 | 168 |
+
+Der Kandidat bezahlt im Präfix über die vier Welten `28+8+48+28=112` Einheiten.
+Die kurze Nutzung zeigt bereits auf dem Papier: korrektes Lernen kann seine
+Beschaffungskosten nicht rechtzeitig verdienen. Bei 16 anschließenden
+Bewertungsaufgaben je Welt sind Kandidat und „nie entlasten“ in dieser
+gleich gewichteten Mischung bei 160 Einheiten gleichauf. Das verändert sich
+mit den Weltanteilen und Preisen; die Mischung ist eine Konvention dieses Plans.
+Bei 32 Bewertungsaufgaben sind es im vollständigen Vergleich 48 Aufgaben je
+Welt, insgesamt 192. A1 ist eine getrennte Prüferprobe und gehört nicht in
+diese Bilanz; ebenso wenig die folgende gesonderte Störfolge.
+
+**Störfall und Abnahme.** Zusätzlich separat die A3-Runden 8 und 17 zu
+handlungsunabhängigen Fehlschlägen machen: dort gilt für jede Methode
+`Y(0)=Y(1)=1`. Diese Kennzeichnung bleibt beim Prüfer. Für diesen Störfall
+gelten die obigen Sollkosten nicht; jede Methode erhält dieselben Störungen,
+unabhängig davon, wie oft sie vorher rechnete oder handelte.
+Harte Abnahme: kein verborgenes Eingabefeld, keine erfundene Gegenbeobachtung,
+gleiche äußere Aufgaben und vollständige Kosten. Das engere Nutzenausmaß wird
+je Welt berichtet, einschließlich Schäden; eine günstige Gesamtsumme darf
+keinen allgemeinen Vorteil vortäuschen. Auch nach A3 ist die Aussage „dieser
+einzelne echte Auftrag wurde gerettet“ außerhalb der Modellannahmen unbelegt.
+
+**Der spätere Prüfer muss absichtliche Defekte entdecken:** Erfolg nach Entlastung
+als Beobachtung `Y(0)=0` speichern; jeden Erfolg als Rettung gutschreiben; die
+Weltkennung heimlich übergeben; unbekannte Fälle aus dem Nenner entfernen;
+Störfälle abhängig vom Zufallsverbrauch einer Methode verteilen. Entdeckt er
+einen dieser Fehler nicht, wird zunächst der Prüfer berichtigt, nicht der Lerner gelobt.
+
+<a id="plan-b"></a>
+
+### Prüfplan B: Ein neues Wort muss zusätzliche Information nutzen
+
+**Behauptung:** Aus sichtbaren Merkmalen lässt sich einmalig eine nützliche
+Zweiteilung von `KNAPP` wählen, bei bedeutungslosen Merkmalen unterlassen und
+innerhalb derselben Wortgrenzen eine später veränderte Folge nachlernen.
+Das ist noch kein frei wachsendes Wörterbuch.
+
+**Welten.** Jede Folge hat 768 abgeschlossene Runden. Sichtbar sind vor der
+Vorhersage nur `KNAPP` und die fair gezogenen binären Merkmale `x,z`. Pro Folge
+wählt der Generator geheim eines davon als relevantes Merkmal `c`. Pro Runde
+zieht er unabhängig ein faires Bit `b` und ein Fehlerbit `e` mit Wahrscheinlichkeit
+0,1 für den Wert 1. Ein geheimer Wechselzeitpunkt wird gleichverteilt aus
+`448,512,576` gezogen. Aus denselben Grundziehungen werden drei Welten gebildet:
+
+| Welt | Ausgang y |
+|---|---|
+| S · Stabile Bedeutung | Wert des relevanten Merkmals XOR e |
+| N · Nullwelt | b; weder x noch z hilft |
+| R · Umgekehrte Folge | Bis einschließlich Wechsel wie S, danach das umgekehrte relevante Merkmal XOR e |
+
+`c` ist die Wahl zwischen `x` und `z`, keine dritte sichtbare Variable. Verboten
+sind Weltkennung, Seed, Wechselmarkierung und zukünftige Ausgänge als Eingabe.
+Vorhersage `a∈{0,1}` wird festgehalten, **danach** wird `y` sichtbar. `a`
+verändert `y` hier nicht; dafür ist Plan A zuständig. Die Ausgabe darf ohne
+eigene Weltkennung die Rundenzahl zur vorgesehenen Lernphase nutzen.
+
+**Verfahren.** Zunächst drei Modelle führen: ungeteilt, nach `x` geteilt,
+nach `z` geteilt. Jedes Blatt behält seine letzten 32 abgeschlossenen Ausgänge.
+Mit Fensterlänge `n` und Einsenzahl `s` ist die Prognose `(s+1)/(n+2)`;
+ab einschließlich 0,5 gilt `a=1`. Erst nach Ausgabe kommt die aktuelle Runde
+ins Fenster. In Runden 1–256 ist die tatsächlich gewertete Ausgabe des
+Kandidaten die des ungeteilten Modells; die anderen sind Nebenprognosen.
+
+Die Fehler der drei Modelle werden nur in Runden 129–256 für die Auswahl
+gezählt. Nach Eingang von `y256` wird eine Teilung nur übernommen, wenn sie
+mindestens 20 Fehler weniger machte als das ungeteilte Modell. Unter geeigneten
+Teilungen gewinnt die mit weniger Fehlern, bei Gleichstand `x`. Sonst bleibt
+das Wort ungeteilt. Suchmodelle, Auswahlfehler und vorübergehender Speicher
+werden in der Ressourcenbilanz nicht unterschlagen.
+
+Ab Runde 257 bleiben gewähltes Merkmal und Wortzuordnung unverändert;
+Wort 0 bedeutet weiterhin Merkmalswert 0 und Wort 1 Merkmalswert 1. Die
+Ergebnisfenster lernen nach derselben Regel weiter. **Eingefroren sind Auswahl-
+und Lernverfahren sowie die Wortdefinition, nicht neue Beobachtungen.** Der
+Wechsel invertiert die Vorhersagebeziehung, nicht die Bedeutung von `x=0`.
+Ein Wechsel des relevanten Merkmals von `x` zu `z` wäre eine andere Frage;
+dieser Kandidat kann seine Wortstruktur dafür noch nicht neu aufbauen.
+
+**Gegner und gleiche Information.** Immer 1; immer 0; letzter Ausgang
+(anfangs 1); ungeteiltes Fenster; feste Teilung nach `x`; feste Teilung nach
+`z`; feste Tabelle aller vier Kombinationen `(x,z)`. Die Fenstermodelle benutzen
+dieselbe Fensterlänge, Anfangsbehandlung und Schwelle. Beide festen Zweiteilungen
+werden einzeln berichtet; die hinterher passende ist kein vom Lerner ohne
+Zusatzinformation gewählter Gegner. Die Vierertabelle ist der wesentliche
+einfache Gegner gegen einen behaupteten praktischen Mehrwert.
+
+**Daten und Grenzen.** Vorgeschlagen sind 20 Entwicklungs- und 200 getrennte
+Prüfseeds im unten definierten Namensraum `OSCAN-IDEEN-v1|B`, jeweils alle drei
+Welten. Vor Erzeugung/Sichtung der Prüfung werden Generator einschließlich
+Zufallsalgorithmus, konkrete Seedlisten, Verfahren und Kriterien festgehalten.
+Entwicklungsdaten dürfen Fehler im Versuch aufdecken; Änderungen werden vor
+der Prüfung neu versioniert. Nach Sichtung einer Prüfung ist sie keine
+unabhängige Bestätigung für eine daran angepasste Fassung mehr.
+
+Gemeinsames Limit sind 512 Byte serialisierter Modellzustand, einschließlich
+Suchfenstern, Auswahlzählern und Wortdefinition. Ein Referenzfenster benötigt
+32 Einbyte-Ausgänge plus je ein Byte für Länge, Schreibposition und Einsenzahl,
+also 35 Byte. Die Suchphase hat fünf solche Fenster, die Vierertabelle vier:
+Schon daran sieht man, dass der Kandidat **keinen automatischen Vorteil beim
+Spitzenspeicher** hat. Gemeinsame Header, Rundenzähler und Auswahlzustand kommen
+hinzu. Speicher nach Auswahl, Spitze und Arbeit über alle 768 Runden werden
+getrennt ausgewiesen; dieser logische Zustand ist kein gemessener Python- oder ESP32-RAM.
+
+**Zählung und Entscheidungshürden.** Primärer Verlust ist `1[a≠y]`; jede
+Runde zählt einmal. Je Welt sowohl alle 768 Runden als auch das vorher festgelegte
+Bewertungsfenster 257–768 berichten, daneben Fehlalarme, verpasste Ausfälle,
+Teilungswahl und Ressourcen. Die folgenden vorgeschlagenen Hürden beziehen
+sich auf die 200 Prüffolgen und dürfen nicht nachträglich verschoben werden:
+
+- S: mindestens 180 Folgen wählen das relevante Merkmal; der Verlust im
+  Bewertungsfenster liegt mindestens 0,10 pro Runde unter dem ungeteilten Modell.
+- N: höchstens zehn Folgen werden geteilt. Die tatsächlichen Nullweltverluste
+  bleiben zusätzlich sichtbar; wenige Teilungen allein beweisen keinen Nutzen.
+- R: alle Wechselverluste bleiben in der Gesamtwertung. Die ersten 64 Runden
+  nach dem Wechsel zusätzlich getrennt berichten; im anschließenden Rest darf
+  der mittlere Verlust höchstens 0,02 pro Runde über der Vierertabelle liegen.
+
+Diese Zahlen sind Entscheidungshürden dieses Entwurfs, keine hergeleiteten
+Konfidenzgrenzen. Es wird kein nachträglich ausgewählter „bester Seed“ gezeigt.
+Für Verlustvergleiche wird zunächst je Folge der Unterschied zum Gegner durch
+die jeweilige Anzahl bewerteter Runden geteilt; danach werden die 200 Folgen
+gleich gewichtet. In R sind das Anpassungsfenster `τ+1…τ+64` und der Rest
+`τ+65…768`; unterschiedlich lange Restfenster geben einer Folge kein höheres Gewicht.
+Ein Mehrwert gegenüber der Vierertabelle wäre separat durch Verlust **und**
+Ressourcen zu belegen. Weniger laufender Zustand nach der Auswahl ist nicht
+gleich weniger benötigter Spitzenspeicher; geringere Fehlerrate allein ist
+kein Beleg für günstigeren Betrieb.
+
+**Absichtliche Defekte:** `y` vor der Vorhersage einlesen; `c` oder den Wechsel
+verraten; das Merkmal nach Runde 256 heimlich austauschen; Suchfenster kostenlos
+rechnen; Ergebnisfenster nach der Auswahl ebenfalls einfrieren. Die ersten vier
+müssen am Daten- oder Zustandsvertrag auffallen, auch bei guten Trefferwerten;
+der letzte muss als fehlendes Nachlernen erkennbar werden.
+
+<a id="plan-c"></a>
+
+### Prüfplan C: Verdichtung muss sagen, welche Fragen sie noch beantworten kann
+
+**Behauptung:** Eine kompakte Regel mit Ausnahmen kann unter einem festgelegten
+Speicherbudget bestimmte spätere Fragen besser beantworten als ein schlanker
+Ringpuffer oder Zähler. Der erste Kandidat ist bewusst ein handgebauter
+Regelkatalog, kein selbst entwickeltes Programm und kein lernender Compiler.
+Er prüft, ob diese Darstellung überhaupt einen Nutzen haben kann.
+
+**Aufzeichnungen.** Eine Folge enthält 256 Beobachtungen mit Ereignisnummer
+`i=1…256`, Kontext `x∈{0,1,2,3}`, Quelle `q∈{0,1}` und Ausgang `y∈{0,1}`.
+Die Ereignisnummer kennzeichnet Herkunft; die Zukunftsvorhersage darf sie nicht
+als verborgenes Zeitsignal nutzen. Drei Familien werden getrennt berichtet:
+
+- **Wiederholung:** `x=(i−1+u) mod 4`, `q=(floor((i−1)/64)+v) mod 2`,
+  gewöhnlich `y=x mod 2`; genau zwei Ereignisse haben den umgekehrten Ausgang.
+  `u∈{0,1,2,3}`, `v∈{0,1}` und die Ausnahmestellen werden vor einer Folge gewählt.
+- **Wechsel:** dieselben Kontext- und Quellenfolgen; bis zu einem verborgenen
+  Punkt aus `96,160,224` gilt `y=x mod 2`, danach die Umkehrung; keine zusätzlichen
+  Ausnahmen. Die Wechsel liegen absichtlich nicht an den Verdichtungsgrenzen.
+- **Unregelmäßigkeit:** `x`, `q` und `y` werden je Ereignis unabhängig und
+  gleichverteilt gezogen. Ein allgemeiner Kompressionsgewinn wird hier nicht vorausgesetzt.
+
+Für die Wiederholung liegt eine Ausnahme gleichverteilt in `1…64`, die andere
+in `129…256`. Drei Entwicklungsfolgen je Familie und vier andere Prüffolgen je
+Familie sind als kleine Erstprobe vorgeschlagen. Gleichverteilte Parameter,
+konkrete Seedlisten und Zufallsverfahren werden wie bei B vor der Prüfung
+festgehalten. Zwölf Prüffolgen sind ein Gegenversuch mit begrenzter Reichweite,
+kein belastbarer Nachweis einer allgemeinen Überlegenheit.
+
+**Budgets.** Jeweils getrennt mit 32, 64 und 128 Byte dauerhaftem, selbstenthaltenem
+Gedächtnisabbild prüfen. Alle veränderlichen Regeln, Ausnahmen, Zähler,
+Quellangaben, Gültigkeitsbereiche und Rücknahmen gehören hinein. Datenabhängige
+Tabellen im angeblich festen Programmcode oder ein externes Rohprotokoll sind
+verboten. Allgemeiner vorab festgelegter Lesecode ist zulässig; Umfang und
+Arbeitsaufwand werden separat berichtet.
+
+Alle Verfahren bekommen dieselbe blockweise Schnittstelle: altes Abbild plus
+genau 64 neue Beobachtungen hinein, neues Abbild heraus. Höchstens 512 Byte
+zusätzlicher logischer Arbeitsraum umfassen gemeinsam Eingabeblock, vorübergehend
+rekonstruierte Episoden, Arbeitszähler und Ausgabeaufbau. Zwischen Aufrufen
+existiert ausschließlich das höchstens B Byte große Abbild; der Prüfer bewahrt
+seinen vollständigen Verlauf getrennt und für das Verfahren unzugänglich auf.
+Abfragen dürfen nur das gültige Abbild lesen, unter demselben Arbeitsraumlimit.
+Das ist eine
+Speicherdisziplin für den Modellversuch, kein Nachweis einer bestimmten realen RAM-Belegung.
+
+**Kanonische Referenzformate.** Ein gemeinsamer Rahmen umfasst acht Byte:
+Formatversion 1, Methode 1, zuletzt gelesene Ereignisnummer 2, Anzahl gespeicherter
+Positionen 2, Anzahl Widerrufe 1, Flags 1. Positionen meint beim Ringpuffer
+Beobachtungen, bei Abschnittskodierung Abschnitte, bei Zählern die 16 Zellen.
+Eine Rohbeobachtung braucht vier Bits
+für `x,q,y`. Die Nummern eines zusammenhängenden Ringpuffers ergeben sich aus
+Endnummer, Anzahl und Position; sie werden dort nicht künstlich pro Datensatz aufgebläht.
+Im Vierbitwort stehen x in Bit 0–1, q in Bit 2 und y in Bit 3; bei zwei Einträgen
+pro Byte kommt der frühere ins niederwertige Halbbyte. Zweibyte-Felder sind
+vorzeichenlos und Little-Endian. Nicht benutzte Bits und Padding sind null.
+
+Der Regelkandidat bildet genau einen maximalen Abschnitt je belegtem Schnitt
+mit den festen Blöcken 1–64,65–128,129–192,193–256. Beim erhaltenen Ringpuffersuffix
+darf der erste Abschnitt kürzer sein; zusätzliche Unterteilungen werden nicht
+gesucht. Pro Abschnitt darf
+er genau folgende Muster kombinieren: Kontext konstant oder zyklisch mit einer
+von vier Anfangsphasen; Quelle konstant oder abwechselnd mit einer von zwei
+Anfangsphasen; Ausgang konstant 0, konstant 1, Kontextparität oder deren Umkehrung.
+Das ergibt `8×4×4=128` mögliche Regeln. Die Phase bezieht sich jeweils auf den
+ersten Eintrag des Abschnitts, nicht auf einen geheimen Weltzustand.
+
+Ein Regelabschnitt kostet neun Byte: Typ 1, Startnummer 2, Länge 2, Kontextmuster
+1, Quellenmuster 1, Ausgangsregel 1, Ausnahmezahl 1. Jede Abweichung erhält zwei
+Byte: relative Position und der tatsächliche vierbitige Ersatzwert, zusammen in
+zwei ganzen Bytes gespeichert. Ein Rohabschnitt kostet vier Byte Verwaltung
+(Typ 1, Startnummer 2, Länge 1) plus die gepackten Beobachtungen. Gewählt wird
+das kürzeste Format, bei Gleichstand Rohformat beziehungsweise die zuerst
+nummerierte Regel. Regelkennungen und Reihenfolge werden vorab veröffentlicht.
+Kontextmuster 0–3 sind Konstanten, 4–7 zyklische Phasen 0–3; Quellenmuster
+0/1 sind Konstanten, 2/3 alternierende Phasen 0/1; Ausgangsmuster 0/1 sind
+Konstanten, 2 Parität, 3 Umkehrung. Die Regelnummer lautet
+`16×Kontextmuster + 4×Quellenmuster + Ausgangsmuster`.
+Der Vergleich ist lexikografisch über Kontext-, Quellen- und Ausgangsmuster.
+Ausnahmen stehen nach relativer Position sortiert, Position 0 meint den ersten
+Eintrag; jede Position darf höchstens einmal vorkommen.
+Der Decoder bildet zuerst Kontext, Quelle und Ausgang vollständig aus der
+Regel. Jede Ausnahme ersetzt anschließend das ganze Vierbit-Ereignis;
+eine Abweichung bedeutet Unterschied in mindestens einem dieser drei Felder.
+
+Beim nächsten Verarbeitungspunkt darf nur der erhaltene alte Inhalt zusammen
+mit den 64 neuen Beobachtungen neu kodiert werden. Frühere verlorene Inhalte
+kommen nicht zurück. Zwei Varianten werden verglichen: kodierte Abschnitte,
+bei Platzmangel um die ältesten ganzen Abschnitte gekürzt; und ein gewöhnlicher
+Roh-Ringpuffer der jüngsten noch passenden Beobachtungen. Der Kandidat nimmt
+die Variante mit mehr erhaltenen Beobachtungen, bei Gleichstand die kleinere,
+bei erneutem Gleichstand den Ringpuffer. Damit wird auch der Fall definiert,
+dass ein unregelmäßiger Abschnitt nicht in 32 Byte passt. Das ist eine feste
+Auswahlregel anhand beobachteter Inhalte, keine Auswahl anhand späterer Prüffragen.
+
+**Gegner.** Der bitgepackte Ringpuffer ist ein eigener Gegner. Hinzu kommen
+16 Einbyte-Zähler für die Ausgänge je `(x,q)`, also zusammen mit dem Rahmen
+24 Byte; würde eine Zelle über 255 wachsen, werden vor ihrem Inkrement alle
+Zellen durch zwei geteilt und abgerundet. Eine weitere Zählervariante halbiert
+zusätzlich nach jeweils 64 Beobachtungen. „Immer unbekannt“ und eine konstante
+Zukunftsprognose 0 bilden weitere Gegner; historisch antworten beide unbekannt.
+Die bezahlte gemeinsame Widerrufsliste ist davon ausgenommen. Keine Methode darf anhand der
+Prüffamilie auf einen anderen nachträglich passenden Gegner umgestellt werden.
+
+**Vier getrennte Fragearten.** Nach Ereignis 64,128,192,256 wird der Zustand
+eingefroren. Die Abfragebatterie läuft auf einer wegwerfbaren Kopie in einem
+getrennten Aufruf; danach startet die nächste Beobachtungsphase wieder vom
+Zustand vor der Abfrage. Weder Antworten noch Anfragehistorie, Prozesszustand
+oder Cache werden übernommen: Schon die gezielt ausgewählten Fragen könnten
+Ausnahmestellen verraten. Für jede einzelne Antwort wird ebenfalls derselbe
+unveränderte Ausgangszustand verwendet. Die vier Fragearten sind:
+
+1. **Nächster Ausgang:** acht Abfragen, je eine für jedes `(x,q)`. Ringpuffer
+   und Regelkandidat verwenden die Mehrheit der noch gültigen erhaltenen
+   Beobachtungen dieser Kombination, Zähler die entsprechende Zelle. Bei
+   Gleichstand lautet die Prognose 0, ohne Beleg unbekannt. Das wirkliche
+   Ergebnis wird unabhängig vom abgefragten Gedächtnis nach der derzeitigen
+   Weltregel gebildet; in der unregelmäßigen Familie wird ein frisches Bit gezogen.
+   Die zwei einmaligen historischen Ausnahmen der Wiederholungsfamilie werden
+   dadurch nicht künstlich zu einer zukünftigen Regel.
+2. **Historischer Ausgang:** zwölf verschiedene Ereignisnummern aus dem
+   bisherigen Verlauf; vorhandene Ausnahmeereignisse beziehungsweise die zwei
+   Seiten eines bereits eingetretenen Wechsels (k und k+1) werden einbezogen,
+   der Rest gleichverteilt gezogen. Historische und Herkunftsfragen enthalten
+   nur die Ereignisnummer. Die Reihenfolge wird anschließend gemischt und
+   kennzeichnet keine Nummer als Ausnahme.
+3. **Herkunft:** für dieselben zwölf Nummern nach der damaligen Quelle fragen.
+   Richtiger Inhalt mit erfundener Quelle gilt nicht als richtiger Herkunftsnachweis.
+4. **Widerruf:** nach Ereignis 256 zwei zuvor gültige Ereignisse zurückziehen:
+   in der Wiederholung die frühe Ausnahme plus ein gewöhnliches Ereignis,
+   in den anderen Familien zwei verschiedene vorher ausgeloste Nummern.
+   Danach die acht Zukunftsfragen von Schritt 256 mit denselben Zielwerten
+   wiederholen. Die bisherigen zwölf historischen Nummern um beide Widerrufe
+   ergänzen, doppelte Nummern nur einmal; für diese 12 bis 14 Nummern jeweils
+   Ausgang und Quelle abfragen. Es gibt keine neue Widerrufsrunde. Diese gesamte
+   Batterie gehört ausschließlich zur vierten Frageart.
+
+Der Prüfer verwahrt die konkreten Abfragen bis nach Festlegung der Verfahren.
+Die Aufgabenarten sind vorher bekannt, die konkreten Antworten nicht.
+Bei korrekter Rekonstruktion darf ein Regelabschnitt einen historischen Beleg
+liefern; eine lediglich plausible Fortsetzung einer Regel darf das nicht.
+Ringpuffer und Regelkandidat liefern einen historischen Wert oder eine Quelle
+nur für eine erhaltene, nicht widerrufene Nummer, sonst `UNBEKANNT`. Reine
+Zähler können historische Nummern nicht zuordnen und antworten ebenfalls
+`UNBEKANNT`; eine erkannte Rücknahme liefert vorrangig `WIDERRUFEN`.
+
+**Widerruf mit Kosten.** Die beiden Nummern brauchen je zwei zusätzliche Byte
+im Abbild. Falls nötig, muss dadurch weiterer Inhalt weichen. Ringpuffer und
+rekonstruierbare Abschnitte dürfen widerrufene Ereignisse nicht mehr als gültige
+Belege ausgeben oder in Prognosen mitzählen. Zähler ohne Zuordnung von Nummer
+zu Beitrag müssen ihren betroffenen Gesamtbestand vorsichtshalber entwerten;
+sie dürfen nicht raten, welche Zelle zu berichtigen wäre. Ein Verfahren könnte
+stattdessen Zuordnungen speichern, müsste sie aber von Beginn an bezahlen.
+Hier wird **Belegberechtigung** zurückgezogen; physische Löschung aller Inhalte
+und das Wiederauftauchen aus Backups sind andere Aufgaben aus Idee 23.
+Für eine gezielte Frage nach einer zurückgezogenen Nummer ist der Status
+`WIDERRUFEN` die richtige Antwort; ein konkreter weiterhin gültig behaupteter
+Beleg wäre falsch. Die Rücknahme verrät dem Verfahren nicht nachträglich den
+ursprünglichen Kontext, die Quelle oder den Ausgang.
+
+**Bewertung.** Richtige Antwort kostet 0, falsche 4, ausdrücklich unbekannt 1.
+Fehler und Unbekannt-Anteil je Familie, Budget und Frageart getrennt berichten.
+Zuerst innerhalb jeder Frageart und jedes Prüfzeitpunkts die Frageverluste mitteln,
+dann die vier Zeitpunkte gleich gewichten. Die Widerrufswertung benutzt nur
+die Batterie nach Schritt 256: zuerst ihre Zukunfts-, Historien- und Herkunftsfragen
+jeweils mitteln, dann diese drei Mittel gleich gewichten. Die so erhaltenen
+vier Frageartwerte werden gleich gewichtet, danach die Folgen innerhalb einer
+Familie. Für den Gesamtwert eines Budgets zählen die drei Familien gleich;
+verschiedene Budgets werden nicht zu einem Siegerwert vermischt. Die wiederholte
+Batterie ist kein unabhängiger Datensatz. Ein frei erfundener konkreter
+Beleg oder ein weiter als gültig zitierter Widerruf ist zusätzlich ein harter
+Vertragsbruch, den ein guter Mittelwert nicht ausgleichen darf.
+
+Die Funktionsabnahme verlangt korrekte Rekonstruktion oder ehrliches Nichtwissen;
+eine vergessene Ausnahme darf `UNBEKANNT` ergeben und kostet dann 1. Bei 32 Byte
+passen nicht einmal drei Regelabschnitte ohne Ausnahmen ins Abbild, denn
+`8+3×9=35`; vollständiger Erhalt aller frühen Ausnahmen wäre dort keine
+haltbare Zusage. Zusätzlich separat geprüft wird: In der Wiederholungsfamilie
+müssen bei 64 und 128 Byte am Punkt 256 beide Ausnahmen korrekt rekonstruiert
+werden können; vier passende Abschnitte mit zwei Ausnahmen kosten `8+4×9+4=48`
+Byte. Nach Rücknahme wird für den zurückgezogenen Beleg der Status statt des
+alten gültigen Inhalts verlangt.
+
+Ein Nutzen im festgelegten Aufgabengemisch gilt nur bei strikt kleinerem
+Gesamtverlust als Ringpuffer **und** beide Zählervarianten beim selben Budget,
+ohne harten Vertragsbruch; die beiden weiteren Gegner bleiben sichtbar.
+Ausnahmefragen und Widerrufe werden zusätzlich mit ihrem eigenen Verlust und
+Unbekannt-Anteil ausgewiesen. Auf unregelmäßigen Daten darf
+das Verfahren offen verlieren; dann ist eine allgemeine Überlegenheitsbehauptung
+verworfen. Code, Dekodierarbeit und Spitzenarbeitsraum bleiben zusätzliche
+Kosten, selbst wenn das dauerhaft gespeicherte Abbild kleiner wird.
+
+**Handprüfbare Layoutrechnung.** Zwölf Beobachtungen mit zyklischen Kontexten
+0,1,2,3, konstanter Quelle 0, normalerweise `y=x mod 2` und einer Ausnahme
+benötigen im Ringpuffer `8+ceil(12×4/8)=14` Byte. Mit einem passenden beschriebenen
+Regelmuster wären es `8+9+2=19` Byte: die Kurzform wäre länger. Dieses Beispiel
+illustriert ausschließlich das vereinbarte Format.
+
+Für 128 Beobachtungen im ersten Katalog werden **zwei** 64er-Abschnitte gebraucht:
+Ringpuffer `8+64=72` Byte, zwei passende Regelabschnitte und eine Ausnahme
+`8+2×9+2=28` Byte. Die Abschnittsgrenze gehört damit sichtbar zur Größenrechnung.
+Beides sind reine Layoutwerte;
+unregelmäßige Quellen, weitere Ausnahmen und Rücknahmen ändern die Bilanz.
+
+**Absichtliche Defekte:** Ausnahme beim Kodieren weglassen; Quelle vertauschen;
+neue Regel rückwirkend auf alte Ereignisse anwenden; Zusatzspeicher außerhalb
+des Abbilds verstecken; zurückgezogenen Beleg weiterhin über eine Kurzfassung
+zitieren. Historische Fragen, Herkunftsprüfung, Zustandsbilanz und Widerruf müssen
+diese jeweiligen Fehler erkennen. Eine gescheiterte Kodierung widerlegt diese
+Darstellung für den betreffenden Zweck, nicht jede denkbare Form des Verdichtens.
+
+<a id="pruefvertrag"></a>
+
+### Gemeinsamer Vertrag vor einer späteren Durchführung
+
+Die Vorschläge lassen sich zuerst in einem getrennten Labor implementieren;
+dieses Dokument ändert dafür noch keine Datei des Lernkerns. Folgende Details
+gehören zur Abnahme der späteren Durchführung:
+
+**Deterministische Ziehungen.** Für B und C kann die folgende konkrete
+Referenzregel ohne Abhängigkeit vom Zufallsverbrauch eines Verfahrens dienen.
+Eine benötigte gleichverteilte Ganzzahl in `0…n−1` wird aus einem mit SHA-256
+gebildeten Wert gewonnen. Seine Eingabe ist die UTF-8-Zeichenfolge
+`OSCAN-IDEEN-v1|Plan|Satz|Seed|Familie|Runde|Feld|Versuch` mit genau diesen
+Trennzeichen; `Plan` ist wörtlich `B` oder `C`, die übrigen symbolischen Felder
+werden durch ihre unten angegebenen Werte ersetzt. Nummern sind Dezimalzahlen
+ohne führende Nullen, `Versuch` beginnt
+bei 0. Der Digest wird als nichtnegative Ganzzahl in Big-Endian-Reihenfolge
+gelesen. Werte ab `floor(2^256/n)×n` werden verworfen und `Versuch` erhöht;
+sonst liefert der Rest modulo n die Ziehung. Das ist eine vorgeschlagene
+reproduzierbare Pseudozufallsquelle, kein Anspruch echter statistischer Unabhängigkeit.
+
+Für B sind die Sätze `entwicklung` mit Seeds 0…19 und `pruefung` mit Seeds
+0…199 getrennte Namensräume; Grundziehungen verwenden für alle drei Welten
+das Familienfeld `basis`. `Runde=0` liefert die Felder `merkmal` und `wechsel`,
+je Runde 1…768 folgen `x,z,b,e`; `e=1` genau dann, wenn die Zehnerziehung 0 ist.
+Merkmalindex 0 meint x, 1 meint z; Wechselindex 0/1/2 meint 448/512/576.
+Nur der Prüfer leitet daraus S/N/R ab.
+
+Für C sind es Seeds 0…2 beziehungsweise 0…3, je Familienfeld `wiederholung`,
+`wechsel`, `unregelmaessig`. Bei Runde 0 werden die Felder `u`, `v`,
+`ausnahme_frueh`, `ausnahme_spaet` und `wechsel` gezogen, mit den oben angegebenen
+Wertebereichen; pro Runde heißen
+die Felder `x,q,y`. Nicht benötigte Felder werden einfach ignoriert. Frische
+Vorhersageziele verwenden Feld `zukunft_x_q` mit eingesetzten Merkmalswerten
+(beispielsweise `zukunft_0_1`) und die jeweilige Prüfgrenze als
+Runde; nur in der unregelmäßigen Familie entscheidet eine neue Zweierziehung
+den Ausgang. Historische Fragen beginnen mit allen bereits verfügbaren
+vorgeschriebenen Ausnahme- beziehungsweise Wechselnummern; weitere eindeutige
+Nummern werden über `frage_0,frage_1,…` in `1…Prüfgrenze` gezogen, bis zwölf
+verschiedene Nummern vorliegen. Dieselbe Liste dient der Herkunftsfrage.
+Vor Übergabe wird die Liste nach unabhängig gezogenen 256-Bit-Schlüsseln des
+Felds `reihenfolge_i` mit eingesetzter Ereignisnummer sortiert, bei Gleichstand
+nach Nummer. So verrät die Frageposition nicht, ob eine Nummer wegen einer
+Ausnahme oder zufällig aufgenommen wurde.
+Die Bereichsabbildungen sind `u=draw(4)`, `v=draw(2)`,
+`ausnahme_frueh=1+draw(64)`, `ausnahme_spaet=129+draw(128)`;
+Wechselindex 0/1/2 bedeutet 96/160/224. In der unregelmäßigen Familie gelten
+`x=draw(4)`, `q=draw(2)`, `y=draw(2)`, jeweils mit ihrem eigenen Feldnamen.
+Die Pflichtnummern eines beobachteten Wechsels sind k und k+1, sofern beide
+bereits vorliegen. `draw(n)` meint hier immer die vollständig benannte Ziehung
+des betreffenden Feldes gemäß der gemeinsamen Vorschrift.
+Widerrufe verwenden `widerruf_0,widerruf_1,…` bei Runde 256, mit Ablehnung
+bereits ausgewählter oder als gewöhnlich unzulässiger Nummern. Diese Listen
+liegen beim Prüfer, nicht beim Gedächtnis.
+Bei Fragen und Widerrufen steigt der Feldindex nach jeder Ziehung, auch bei
+einer doppelten oder unzulässigen Nummer. Der innere Zähler `Versuch` bleibt
+ausschließlich für die Bereichsverwerfung eines SHA-Werts reserviert.
+
+**Faire Grenzen des Datensatzes.** Die Verfahren kennen Aufgabenart und
+zulässige Schnittstelle; sie erhalten keine Seed-/Familienkennung oder
+Prüferfelder. Entwicklungsdaten und Prüfdaten werden getrennt aufbewahrt.
+Eine öffentliche Generatorspezifikation macht eine Prüfung nicht automatisch
+blind: Der Prüflauf darf erst nach Festlegung und Versionierung aller Verfahren
+erzeugt oder angesehen werden. Ist er einmal angesehen, braucht eine daran
+angepasste Nachfolgefassung einen neuen, vorher festgelegten Namensraum.
+
+**Prüfer gegen absichtliche Fehler prüfen.** Zu jedem Plan gibt es oben
+Defektvarianten. Vor einem Ergebnisbericht muss die Implementierung nachweisen,
+dass die vorgesehenen Vertragsprüfungen diese Varianten tatsächlich entdecken.
+Gute Kostenwerte allein dürfen einen undichten Datenweg nicht bestehen lassen.
+Eine erfolgreiche Detektion wird später mit zugehörigem Gegenfall dokumentiert;
+hier wird keine bereits erfolgte Detektion behauptet.
+
+**Vollständiger Bericht.** Festgehalten werden Planversion und Quellstand,
+Eingabeschemata, Generator-/Verfahrensversionen, Prüfsatz, rohe Zähler,
+Ausfälle/Fehlalarme/Unbekannt, volle Aufgabenanzahl, Verlust je Familie sowie
+Zustandsgröße und Arbeitsaufwand. Die logische Zustandsgröße ersetzt keine
+spätere Messung von RAM, Flash, Laufzeit, Energie oder Datenverkehr. Wiederholte
+Runden derselben Folge werden nicht als unabhängige Geräteversuche ausgegeben.
+Für diese kleinen Mechanikproben wird keine allgemeine Zuverlässigkeit oder
+statistische Signifikanz behauptet. Ein späterer statistischer Leistungsnachweis
+benötigt eine gesondert festgelegte Stichprobe und Auswertung.
+
+**Entscheidung nach einem Fehlschlag.** Ein Vertragsbruch stoppt den betreffenden
+Vergleich bis zur Korrektur. Ein korrektes, aber nutzloses Verfahren wird als
+solches berichtet. Ein vorteilhafter Kandidat in einer einzigen Modellfamilie
+rechtfertigt zunächst nur die nächste gezielte Gegenprobe. Keine dieser Stufen
+autorisiert eine automatische Übernahme in Firmware, Gerätekonfiguration oder
+die noch reservierte Aufnahme.
+
+
+
+
+
+<a id="reihenfolge"></a>
+
+## Empfohlene Reihenfolge: genau drei erste Prüfungen
+
+**1. Handlungsfolgen – Plan A, Idee 4.** Zuerst prüfen, ob Beobachtung, eigene
+Handlung und unbekannter Alternativausgang auseinandergehalten werden. Hier
+kann bereits ein kleiner, vollständiger Gegenfall einen grundlegenden Lernfehler
+zeigen. Die getrennte Bilanz von Erkundung und Nutzung verhindert außerdem,
+dass ein nachträglich günstiges Verhalten als kostenlos gelernt erscheint.
+
+**2. Wortspaltung – Plan B, Idee 1.** Danach die Informationsgrenze des
+gemeinsamen Zustandsworts angehen. Ein einmaliger Split genügt für die erste
+Frage; eine feste Tabelle bleibt ein ernsthafter Gegner. Nur bei zusätzlichem
+Nutzen oder nachvollziehbarer Ressourcenersparnis lohnt sich eine reichere,
+später erneut veränderliche Sprache. Das weitergehende Wachstum bleibt offen.
+
+**3. Verdichtung – Plan C, Idee 3.** Anschließend prüfen, welche Fähigkeiten
+unter einem festen Speicherlimit erhalten bleiben. Der handgebaute Kodierer
+ist eine Vorstufe zu „Schlaf“: Er erfindet noch keine neuen Regeln, macht aber
+Informationsverlust, Ausnahmen, Herkunft und Widerruf konkret überprüfbar.
+Wenn diese Darstellung scheitert, wird zuerst genau sie überarbeitet; ein
+größeres Modell oder ein eigener Kernel behebt den Befund nicht automatisch.
+
+Alex und Claude können aus diesen Plänen einen **separaten Laborversuch**
+ableiten, zuerst den Prüfer samt absichtlichen Defekten, dann den Kandidaten.
+Eine Übernahme in den laufenden Kern wäre eine spätere Entscheidung anhand
+der Ergebnisse. Die 24-Stunden-Prüfaufnahme bleibt für einen eigenen vorher
+festgelegten Prüfauftrag reserviert.
+
+Der offene Kern der großen Idee bleibt für mich: Kann ein System durch
+Erfahrung zugleich **treffender unterscheiden, sparsamer erinnern und weniger
+Abstimmung benötigen**, ohne seine Grenzen und Zuständigkeiten zu verlieren?
+Dieses Papier macht daraus begrenzte Fragen, an denen auch ein Nein Fortschritt wäre.
