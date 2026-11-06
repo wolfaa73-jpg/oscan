@@ -32,6 +32,11 @@ const char *const standKey = "zeit";
 char zeile[64];
 size_t laenge = 0;
 bool verwerfen = false;
+// Weiterlernen über Läufe: Das Gerät sichert selbst jeden n-ten Takt. Nach LADEN lässt der
+// nächste Körpertakt eine Lücke, damit die Pause zwischen zwei Läufen kein Übergang wird.
+uint32_t sichernAlle = 0;
+bool frischGeladen = false;
+bool lernstand(bool speichern, bool melden = true);
 const char *const namen[] = {"OK", "SCHWACH", "AUSFALL"};
 const uint32_t maxTemp = 100000;  // Zehntelgrad, nur Plausibilitätsgrenze der Eingabe
 Grenzen grenzen = {};
@@ -186,9 +191,10 @@ void ruhe() {
 // Ein Körpertakt: einstufen, lernen, Rohwerte und Entscheidung ausgeben.
 bool koerperTakt(bool tempGueltig, int32_t temp, uint32_t heap, uint32_t luecke) {
     const Zustand zustand = einstufen(tempGueltig, temp, heap, luecke, grenzen);
-    const uint32_t takt = knoten.takt() + 1;
+    const uint32_t takt = knoten.takt() + (frischGeladen ? 2 : 1);
     Entscheidung entscheidung;
     if (!knoten.schritt(takt, zustand, entscheidung)) return false;
+    frischGeladen = false;
     Serial.print("K,");
     Serial.print(takt);
     Serial.print(',');
@@ -206,7 +212,8 @@ bool koerperTakt(bool tempGueltig, int32_t temp, uint32_t heap, uint32_t luecke)
 #if defined(ARDUINO_ARCH_ESP32) && defined(ALEX_RGB_PIN)
     if (entscheidung.warnung) blitze(zustand); else zeigeZustand(zustand);
 #endif
-    return true;
+    // Still sichern. Schlägt es fehl, folgt FEHLER, und die Aufnahme bricht sichtbar ab.
+    return !sichernAlle || takt % sichernAlle || lernstand(true, false);
 }
 
 #ifdef ARDUINO_ARCH_ESP32
@@ -271,7 +278,7 @@ void meldeNeustart() {
 }
 #endif
 
-bool lernstand(bool speichern) {
+bool lernstand(bool speichern, bool melden) {
     uint8_t daten[Knoten::maxStandBytes];
     uint8_t alt[Knoten::maxStandBytes];
     const size_t n = knoten.standBytes();
@@ -287,9 +294,10 @@ bool lernstand(bool speichern) {
         ok = (lesbar && memcmp(daten, alt, n) == 0) || nvs.putBytes(key, daten, n) == n;
     } else {
         ok = lesbar && knoten.importiere(alt);
+        frischGeladen = ok;
     }
     nvs.end();
-    if (ok) Serial.println(speichern ? "GESICHERT" : "GELADEN");
+    if (ok && melden) Serial.println(speichern ? "GESICHERT" : "GELADEN");
     return ok;
 }
 
@@ -299,6 +307,8 @@ bool verarbeiteZeile() {
     if (strcmp(zeile, "LADEN") == 0) return lernstand(false);
     if (strcmp(zeile, "NEUER_LAUF") == 0) {
         knoten.neuerLauf();
+        sichernAlle = 0;
+        frischGeladen = false;
         ruhe();
         Serial.println(bereit);
         return true;
@@ -324,6 +334,14 @@ bool verarbeiteZeile() {
         uint32_t takte;
         if (koerperAn || !felder(rest, &takte, 1) || !knoten.setzeBlick(takte)) return false;
         Serial.println("BLICK,ok");
+        return true;
+    }
+    if (befehl("SICHERN_ALLE", rest)) {
+        // Jeden n-ten Körpertakt selbst sichern, 0 schaltet ab. Wie BLICK nicht im Körpermodus.
+        uint32_t n;
+        if (koerperAn || !felder(rest, &n, 1)) return false;
+        sichernAlle = n;
+        Serial.println("SICHERN_ALLE,ok");
         return true;
     }
     if (befehl("MESSWERT", rest)) {
@@ -397,6 +415,7 @@ bool verarbeiteZeile() {
     }
     Entscheidung entscheidung;
     if (!knoten.schritt(takt, zustand, entscheidung)) return false;
+    frischGeladen = false;
     Serial.print(takt);
     Serial.print(',');
     Serial.print(namen[zustand]);

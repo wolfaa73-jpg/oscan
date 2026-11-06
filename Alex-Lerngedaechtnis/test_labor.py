@@ -359,11 +359,12 @@ class KoerperTests(unittest.TestCase):
            (None, 298000, 250000), (430, 300000, 60)]
 
     @staticmethod
-    def geraetezeilen(roh, g, regel, reize=None, blick=1):
-        """So antwortet das Gerät, wenn es wie Python einstuft und entscheidet."""
-        k = Knoten(REGELN[regel](), blick=blick)
+    def geraetezeilen(roh, g, regel, reize=None, blick=1, knoten=None, ab=1):
+        """So antwortet das Gerät, wenn es wie Python einstuft und entscheidet. Mit knoten und ab
+        rechnet es von einem geladenen Stand aus weiter."""
+        k = knoten or Knoten(REGELN[regel](), blick=blick)
         zeilen = []
-        for takt, ((t, h, l), phase) in enumerate(zip(roh, reize or [0] * len(roh)), 1):
+        for takt, ((t, h, l), phase) in enumerate(zip(roh, reize or [0] * len(roh)), ab):
             z = koerper.einstufen(t, h, l, g)
             s = k.schritt(takt, z)
             zeilen.append(f"K,{takt},{z},{int(s.sofort)},{int(s.vorwarnung)},"
@@ -423,6 +424,42 @@ class KoerperTests(unittest.TestCase):
             ziel.write_text(ziel.read_text().replace(",SCHWACH,0,1,1", ",SCHWACH,0,0,1"))
             with self.assertRaises(ValueError):
                 koerper.pruefen(ziel)
+
+    def test_weiterlernen_ueber_zwei_aufnahmen(self):
+        roh = self.ROH + [(410, 300000, 60)]
+        with tempfile.TemporaryDirectory() as ort:
+            erste, zweite = Path(ort, "erste.csv"), Path(ort, "zweite.csv")
+            # Nach den sechs bestellten Takten kommt vor KOERPER,aus noch ein siebter. Er gehört zum Endstand.
+            antworten = [b"BEREIT,STARTWERT", b"GRENZEN,ok", b"BLICK,ok", b"SICHERN_ALLE,ok", b"KOERPER,an",
+                         *(z.encode() for z in self.geraetezeilen(roh, self.G, "startwert")),
+                         b"KOERPER,aus", b"GESICHERT"]
+            gesendet = []
+            self.assertEqual(koerper.aufnehmen(self.port(antworten, gesendet), "startwert", self.G, 1000, 6, erste,
+                                               sichern_alle=4), 7)
+            self.assertLess(gesendet.index(b"SICHERN_ALLE 4\n"), gesendet.index(b"KOERPER 1000\n"))
+            self.assertEqual(gesendet[-2:], [b"STOP\n", b"SICHERN\n"])
+            meta, werte = koerper.pruefen(erste)
+            self.assertEqual((meta["sichern_alle"], meta["fortsetzung"], len(werte)), (4, None, 7))
+            # Das Gerät lädt den Endstand nach Takt 7 und lässt einen Takt Lücke.
+            k = koerper.gelernt_bis(erste, 7)
+            self.assertEqual(k.takt, 7)
+            weiter = [b"BEREIT,STARTWERT", b"GRENZEN,ok", b"BLICK,ok", b"GELADEN", b"KOERPER,an",
+                      *(z.encode() for z in self.geraetezeilen(self.ROH, self.G, "startwert", knoten=k, ab=9))]
+            gesendet = []
+            self.assertEqual(koerper.aufnehmen(self.port(weiter, gesendet), "startwert", self.G, 1000, 6, zweite,
+                                               fortsetzen=erste), 6)
+            self.assertLess(gesendet.index(b"LADEN\n"), gesendet.index(b"KOERPER 1000\n"))
+            meta, werte = koerper.pruefen(zweite)
+            self.assertEqual((meta["fortsetzung"], werte[0]["takt"]), ("erste.csv", 9))
+            self.assertIn("Setzt erste.csv fort, mit dem Stand nach Takt 7.", koerper.bericht(meta, werte))
+            # Ein Stand nach Takt 6 kann nicht im Gerät liegen: kein Vielfaches von 4 und nicht das Ende.
+            falsch = Path(ort, "falsch.csv")
+            falsch.write_text(zweite.read_text().replace("\n9,", "\n8,", 1))
+            falsch.with_suffix(".json").write_text(zweite.with_suffix(".json").read_text())
+            with self.assertRaises(ValueError):
+                koerper.pruefen(falsch)
+            with self.assertRaises(ValueError):
+                koerper.aufnehmen(self.port([], []), "erbe", self.G, 1000, 1, Path(ort, "x.csv"), fortsetzen=erste)
 
     def test_aufnahme_mit_blick_leck_und_bremse(self):
         # Ein Leck drückt den Speicher unter beide Grenzen, danach steht die Schleife still.
@@ -825,6 +862,33 @@ int main() {
             self.assertEqual(replay("kontext", teile + ["SICHERN"])[-1], "GESICHERT")
             self.assertEqual(replay("erbe", ["LADEN"]), ["FEHLER"])
             self.assertEqual(replay("kontext", ["LADEN"]), ["GELADEN"])
+
+    def test_weiterlernen_ueber_zwei_prozesse(self):
+        g = koerper.ERKUNDUNG
+        roh = (KoerperTests.ROH * 2)[:12]
+        messwerte = [f"MESSWERT {'-' if t is None else t} {h} {l}" for t, h, l in roh]
+        with tempfile.TemporaryDirectory() as ort:
+            for regel, exe in self.binaries.items():
+                with self.subTest(regel=regel):
+                    env = dict(os.environ, ALEX_TEST_NVS=str(Path(ort, regel)))
+                    lauf = lambda befehle: subprocess.run([str(exe)], input="\n".join(befehle) + "\n", text=True,
+                                                          capture_output=True, timeout=5, check=True,
+                                                          env=env).stdout.splitlines()[1:]
+                    # Gesichert wird still nach Takt 5 und 10, nicht während des Körpermodus einstellbar.
+                    self.assertEqual(lauf([g.befehl().decode(), "SICHERN_ALLE 5", *messwerte]),
+                                     ["GRENZEN,ok", "SICHERN_ALLE,ok", *KoerperTests.geraetezeilen(roh, g, regel)])
+                    k = Knoten(REGELN[regel]())
+                    for t, (temp, h, l) in enumerate(roh[:10], 1):
+                        k.schritt(t, koerper.einstufen(temp, h, l, g))
+                    # Ein neuer Prozess wie nach einer Stromtrennung: Stand nach Takt 10, dann eine Lücke.
+                    self.assertEqual(lauf([g.befehl().decode(), "LADEN", *messwerte[:6]]),
+                                     ["GRENZEN,ok", "GELADEN",
+                                      *KoerperTests.geraetezeilen(roh[:6], g, regel, knoten=k, ab=12)])
+                    # NEUER_LAUF vergisst Lücke und Sicherungstakt.
+                    self.assertEqual(lauf([g.befehl().decode(), "LADEN", "NEUER_LAUF", g.befehl().decode(),
+                                           messwerte[0], "SICHERN_ALLE x"])[2:],
+                                     ["BEREIT," + regel.upper(), "GRENZEN,ok",
+                                      *KoerperTests.geraetezeilen(roh[:1], g, regel), "FEHLER"])
 
     def test_boardpruefer_mit_echtem_sketch_ueber_pipes(self):
         for regel, exe in self.binaries.items():

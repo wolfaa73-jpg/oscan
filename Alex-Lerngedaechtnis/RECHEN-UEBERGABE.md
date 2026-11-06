@@ -74,7 +74,7 @@ Seine Grenzen für die Temperatur müssen zu seinem Chip passen. Die Werte oben 
 
 ## Was bei Alex parallel weiterläuft
 
-- **Weiterlernen über Läufe.** Bisher beginnt jede Körperaufnahme mit `NEUER_LAUF`, das Gerät vergisst also alles zwischen zwei Läufen. Als Nächstes lädt eine Aufnahme auf Wunsch den gesicherten Stand und sichert regelmäßig. Dann behält das Gerät Erfahrung und verblasstes Erbe über Pausen und Stromtrennungen. Die Nachrechnung in Python startet dafür vom selben Stand. Wie, steht nach dem Einbau in UEBERGABE.md.
+- **Weiterlernen über Läufe, eingebaut am 6. November.** Eine Aufnahme kann jetzt mit dem gesicherten Stand der vorigen beginnen (`--fortsetzen`), das Gerät sichert regelmäßig selbst (`--sichern-alle`). `koerper.py pruefen` rechnet die ganze Kette nach. Achtung: `vokabular.py auswertung` lernt in jeder Aufnahme von vorn, siehe UEBERGABE.md unter „Weiterlernen über Läufe“.
 - **Danach ein langer Lauf mit Startwert** und denselben Reizen wie der 6-Stunden-Lauf. An dieser Aufnahme ist nichts eingestellt. Sie ist die unabhängige Prüfung für die Aufgaben 1 bis 5, also bitte erst prüfen, wenn Schwellen, Halbwertszeiten und Muster auf künstlichen Spuren gewählt sind.
 
 ## Daten

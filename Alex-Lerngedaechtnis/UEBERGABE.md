@@ -92,16 +92,16 @@ pio run -d esp32
 
 | Gebaute Variante | Vom Linker gemeldete RAM-Belegung | Vom Build gemeldeter Flashbedarf |
 |---|---:|---:|
-| esp32dev · Zeit | 23.972 Byte | 289.257 Byte |
-| esp32dev-kontext · Kontext | 23.972 Byte | 289.273 Byte |
-| esp32dev-erbe · Erbe und Kontext | 23.972 Byte | 289.253 Byte |
-| esp32dev-startwert · Startwert | 23.972 Byte | 289.273 Byte |
-| esp32s3 · Zeit | 21.600 Byte | 301.873 Byte |
-| esp32s3-kontext · Kontext | 21.600 Byte | 301.873 Byte |
-| esp32s3-erbe · Erbe und Kontext | 21.600 Byte | 301.873 Byte |
-| esp32s3-startwert · Startwert | 21.600 Byte | 301.873 Byte |
+| esp32dev · Zeit | 23.980 Byte | 289.481 Byte |
+| esp32dev-kontext · Kontext | 23.980 Byte | 289.497 Byte |
+| esp32dev-erbe · Erbe und Kontext | 23.980 Byte | 289.477 Byte |
+| esp32dev-startwert · Startwert | 23.980 Byte | 289.497 Byte |
+| esp32s3 · Zeit | 21.608 Byte | 302.081 Byte |
+| esp32s3-kontext · Kontext | 21.608 Byte | 302.081 Byte |
+| esp32s3-erbe · Erbe und Kontext | 21.608 Byte | 302.081 Byte |
+| esp32s3-startwert · Startwert | 21.608 Byte | 302.081 Byte |
 
-Gebaut am 6. November mit Leckmuster, Startwert und `isKey` auf Alex’ Mac. Die Zahlen umfassen das Arduino-Programm samt Framework. Die neun Gewichte und die Erbtabelle belegen je 72 Byte, die Tabelle für die Blöcke des Lecks 2.048 Byte. In 0.3, vor Körpermodus und Reizen, lag die RAM-Belegung beim S3 bei 18.872 Byte. Die Rechenzeit des weiten Blicks ist am Gerät gemessen (siehe „Weiter Blick im Gerät“), Stromaufnahme und tatsächlich beanspruchte Flashzyklen noch nicht. Der Hosttest führt je Variante den identischen Sketch auf der Demo und allen 120 Kontrollspuren aus. Alle 57.840 Antworten pro Variante stimmen bei Takt, Zustand, Sofortmeldung und Vorwarnung mit Python überein.
+Gebaut am 6. November mit Leckmuster, Startwert, `isKey` und Weiterlernen auf Alex’ Mac. Die Zahlen umfassen das Arduino-Programm samt Framework. Die neun Gewichte und die Erbtabelle belegen je 72 Byte, die Tabelle für die Blöcke des Lecks 2.048 Byte. In 0.3, vor Körpermodus und Reizen, lag die RAM-Belegung beim S3 bei 18.872 Byte. Die Rechenzeit des weiten Blicks ist am Gerät gemessen (siehe „Weiter Blick im Gerät“), Stromaufnahme und tatsächlich beanspruchte Flashzyklen noch nicht. Der Hosttest führt je Variante den identischen Sketch auf der Demo und allen 120 Kontrollspuren aus. Alle 57.840 Antworten pro Variante stimmen bei Takt, Zustand, Sofortmeldung und Vorwarnung mit Python überein.
 
 **Erster Boardlauf.** Nach dem Aufspielen der zum Gerät passenden Variante den seriellen Monitor schließen und mit einem Python-Interpreter mit `pyserial` den Prüfer starten. Den Beispielport durch den tatsächlichen Port ersetzen. Der Prüfer startet bewusst einen leeren RAM-Lauf, sendet eine Zeile, wartet auf die Antwort und vergleicht jede Entscheidung. Erwartet werden 240 von 240 passende Antworten. Startet das Board langsam, sendet der Prüfer `NEUER_LAUF` mehrmals, und jede Wiederholung wird beantwortet. Seit 0.3 überspringt er diese späten Bereitmeldungen vor der ersten Antwort. Vorher schlug der Hosttest gelegentlich beim ersten Start frisch übersetzter Programme fehl.
 
@@ -128,6 +128,20 @@ python3 wiederanlauf.py laden --port /dev/PORT --regel erbe --grenze N
 ```
 
 Der Hosttest spielt beide Teile in zwei getrennten Prozessen mit Dateibackend durch, auch mit falscher Grenze. Der Zustand nach einem Abbruch **während** des Schreibens steht noch aus.
+
+**Weiterlernen über Läufe (seit 6. November).** Bis dahin begann jede Körperaufnahme mit `NEUER_LAUF`, das Gerät vergaß zwischen zwei Läufen alles. Jetzt gibt es zwei Optionen:
+- `--sichern-alle N` lässt das Gerät jeden N-ten Takt selbst sichern, still, ohne eigene Zeile. Gezählt wird der absolute Takt. Schlägt das Sichern fehl, kommt `FEHLER`, und die Aufnahme bricht sichtbar ab. Am Ende sendet die Aufnahme `STOP`, schreibt Takte, die bis `KOERPER,aus` noch kommen, mit in die Datei und sichert noch einmal. So passt der Endstand genau zur Datei, auch nach Strg-C.
+- `--fortsetzen VORIGE.csv` lässt das Gerät vor dem Start seinen gesicherten Stand laden. Der erste Takt danach lässt eine Lücke, er zählt Stand plus zwei. So wird die Pause kein erfundener Übergang. Bei der Zeitregel altert die Erfahrung über die Pause nur um diese zwei Takte, nicht um die wirkliche Pausenzeit.
+
+`koerper.py pruefen` baut den Anfangsstand einer Fortsetzung nach, indem es die vorigen Aufnahmen der Kette bis zum geladenen Takt nachrechnet. Liegt der geladene Takt weder auf einem Vielfachen von N noch am Ende der vorigen Aufnahme, kann das Gerät ihn nicht gesichert haben, und die Prüfung bricht ab. Alle Aufnahmen einer Kette liegen im selben Ordner, die JSON nennt die vorige unter `fortsetzung`. Die Verfahren in `vokabular.py auswertung` lernen dagegen in jeder Aufnahme von vorn. Für Fortsetzungen zeigen sie, was ein frisches Gedächtnis täte, nicht was das Gerät tat. Firmwareseitig gibt es dafür `SICHERN_ALLE n` (0 aus, nicht im Körpermodus). Nach `LADEN` lässt der nächste Körpertakt die Lücke, `NEUER_LAUF` setzt beides zurück.
+
+Am Gerät geprüft: 150 Takte mit allen Reizen und Sichern alle 30 Takte. Takt 90 wurde bei 13.836 Byte freiem Speicher gesichert, ohne Fehler, und nach den Sicherungen war so viel frei wie vorher. Danach setzten 90 Takte fort, ab Takt 152 mit dem Stand nach Takt 150. Alle 240 Entscheidungen stimmen mit Python überein. Der Hosttest prüft dasselbe über zwei Prozesse für alle vier Regeln. Ohne die Lücke oder ohne das stille Sichern schlägt er an.
+
+```bash
+python3 koerper.py aufnahme messungen/a.csv --port /dev/PORT --regel startwert --sichern-alle 600 …
+python3 koerper.py aufnahme messungen/b.csv --port /dev/PORT --regel startwert --sichern-alle 600 --fortsetzen messungen/a.csv …
+python3 koerper.py pruefen messungen/b.csv
+```
 
 ## Körpersignale
 
