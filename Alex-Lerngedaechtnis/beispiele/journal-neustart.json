@@ -1,0 +1,33 @@
+{
+  "art": "Harte lokale Prozessabbrüche; externe Testwirkung ist eine Dateizeile",
+  "grenze": "Kein Stromausfalltest und keine atomare Transaktion mit einem realen Aktor",
+  "verlauf": [
+    {
+      "abbruch": "vor_wirkung",
+      "prozess_exit": 73,
+      "status_nach_neustart": "UNGEKLAERT",
+      "neue_sitzung": true,
+      "wirkungen_vorher": 0,
+      "wirkungen_nachher": 0,
+      "wiederholungen": 11
+    },
+    {
+      "abbruch": "nach_wirkung",
+      "prozess_exit": 73,
+      "status_nach_neustart": "UNGEKLAERT",
+      "neue_sitzung": true,
+      "wirkungen_vorher": 1,
+      "wirkungen_nachher": 1,
+      "wiederholungen": 11
+    },
+    {
+      "abbruch": "nach_abschluss",
+      "prozess_exit": 73,
+      "status_nach_neustart": "ERLEDIGT",
+      "neue_sitzung": true,
+      "wirkungen_vorher": 1,
+      "wirkungen_nachher": 1,
+      "wiederholungen": 11
+    }
+  ]
+}

@@ -19,9 +19,11 @@ class Verbundsystem:
     gelten zur Arbeitsvergabe. Alle Methoden gehören in denselben Ereignisablauf.
     """
 
-    def __init__(self, antwortfrist=.5, gueltigkeit=1, sitzung=None, kapazitaet=1024):
+    def __init__(self, antwortfrist=.5, gueltigkeit=1, sitzung=None, kapazitaet=1024, *, register=None):
+        if register is not None and (sitzung is not None or kapazitaet != 1024):
+            raise ValueError("Sitzung und Kapazität gehören zum übergebenen Register.")
         self.hub = Zentrale([1, 2], antwortfrist, gueltigkeit)
-        self.register = Auftragsregister(sitzung, kapazitaet)
+        self.register = Auftragsregister(sitzung, kapazitaet) if register is None else register
         self.takt = 0
         self.offen = False
         self.auftrag = None
@@ -105,7 +107,7 @@ class Verbundsystem:
             return self.register.vermerken(auftrag, "VERFALLEN", "Freigabe vor Arbeitsbeginn veraltet")
         try:
             q = self.register.ausfuehren(auftrag, arbeiter)
-        except OverflowError:
+        except BaseException:
             self.vorher = None
             raise
         if q.status == "UNGEKLAERT":
