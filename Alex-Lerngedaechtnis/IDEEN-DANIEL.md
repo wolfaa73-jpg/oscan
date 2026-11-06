@@ -1,6 +1,6 @@
 # OSCan: 24 mögliche Richtungen und ihre Gegenproben
 
-6. November 2026 · Fassung 0.2 · Ideen und Prüfentwürfe für Alex und Claude
+6. November 2026 · Fassung 0.3 · Ideen, Prüfentwürfe und OS-Verträge für Alex und Claude
 
 Antwort auf den [Ideenauftrag](IDEEN-AUFTRAG.md), gelesen am bereinigten
 Stand `6b5af19975b8c6c9fd0fc27c216887c28bcc94a2`. Diese Sammlung schlägt
@@ -10,6 +10,8 @@ nachgewiesen. Die 24-Stunden-Prüfaufnahme vom 6. November bleibt unangetastet.
 Lesepfade: [24 Ideen](#ideen) · [Gemeinsame Bausteine](#bausteine) ·
 [Plan A: Handlungsfolgen](#plan-a) · [Plan B: Wortspaltung](#plan-b) ·
 [Plan C: Verdichtung](#plan-c) · [Durchführung und Prüfung](#pruefvertrag) ·
+[OS-Verträge](#os-vertraege) · [Nachrichten](#probe-d) ·
+[Rollenwechsel](#probe-e) · [Begrenzte Auftragsregister](#probe-f) ·
 [Empfohlene Reihenfolge](#reihenfolge).
 
 Mein interessantestes Zielbild: **OSCan ist ein System, das aus Erfahrungen
@@ -450,7 +452,7 @@ Ein späterer Gerätetest müsste diesen Aufwand tatsächlich messen.
 
 ## Ausarbeitung: Was die Ideen zu einem Betriebssystem verbinden könnte
 
-**Arbeitsfassung der Entwürfe: 0.2.** Die folgenden Abschnitte vertiefen die
+**Arbeitsfassung der Entwürfe: 0.3.** Die folgenden Abschnitte vertiefen die
 24 Ideen zu Bausteinen, Verträgen und drei konkreten Prüfplänen. Zahlen in diesen
 Plänen sind vorgeschlagene Designkonstanten, keine Messergebnisse und keine
 empfohlenen Geräteeinstellungen. Es wurde dafür kein Experiment ausgeführt.
@@ -527,7 +529,7 @@ Aufgabenteil. Diese Trennung ist ein Vorschlag für das weitere Konzept, kein
 nachträglicher Umbau der vorhandenen Regeln.
 
 **Nutzung ist nicht Bestätigung.** Abruf darf einen Eintrag verfügbar halten;
-eine neue unabhängige Beobachtung darf seine Beleglage ändern. Die Zahl der
+eine neue, nicht bloß wiederholte Beobachtung darf seine Beleglage ändern. Die Zahl der
 Abrufe, die Stärke einer Annahme und das Recht auf eine Aktion werden nicht aus
 demselben Gewicht abgeleitet. Auch ein falsch gewordenes, häufig benötigtes
 Beispiel kann als ausdrücklich falsches Beispiel nützlich bleiben.
@@ -677,15 +679,23 @@ Gegner dürfen nicht um 16 Aufgaben verkürzt werden, und dem Kandidaten dürfen
 seine Erhebungskosten nicht erlassen werden. Denk- und Speicherkosten sind in
 dieser einfachen Kostenformel noch nicht enthalten und separat auszuweisen.
 
+Ein stärkerer adaptiver Gegner verwendet **eine Beobachtung je Zelle** statt
+vier: Er führt nur die ersten vier Kombinationen `(0,0),(0,1),(1,0),(1,1)`
+als Erkundung aus, friert danach seine vier Ergebnisse ein und wählt nach
+derselben Kostenregel. Auch im Rest des 16er-Präfixes bearbeitet er die jeweils
+vorliegenden Aufgaben, mit seinen tatsächlich gewählten Aktionen. Dass ein
+einzelner beobachteter Ausgang hier genügt, folgt ausschließlich aus der
+rauschfreien, stationären Modellwelt. Das ist keine Empfehlung für reale Geräte.
+
 Die folgenden **algebraischen Sollwerte** folgen unmittelbar aus den
 Weltdefinitionen. Sie prüfen die spätere Kostenrechnung; sie sind keine
 ausgeführten Versuchsresultate und keine Aussage über echte Geräte:
 
-| Bilanz über alle vier gleich gewichteten Welten | Kandidat | Nie entlasten | Immer entlasten | Bei Vorzeichen |
-|---|---:|---:|---:|---:|
-| Nur 32 Bewertungsaufgaben je Welt | 96 | 160 | 288 | 224 |
-| Vollständig: 16 Kalibrier-/Präfixaufgaben + 32 Bewertung je Welt | 208 | 240 | 432 | 336 |
-| Kurze Nutzung: 16 Präfix + nur 8 Bewertung je Welt | 136 | 120 | 216 | 168 |
+| Bilanz über alle vier gleich gewichteten Welten | Kandidat: vier je Zelle | Eine Beobachtung je Zelle | Nie entlasten | Immer entlasten | Bei Vorzeichen |
+|---|---:|---:|---:|---:|---:|
+| Nur 32 Bewertungsaufgaben je Welt | 96 | 96 | 160 | 288 | 224 |
+| Vollständig: 16 Kalibrier-/Präfixaufgaben + 32 Bewertung je Welt | 208 | 160 | 240 | 432 | 336 |
+| Kurze Nutzung: 16 Präfix + nur 8 Bewertung je Welt | 136 | 88 | 120 | 216 | 168 |
 
 Der Kandidat bezahlt im Präfix über die vier Welten `28+8+48+28=112` Einheiten.
 Die kurze Nutzung zeigt bereits auf dem Papier: korrektes Lernen kann seine
@@ -693,6 +703,12 @@ Beschaffungskosten nicht rechtzeitig verdienen. Bei 16 anschließenden
 Bewertungsaufgaben je Welt sind Kandidat und „nie entlasten“ in dieser
 gleich gewichteten Mischung bei 160 Einheiten gleichauf. Das verändert sich
 mit den Weltanteilen und Preisen; die Mischung ist eine Konvention dieses Plans.
+Der Ein-Beobachtungs-Gegner bezahlt im selben Präfix nur `13+2+42+7=64`
+Einheiten und danach dieselben Handlungskosten: über die vier Welten
+`64+3m` statt `112+3m` bei m geraden Bewertungsaufgaben je Welt. Die Rechnung
+bewertet folglich die gewählte Kalibrierfolge, nicht notwendige Lernkosten
+oder die beste adaptive Lösung. Gegen diesen einfacheren Lerner besitzt
+der Vierfach-Kandidat in diesen Sollfällen keinen Kostenvorteil.
 Bei 32 Bewertungsaufgaben sind es im vollständigen Vergleich 48 Aufgaben je
 Welt, insgesamt 192. A1 ist eine getrennte Prüferprobe und gehört nicht in
 diese Bilanz; ebenso wenig die folgende gesonderte Störfolge.
@@ -773,7 +789,7 @@ Zusatzinformation gewählter Gegner. Die Vierertabelle ist der wesentliche
 einfache Gegner gegen einen behaupteten praktischen Mehrwert.
 
 **Daten und Grenzen.** Vorgeschlagen sind 20 Entwicklungs- und 200 getrennte
-Prüfseeds im unten definierten Namensraum `OSCAN-IDEEN-v1|B`, jeweils alle drei
+Prüfseeds im unten definierten Namensraum `OSCAN-IDEEN-v2|B`, jeweils alle drei
 Welten. Vor Erzeugung/Sichtung der Prüfung werden Generator einschließlich
 Zufallsalgorithmus, konkrete Seedlisten, Verfahren und Kriterien festgehalten.
 Entwicklungsdaten dürfen Fehler im Versuch aufdecken; Änderungen werden vor
@@ -813,6 +829,30 @@ Ein Mehrwert gegenüber der Vierertabelle wäre separat durch Verlust **und**
 Ressourcen zu belegen. Weniger laufender Zustand nach der Auswahl ist nicht
 gleich weniger benötigter Spitzenspeicher; geringere Fehlerrate allein ist
 kein Beleg für günstigeren Betrieb.
+
+**Zusätzliche Zeitkontrolle für die Interpretation.** 32 Ergebnisse je Blatt
+decken im Mittel ungefähr 32 globale Runden beim ungeteilten Modell, 64 bei
+einer Zweiteilung und 128 bei der Vierertabelle ab. Gerade nach einem Wechsel
+vergleicht der obige Versuch damit auch unterschiedliche Gedächtniszeiträume.
+Ein schnelleres Nachlernen wäre nicht allein der Wortwahl zuzuschreiben.
+
+Deshalb wird vor einer entsprechenden Nutzenaussage eine zweite, ebenfalls
+vorab festgelegte Variante auf denselben Folgen ausgewiesen: Alle Fenstermodelle
+verwenden ausschließlich die letzten **128 abgeschlossenen globalen Runden**.
+Die Blätter zählen daraus nur ihre jeweils passenden `(x,z,y)`-Einträge;
+es gibt keine zusätzliche Grenze von 32 je Blatt. Formel, Schwelle,
+Auswahlzeitpunkte, 20-Fehler-Hürde, Gleichstandsregel und Gegner bleiben gleich.
+Der aktuelle Ausgang kommt weiterhin erst nach der Vorhersage hinzu.
+Triviale Regeln wie „letzter Ausgang“ bleiben unverändert.
+
+Die Auswertung und alle obigen Hürden werden getrennt für beide Varianten
+angegeben. Es wird kein Gewinner zwischen den beiden Fensterarten gewählt
+und anschließend allein berichtet. Die zweite Variante isoliert den gemeinsamen
+zeitlichen Ausschnitt; sie beweist nicht automatisch eine optimale Fensterlänge.
+Ihr vollständiger Zustand gehört ebenfalls in die 512 Byte, einschließlich
+Suchphase. Ein Referenzring braucht für 128 Einbyte-Einträge mit je x,z,y
+128 Byte zuzüglich Verwaltung und Zählern; Speicher dieser Variante wird
+gesondert bilanziert und nicht mit den 35-Byte-Blattfenstern verwechselt.
 
 **Absichtliche Defekte:** `y` vor der Vorhersage einlesen; `c` oder den Wechsel
 verraten; das Merkmal nach Runde 256 heimlich austauschen; Suchfenster kostenlos
@@ -1006,8 +1046,10 @@ Byte. Nach Rücknahme wird für den zurückgezogenen Beleg der Status statt des
 alten gültigen Inhalts verlangt.
 
 Ein Nutzen im festgelegten Aufgabengemisch gilt nur bei strikt kleinerem
-Gesamtverlust als Ringpuffer **und** beide Zählervarianten beim selben Budget,
-ohne harten Vertragsbruch; die beiden weiteren Gegner bleiben sichtbar.
+Gesamtverlust als Ringpuffer, beide Zählervarianten, „immer unbekannt“ **und**
+konstante Zukunftsprognose beim selben Budget, ohne harten Vertragsbruch.
+Schlägt ein trivialer Gegner den Kandidaten, fehlt ein Gesamtnutzen auch dann,
+wenn die Kodierung kleinere Abbilder als der Ringpuffer erzeugt.
 Ausnahmefragen und Widerrufe werden zusätzlich mit ihrem eigenen Verlust und
 Unbekannt-Anteil ausgewiesen. Auf unregelmäßigen Daten darf
 das Verfahren offen verlieren; dann ist eine allgemeine Überlegenheitsbehauptung
@@ -1045,7 +1087,7 @@ gehören zur Abnahme der späteren Durchführung:
 Referenzregel ohne Abhängigkeit vom Zufallsverbrauch eines Verfahrens dienen.
 Eine benötigte gleichverteilte Ganzzahl in `0…n−1` wird aus einem mit SHA-256
 gebildeten Wert gewonnen. Seine Eingabe ist die UTF-8-Zeichenfolge
-`OSCAN-IDEEN-v1|Plan|Satz|Seed|Familie|Runde|Feld|Versuch` mit genau diesen
+`OSCAN-IDEEN-v2|Plan|Satz|Seed|Familie|Runde|Feld|Versuch` mit genau diesen
 Trennzeichen; `Plan` ist wörtlich `B` oder `C`, die übrigen symbolischen Felder
 werden durch ihre unten angegebenen Werte ersetzt. Nummern sind Dezimalzahlen
 ohne führende Nullen, `Versuch` beginnt
@@ -1053,6 +1095,8 @@ bei 0. Der Digest wird als nichtnegative Ganzzahl in Big-Endian-Reihenfolge
 gelesen. Werte ab `floor(2^256/n)×n` werden verworfen und `Versuch` erhöht;
 sonst liefert der Rest modulo n die Ziehung. Das ist eine vorgeschlagene
 reproduzierbare Pseudozufallsquelle, kein Anspruch echter statistischer Unabhängigkeit.
+Fassung 0.3 benutzt dafür den neuen Namensraum v2. Etwaige bereits erzeugte
+Daten einer früheren Planfassung sind keine unangesehene Prüfung dieser Fassung.
 
 Für B sind die Sätze `entwicklung` mit Seeds 0…19 und `pruefung` mit Seeds
 0…199 getrennte Namensräume; Grundziehungen verwenden für alle drei Welten
@@ -1125,6 +1169,406 @@ die noch reservierte Aufnahme.
 
 
 
+
+
+<a id="os-vertraege"></a>
+
+## Weiter zum Betriebssystem: konkrete Verträge und Gegenfälle
+
+Diese Vertiefung verbindet die Ideen mit den bereits vorhandenen Systembausteinen.
+Die folgenden Architekturproben D–F sind **Papierentwürfe**, keine neuen
+Implementierungen oder ausgeführten Versuche. Die drei zuerst empfohlenen
+Laborprüfungen bleiben A–C. Ein kleinerer Entwurf mit klarer Zuständigkeit wäre
+hier wertvoller als ein gleichzeitig umzubauendes Gesamtsystem.
+
+### Was im Repository bereits existiert – und was noch fehlt
+
+Gelesen am oben genannten bereinigten Hauptstand; die hier verlinkten Übergaben
+enthalten teilweise historische Standangaben. Es wurden dafür keine ihrer
+Versuche erneut ausgeführt. Alte dort erwähnte Commit-IDs sind keine neue Arbeitsbasis.
+
+| Vorhandener Baustein | Bereits beschriebene Eigenschaft | Grenze zur weiteren OS-Idee |
+|---|---|---|
+| [Verbund](VERBUND-UEBERGABE.md), `verbund.py` | 36-Byte-Abfragen und Antworten mit Sitzung, Runde, Messtakt und Empfangsfrist; wiederholte Frage erzeugt keine neue Beobachtung | Noch kein gemeinsam bestätigtes Erwartungsmodell; unabhängige Sensorerfassung braucht einen eigenen Altersvertrag |
+| [Feste Disposition](SYSTEM-UEBERGABE.md), `systemkern.py` | Vergibt begrenzte Arbeit und Reserve für den folgenden logischen Takt | Ein logischer Takt ist keine physische Fertigstellungsfrist; der Laufzeitkern ersetzt keinen Bootpfad oder Speicherschutz |
+| [Anschluss](ANSCHLUSS-UEBERGABE.md), `verbundsystem.py` | Verbindet geprüfte Meldungen mit Auftrag und erneuter Frischeprüfung vor Arbeitsbeginn | Der Kanal dieses Versuchs ist simuliert; vorhandene lokale Arbeiter sind kein entfernter Aktorvertrag |
+| [Auftragsjournal](JOURNAL-UEBERGABE.md), `auftragsjournal.py` | Speichert Arbeitsbeginn vor externer Wirkung; ungeklärter Anfang bleibt nach Neustart ungeklärt | Keine gemeinsame Transaktion mit beliebiger äußerer Wirkung; keine automatische Wiederholung und keine automatische Bereinigung voller Register |
+| [Hash-Wiederanlauf](WIEDERANLAUF-UEBERGABE.md), `arbeiterlaufzeit.py` | Prüft Epoche und speichert die vollständige fachliche Wirkung im selben Datenbankvorgang; bestätigt Ende eigener Arbeiter vor Übernahme | Diese engere Zusage gilt für das Ergebnis-Backend; sie überträgt sich nicht automatisch auf Motoren, Impulse oder entfernte Geräte |
+
+Ein neuer Rollenwechsel müsste deshalb die vorhandene Epochenidee am **wirklichen
+Aktorzugang** durchsetzen. Ein neuer Gedächtnisbegriff dürfte das bestehende
+Journal nicht zu einem vergessenden Erfahrungszähler machen. Die Anschlussarbeit
+liegt zwischen vorhandenen Verträgen, nicht im bloßen Umbenennen von Python-Modulen.
+
+### Vier getrennte Arten von Zustand
+
+| Art | Darf altern oder verschwinden? | Was das Verschwinden bedeutet |
+|---|---|---|
+| Erfahrung und Erwartung | Nach ausdrücklich gewählter Lernregel | Eine Prognose kann ungenauer oder unbekannt werden |
+| Nachgewiesene Beobachtungsfrische | Läuft ab, ohne neu bestätigt zu werden | Ein historischer Messwert wird keine aktuelle Freigabe |
+| Ausführungsrecht | Nur durch geregelten Wechsel, Ablauf oder Widerruf | Ein alter Besitzer darf keine neue Wirkung beginnen |
+| Begonnene Arbeitsverpflichtung | Nicht durch gewöhnliches Verblassen | Eine ungeklärte Wirkung bleibt ungeklärt, auch wenn die auslösende Erwartung gelöscht ist |
+
+Diese Trennung beantwortet einen wichtigen Teil der Frage „Gedächtnis als
+OS-Funktion“: Unterschiedliche Inhalte brauchen unterschiedliche Regeln für
+Verlust, Zugriff und Fortsetzung. Es genügt nicht, überall dasselbe abnehmende
+Gewicht einzusetzen.
+
+**Historische Treue und heutige Prognose bleiben getrennt.** Plan C kann eine
+alte Beobachtung korrekt erhalten, die für die heutige Mehrheitsprognose bereits
+stört. Eine Erinnerung darf daher im Archiv exakt bleiben und im aktuellen
+Entscheidungsmodell wenig Gewicht erhalten. Daraus folgt noch kein bestimmtes
+zweites Lernverfahren; es ist zunächst ein getrennter Aufbewahrungsauftrag.
+
+**Eigene Kennung ist nicht statistische Unabhängigkeit.** Drei Sensoren können
+dasselbe gemeinsame Problem beobachten und drei unterschiedliche Ereignisnummern
+liefern. Deduplizierung verhindert das Zählen eines Pakets als drei Pakete;
+sie erklärt diese drei echten Messungen aber nicht zu drei unabhängigen Ursachen.
+Bekannte gemeinsame Erfassung oder Herkunft kann gruppiert werden; unbekannte
+Abhängigkeit bleibt eine Grenze der Vertrauensaussage. Ein billiger Gegenfall
+wäre derselbe Fehler einmal mit drei weitergereichten Kopien, einmal mit drei
+gekoppelten Sensoren und einmal mit tatsächlich getrennten Ursachen.
+
+### Ein kleinster durchgehender Vertrag für das spätere System
+
+Das Gedächtnis könnte eine begrenzte, versionierte **Erwartung** liefern:
+beobachteter Kontext, erwarteter Ausgang, Horizont, verwendete Belege und
+Unsicherheitsstatus. Ein Planer übersetzt sie zusammen mit einem konkreten
+Auftragsziel in einen **Vorschlag**. Erst die feste Instanz erzeugt gegebenenfalls
+eine befristete **Ausführungserlaubnis**; der Aktor meldet Annahme, Beginn und
+beobachteten Abschluss getrennt zurück.
+
+Die Zuordnungen dürfen dabei nicht zusammenfallen:
+
+- Eine neue Kommunikationssitzung ist kein neuer fachlicher Auftrag.
+- Eine Modell- oder Wörterbuchversion ist keine Ausführungsberechtigung.
+- Eine angenommene Nachricht ist kein beobachteter Arbeitsabschluss.
+- Eine vergangene Beobachtung mit eigener Kennung ist keine aktuelle Messung.
+- Eine neue Auftragsnummer macht eine schon unklar gewordene Wirkung nicht ungeschehen.
+
+Zum Gegenprüfen reicht eine gedachte Arbeit: Auftrag 7 soll bis zu einer
+genannten lokalen Grenze fertig sein. Die Reserve braucht Vorlauf. OSCan
+erwartet ein Problem, bestätigt Reservebereitschaft, erhält eine Erlaubnis und
+fragt später den Abschluss ab. Nun gehen nacheinander Bereitschaft, Erlaubnis
+oder Abschlussantwort verloren. An jeder Stelle muss eine andere Information
+fehlen dürfen, ohne dass das System die nächste einfach dazuerfindet.
+
+<a id="probe-d"></a>
+
+### Architekturprobe D: Wann gemeinsames Wissen wirklich Nachrichten spart
+
+**Frage und Modell.** Ein Sender und ein Empfänger benutzen für diese Papierprobe
+denselben logischen Takt. Ein fest vereinbarter Katalog sagt: OK und SCHWACH
+wechseln, Warnflags bleiben null. Basis und Phasenbit sind bekannt; AUSFALL oder
+abweichende Warnflags sind Abweichungen. Diese Erwartung ist handgegeben, nicht
+erlernt. Sitzungsaufnahme und zulässige Katalogversion werden vorab vereinbart;
+die Probe entwickelt kein Verfahren zur Aufnahme beliebiger Geräte.
+
+Es gibt drei Ausgaben: **bestätigte Beobachtung zu einem bestimmten Messtakt**,
+**unbestätigte Erwartung** und **unbekannt**. Schweigen bestätigt keine Messung.
+Ein ACK bestätigt die Installation einer Basis, nicht eine neue Beobachtung.
+Die aktuelle Auftragsvergabe des Repositorys darf eine unbestätigte Erwartung
+deshalb nicht als die verlangte aktuelle Statusmeldung übernehmen.
+
+**Begrenztes Protokoll.** `BASE` liefert einen Vollzustand, Modell, Phase und
+Basis-ID. Erst nach passendem ACK darf der Sender erwartungsgemäße Meldungen
+unterlassen. `DELTA` enthält eine tatsächlich beobachtete Abweichung als
+vollständigen Zustand samt Flags. `CHECK` bestätigt am periodischen Prüfpunkt
+die erneut gemessene Übereinstimmung mit dem Modell. Alle Meldungen beziehen
+sich auf **dieselbe feste Basis**, nicht auf eine Kette vorheriger Deltas.
+Damit kann ein verlorenes Delta den nächsten Zustand nicht falsch dekodieren;
+die verlorene Beobachtung wird dadurch allerdings nicht nachgeliefert.
+
+Jede neue Sendernachricht hat eine steigende Nachrichten-ID und ihren eigenen
+Messtakt. Wiederholungen tragen dieselbe ID und denselben Inhalt; sie erneuern
+keine Frist und keinen Beleg. Ältere Beobachtungen überschreiben keine neuere.
+Für ACK/RESYNC bezeichnet die Nachrichten-ID die beantwortete Sendernachricht;
+die Kontrolle ist nur zusammen mit passender Sitzung und Basis gültig und
+erzeugt keine eigene Beobachtungsreihenfolge. Ein Zählerüberlauf erfordert eine
+neue Sitzung statt Wiederverwendung alter IDs.
+Ein ACK bestätigt nur die gerade ausstehende BASE bei übereinstimmender
+Wörterbuchversion, Basis-ID und referenzierter Nachrichten-ID. Zu einer noch
+gespeicherten ID abweichender Inhalt ist ein Konflikt; ältere nicht mehr
+gespeicherte IDs werden als alt abgewiesen, nicht anhand einer unbegrenzten
+Liste alter Paketinhalte verglichen.
+
+Fehlt die Basis oder passt die Version nicht, meldet der Empfänger zuerst
+`UNBEKANNT` und fordert mit `RESYNC` einen kanonischen Vollzustand `RAW` an.
+Danach bleibt diese Sitzung im Vollmodus. Eine verlorene Basisbestätigung
+erlaubt höchstens eine Wiederholung derselben BASE; fehlt auch deren ACK,
+wechselt der Sender zu RAW. Auch RESYNC wird höchstens einmal wiederholt.
+Das beendet die Verhandlungsschleife, verspricht aber keine Zustellung bei
+weiterem Verlust. Ein Neustart einer Seite verlangt eine neue Sitzung und
+verwirft die Modellbasis; Versionen werden nicht still übersetzt.
+Ein verspätetes ACK kann den bereits gewählten Vollmodus nicht rückgängig machen.
+Für die unten gerechnete Wiederholung in Takt 1 gilt: Retry und eintreffendes
+ACK werden vor der nächsten Beobachtung verarbeitet. Trifft vorher eine neue
+kritische Beobachtung ein, erzwingt sie RAW und zusätzliche, separat zu zählende
+Frames; die 612-Byte-Folge ist dann nicht mehr der passende Ablauf.
+
+**Aktualitätsziel.** Ohne Verlust soll spätestens alle drei Takte eine neue
+Bestätigung vorliegen; AUSFALL und geänderte Warnflags lösen sofort eine
+Sendung aus. Die Frische einer bestätigten Beobachtung läuft hier nach drei
+Takten ab. Kommt am Grenztakt eine gültige neuere Beobachtung an, wird diese
+zuerst verarbeitet; sonst wird der aktuelle bestätigte Zustand unbekannt.
+Eine Meldung wird nur als frisch angenommen, wenn
+`0 ≤ Empfangstakt − Messtakt < 3` gilt, auch bei einer neueren Nachrichten-ID.
+CHECK bei Takt 3 trägt Messtakt 3, die BASE-Wiederholung in Takt 1 weiterhin 0.
+Eine Vorhersage darf getrennt angezeigt werden. Bei Verlust wird keine feste
+Ausfallerkennungszeit garantiert. Für echte unabhängige Geräteuhren fehlen
+weiterhin Messalter-, Verzögerungs- und Aufnahmevertrag.
+
+**Vollständig benannte Framegrößen, noch kein neues Produktionsformat:**
+Kennung/Version/Art 4 Byte, Knoten 2, Sitzung 16, Wörterbuchversion 2,
+Nachrichten-ID/Messtakt/Basis-ID zusammen 12, CRC32 4: Rahmen 40 Byte.
+BASE ergänzt Modell, Phase, Zustand und Flags: 44 Byte; DELTA ergänzt Zustand
+und Flags: 42 Byte. CHECK, ACK und RESYNC bleiben bei 40 Byte. Der Vollgegner
+darf Wörterbuch- und Basisfelder weglassen: 34 Byte Rahmen plus zwei Byte
+Zustand/Flags, also 36. RAW benutzt dieses einfachere Format. Die gleiche Größe
+wie OC Version 1 bedeutet keine Kompatibilität mit dessen Abfrage-API.
+CRC und Kennungen sind in dieser Probe keine Authentifizierung.
+
+**Sollrechnung für Takte 0–7.** Bei genau passenden Wechseln sendet der Kandidat
+BASE+ACK bei 0 sowie CHECK bei 3 und 6: `44+40+40+40=164` Byte, vier Frames.
+Vollmeldung in jedem Takt und Meldung bei jeder Zustandsänderung benötigen
+je `8×36=288` Byte. Das allein wäre noch kein fairer Nutzennachweis: Der
+Kandidat bestätigt nur drei Messtakte.
+
+Der stärkere einfache Gegner ist deshalb **periodischer Vollzustand plus
+sofortige Meldung kritischer Zustände und geänderter Warnflags**. Unter dem
+genannten Aktualitätsziel braucht er bei dieser harmlosen Wechselspur nur
+`3×36=108` Byte, drei Frames. Der gemeinsame Modellzustand ist hier teurer.
+Bei einem konstanten harmlosen Zustand genügt auch der einfache Ereignisgegner
+mit periodischer Bestätigung; ein Modellwechsel wäre dafür kein kostenloser Gewinn.
+
+Eine rein algebraische Grenze zeigt, wo die Frage wieder interessant werden
+könnte: Bei S Byte vollständigem Zustand kosten drei Vollmeldungen `102+3S`,
+die obige Modellfolge `162+S`. Nur bei `S>30` spart diese spezielle Folge
+Protokollbytes. Dann müsste der gesamte größere Zustand aus genau diesem
+vereinbarten Modell rekonstruierbar sein. Der Kandidat hat außerdem einen
+Frame mehr; äußere Rahmen, Installation und Speicher des Modells, Rechenarbeit,
+Neustarts und Wiederabgleich können den Vorteil aufzehren. Für die vorhandenen
+zwei Statusbytes weist diese Rechnung keinen Kommunikationsgewinn nach.
+Bei h Byte zusätzlichem äußerem Rahmen pro Frame und M Byte zusätzlicher
+einmaliger Kandidateninstallation wäre schon für die reine Übertragung
+`2S > 60+h+M` nötig. Diese Größen sind offen und werden nicht als null gemessen behauptet.
+
+**Fehlerfolge als Prüferentwurf, nicht als Effizienzvergleich:**
+
+| Vorgang | Im modellierten Kanal berechnete Bytes |
+|---|---:|
+| Takt 0: BASE, ihr ACK geht verloren | 44+40=84 |
+| Takt 1: identische BASE erneut, ACK kommt an | 44+40=84 |
+| Takt 3: CHECK und eine zusätzlich erzeugte Kopie | 40+40=80 |
+| Takt 4: tatsächlicher AUSFALL, DELTA geht verloren | 42 |
+| Takt 5/6: DELTA zu erneutem AUSFALL in 5 verspätet; gültiges CHECK zu normalem Zustand in 6 kommt zuerst | 42+40=82 |
+| Takt 7: Empfänger neu gestartet, neue Sitzung und BASE+ACK; zusätzlich alte CHECK-Kopie | 44+40+40=124 |
+| Takt 8: formal gültiges CHECK mit unpassender Wörterbuchversion, dann RESYNC und RAW | 40+40+36=116 |
+| **Summe** | **612** |
+
+Das sind 15 Frames. In diesem abstrakten Kanal kostet jede übergebene Sendung
+und jede zusätzlich erzeugte Kopie ihre volle Größe; verlorene Sendungen zählen,
+eine bloße Verzögerung wird nicht doppelt berechnet. Hinzu kommen zwei
+Sitzungsaufnahmen mit noch unbestimmten Kosten H je Aufnahme sowie alle äußeren
+Rahmen. Diese Rechnung ist keine gemessene Leitungsmenge. Sie vergleicht noch
+keine Verfahren unter demselben ausgeführten Verlustmodell.
+
+Erwartete Entscheidungen: Der verspätete Ausfall überschreibt nicht die neuere
+Beobachtung; Duplikate verlängern keine Frische; alte Sitzungen bleiben ungültig;
+die falsche Version wird vor Interpretation unbekannt. Beide Ausfallbeobachtungen
+können hier trotz korrektem Protokoll für eine rechtzeitige Reaktion verloren
+sein. Das muss neben Bytes als Nachteil sichtbar bleiben.
+
+**Abnahme:** Kein erwarteter Zustand darf als neu beobachtet ausgegeben werden.
+Ein Nutzenvergleich müsste anschließend den starken periodischen Gegner,
+dieselben vorab festgelegten Kanalstörungen, Bestätigungsalter, unbekannte Takte
+und verspätet/nie erkannte kritische Ereignisse enthalten. Quellenkennung
+`(Knoten,Sitzung,Messtakt)` bleibt beim Weiterreichen erhalten; Empfänger lernen
+aus ACK, CHECK-Duplikaten oder bloßen Modellerwartungen nicht zusätzlich.
+
+<a id="probe-e"></a>
+
+### Architekturprobe E: Ein neuer Besitzer beendet keine alte Wirkung
+
+**Welt.** Zwei Steuerknoten A und B, ein einziger Aktorzugang G, vier
+Auftragsplätze und die nicht idempotente Modellwirkung „einen Impuls ausgeben“.
+Nur G darf diese Wirkung auslösen. Seine Speicherung gilt in dieser Papierwelt
+als atomar und neustartfest; alte Sicherungen werden nicht zurückgespielt.
+Der Prüfer zählt wirkliche Impulse, die Steuerknoten sehen diesen geheimen
+Zähler nicht. Ein zweiter unabhängiger Zugang oder verlorener Dauerspeicher
+liegt außerhalb dieser Zusage. Es wird kein echtes Gerät angesteuert.
+
+G hält Generation und berechtigten Besitzer, fachliche Auftrags-ID,
+unveränderlichen Inhalt, Zustand und eine belegte Ressource dauerhaft fest.
+Die fachliche ID bleibt bei Rollen- und Kommunikationswechseln dieselbe.
+Derselbe fachliche Wunsch unter neuer ID wäre neue Arbeit und wird durch
+Deduplizierung alter IDs nicht erkannt.
+
+| Zustand | Bedeutung |
+|---|---|
+| OFFEN | Dauerhaft angenommen, sicher noch keine Wirkung freigegeben |
+| BEGONNEN | Beginn dauerhaft vermerkt; Wirkung steht möglicherweise noch aus oder ist schon erfolgt |
+| ERLEDIGT | Abschluss dauerhaft bestätigt; Wiederholung startet nichts |
+| UNGEKLÄRT | Wirkung nicht zuverlässig bestimmbar; betroffene Ressource bleibt gesperrt |
+| VERFALLEN | Sicher ohne Beginn verworfen; keine automatische Reaktivierung |
+
+Vor der Freigabe prüft G Besitzer, Generation, Inhalt, lokale Gültigkeit und
+freie Ressource. BEGONNEN wird dauerhaft, bevor der Impuls erfolgt. Die
+Annahmebestätigung bestätigt nur OFFEN. Der Übergang von Freigabe zu tatsächlicher
+Wirkung bleibt ausdrücklich eine Unterbrechungsstelle.
+Besitzer-/Generationsprüfung, Prüfung des Auftragszustands, Ressourcenbelegung
+und dauerhaftes BEGONNEN bilden dabei **einen gemeinsam gegen Rollenwechsel
+serialisierten Freigabeschritt**. Eine vorherige positive Prüfung ist keine
+später frei verwendbare Erlaubnis. Sonst könnte der Rollenwechsel genau
+zwischen Prüfung und Beginn liegen und den Schutz aushebeln.
+Das Schließen alter offener Aufträge beim Rollenwechsel benutzt dieselbe
+Serialisierung. Nur der einmalige Übergang OFFEN→BEGONNEN kann eine Wirkung
+freigeben; erneute Nachrichten zu BEGONNEN, UNGEKLÄRT oder einem endgültigen
+Zustand führen ihn nicht noch einmal aus. Das gilt auch für eine innerhalb G
+schon vor dem Wechsel begonnene, aber noch nicht festgeschriebene Vorbereitung.
+
+**Ein erlaubter Rollenwechsel.** Für diese Probe ist genau A→B von Generation
+41 auf 42 zugelassen. G prüft die erwartete 41 und speichert Besitzer B und 42
+in einem serialisierten Vorgang. Die Generation wird nicht vom beliebigen
+Absender frei gewählt. Verlorene Wechselantworten werden per Statusabfrage
+geklärt; eine wiederholte identische Wechselanfrage erhält den bekannten Stand,
+keinen zusätzlichen Wechsel. Der Entwurf löst keine allgemeine verteilte Wahl
+und nicht den Ausfall des einzigen Zugangs G.
+
+Nach bestätigtem Wechsel dürfen Befehle aus 41 keine neue Arbeit beginnen;
+alte nur offene Aufträge werden ohne Wirkung geschlossen. Eine bereits
+begonnene oder ungeklärte Arbeit bleibt jedoch ressourcenbelegend. B darf sie
+abfragen, aber nicht durch einen neuen Auftrag auf derselben Ressource verdrängen.
+Ein höherer Zähler ist kein Stillstandsnachweis. Nur ein gesondert definierter
+verlässlicher Abschluss- oder Stillstandsnachweis könnte diese Sperre lösen.
+Eine vor dem Wechsel bereits festgeschriebene Freigabe kann noch danach eine
+physische Wirkung auslösen. Der Wechsel begrenzt neue Freigaben, nicht diesen
+bereits begonnenen Vorgang. Ein Stillstand allein belegt zudem noch nicht,
+ob der alte Auftrag seine gewünschte Wirkung bereits hatte.
+Er erlaubt deshalb allein weder dessen Wiederholung noch das endgültige
+Schließen dieses Auftrags für die Präfixbereinigung in Probe F.
+
+**Frist ohne globale Uhr.** G vergibt ein Ticket mit eigener Bootkennung und
+Grenze auf seiner lokalen monotonen Uhr. Das Budget beginnt mit Ticketausgabe
+bei G; nicht mit der ursprünglichen Absicht auf A. Übertragung und Warten
+verbrauchen es, Wiederholungen verlängern es nicht. Unmittelbar vor der
+Wirkungsfreigabe wird die Grenze erneut geprüft, einschließlich verstrichener
+Zeit für die dauerhafte Vorbereitung. In der Papierwelt gehört diese letzte
+Prüfung zum atomar betrachteten Freigabeschritt. Eine reale Umsetzung müsste
+dessen Zeitverhalten gesondert prüfen; Fertigstellung bis zur Grenze ist nicht zugesagt.
+
+Nach Gs Neustart sind alte offene Tickets ungültig. BEGONNEN wird UNGEKLÄRT,
+ERLEDIGT bleibt abfragbar; Uhrwerte verschiedener Boots werden nicht verglichen.
+Eine Frist seit Erstellung auf A erfordert einen anderen Zeitvertrag.
+
+**Der entscheidende Doppelverlauf:**
+
+| Schritt | Verlauf L | Verlauf R |
+|---|---|---|
+| 1 | BEGONNEN(j7) dauerhaft | identisch |
+| 2 | Absturz vor dem Impuls | Impuls, dann Absturz vor dauerhaftem Abschluss |
+| 3 | Neustart; kein bestätigter Abschluss | identisch |
+| 4 | B sieht UNGEKLÄRT(j7) | identisch |
+
+Erneute Ausführung erledigt L, verdoppelt aber R. Keine Wiederholung schützt R,
+lässt L jedoch unerledigt. Warten bringt ohne weitere Information keinen
+garantierten Abschluss. Für diese Wirkung sind daher keine Verdopplung,
+garantierte Erledigung und automatische Fortsetzung trotz dieser Wissenslücke
+nicht gemeinsam zugesagt. Der vorhandene Hash-Arbeiter hat einen engeren
+Vertrag: Seine gesamte fachliche Wirkung liegt mit der Epochenprüfung im selben
+Datenbankvorgang. Das ist genau die hier fehlende Verbindung.
+
+**Gegenfälle:** Verlorene Abschlussantwort bei gespeicherter Erledigung liefert
+denselben Status ohne neuen Impuls. Ein alter Befehl nach bestätigter 42 wird
+am Aktorzugang abgewiesen. Neustart nach BEGONNEN sperrt in beiden Verläufen
+dieselbe Ressource. Verspätete oder zu einem alten Boot gehörende Tickets
+starten nichts; bekannte historische Ergebnisse bleiben trotzdem abfragbar.
+Volles Register, widersprüchlicher Inhalt oder unlesbarer dauerhafter Stand
+führen vor neuer Wirkung zur Ablehnung.
+
+Der besonders billige Architekturtest hält einen von A vorgeprüften Befehl
+zurück, lässt B übernehmen und stellt dann den alten Befehl zu. Wirkt er,
+weil nur der Supervisor statt G die Generation prüfte, ist der Entwurf
+gescheitert. Mehr Lerngenauigkeit würde diesen Fehler nicht beheben.
+
+<a id="probe-f"></a>
+
+### Architekturprobe F: Begrenzter Speicher ohne wiederbelebte Aufträge
+
+Das vorhandene Journal stoppt bei seiner Kapazitätsgrenze, statt alte Kennungen
+automatisch zu vergessen. Ein möglicher Gegenentwurf wäre ein **dauerhafter
+Abschlusspräfix mit begrenztem offenen Fenster**. Er ändert den Vertrag:
+Alte Ergebnisse können nicht unbegrenzt abrufbar bleiben. Er wird hier nicht
+in das bestehende Journal eingebaut.
+
+**Annahmen.** Genau ein zugelassener Auftraggeber vergibt im selben dauerhaften
+Namensraum strikt steigende Sequenznummern; der Aktorzugang speichert atomar
+eine Grenze H und höchstens W folgende Einträge. Beispiel: W=3. Nachrichten
+dürfen verspätet und umgeordnet ankommen. Payload und Ergebnisgröße bekommen
+zusätzlich eigene Grenzen, denn drei beliebig große Aufträge sind kein festes
+Bytebudget. Alte Sicherungen, neue leere Speicher und Zählerüberlauf dürfen
+keine alte Nummer wieder zur neuen machen; bei ungeklärter Wiederherstellung stoppt die Probe.
+
+- `j≤H`: niemals neue Wirkung. Antwort nur „Kennung geschlossen; Detail/Ergebnis
+  gegebenenfalls nicht mehr vorhanden“, keine erfundene alte Quittung.
+- `H<j≤H+W`: bekannter Eintrag verlangt denselben Inhalt; ein freier Platz
+  darf unter den übrigen Aktorregeln angenommen werden.
+- `j>H+W`: vor Beginn abweisen. Eine große Nummer überspringt keine Lücke.
+
+H steigt nur über lückenlos vorhandene endgültige Zustände: verlässlich
+ERLEDIGT oder sicher ohne Beginn geschlossen. UNGEKLÄRT ist kein endgültiger
+Zustand dieses Sinns. Grenze und Entfernen der ersetzten Detailzeilen werden
+gemeinsam dauerhaft. Fehlende Nummern werden nicht als erledigt behandelt;
+ihre sichere Schließung bräuchte einen ausdrücklichen berechtigten Stornovorgang.
+Auch die Prüfung eines eintreffenden j gegen H und seine Aufnahme werden mit
+Präfixfortschritt und Bereinigung serialisiert; ein vor der Bereinigung gelesenes
+H darf keine spätere erneute Aufnahme einer inzwischen geschlossenen ID erlauben.
+
+**Handfolge:** Bei H=0 werden 1,2,3 angenommen. Zuerst werden 1 und 3 fertig;
+erst danach wird bei der Ausführung von 2 dessen Wirkung ungeklärt. H darf
+nur auf 1 steigen. Die Details von 1 können entfallen;
+eine späte Kopie von 1 wird dennoch nicht ausgeführt. Auftrag 4 passt jetzt
+ins Fenster 2…4 und kann OFFEN aufgenommen werden; Auftrag 5 nicht. Auf
+derselben Ressource darf 4 wegen der ungeklärten 2 noch nicht beginnen.
+Die Grenze bleibt bei 1. Eine einzige ungeklärte Wirkung kann den Fortschritt
+dieser begrenzten Ordnung blockieren; die Probe verspricht ausdrücklich
+keinen dauerhaften Durchsatz trotz ungeklärter Lücken.
+
+Wird 2 später durch einen gültigen Backend-Nachweis endgültig geklärt, kann H
+zunächst über 2 und 3 steigen. Erst wenn auch 4 unter gültiger Freigabe
+abgeschlossen wurde, darf H weiter auf 4 steigen. Ein Absturz zwischen Bereinigung und
+Grenzfortschritt darf diesen Schutz nicht beseitigen; genau deshalb gehören
+beide in denselben dauerhaften Vorgang. Ein absichtlich falscher Prüferfall
+löscht erst Zeile 1, stürzt vor dem Speichern von H=1 ab und liefert 1 erneut
+zu. Eine erneute Wirkung widerlegt die Bereinigungsregel.
+
+**Preis und Grenze.** Unterhalb H kann ein anderer Inhalt unter derselben alten
+ID nicht mehr mit dem gelöschten Original verglichen werden; er wird trotzdem
+abgewiesen. Das genügt gegen erneute Wirkung, nicht für unbegrenzte historische
+Beauskunftung. Eine neue ID für denselben fachlichen Wunsch bleibt neue Arbeit.
+Rollenwechsel dürfen den dauerhaften ID-Namensraum nicht zurücksetzen.
+Mehrere unabhängig vergebende Auftraggeber, beliebige ID-Reihenfolgen und
+eine Lösung ungeklärter Wirkungen sind durch diese einzelne Präfixzahl nicht gelöst.
+
+Dieser Entwurf macht eine reale Produktentscheidung sichtbar: Wie lange müssen
+Details und Ergebnisse abrufbar bleiben, und wann ist ein sichtbarer Stillstand
+besser als das Risiko doppelter Arbeit? Diese Entscheidung kann kein
+Vergessensparameter an Alex’ Stelle treffen.
+
+### Was vor einem späteren Anschluss an Geräte entschieden sein muss
+
+Die neuen Gegenfälle verengen den Weg, ohne neue Umbauten zu verlangen:
+Welcher Auftrag soll erledigt werden, wer darf ihn auslösen, woran erkennt man
+seinen tatsächlichen Abschluss, welche Uhr setzt seine Frist und welche
+Information muss nach einem Neustart noch gelten? Erst danach lässt sich
+entscheiden, ob ein gelerntes Gedächtnis diesen Auftrag besser vorbereitet.
+
+Für Claude wäre die erste Übergabe deshalb ein kleiner Vertragsdatensatz:
+beobachtbares Signal, erlaubte Aktion, stabile fachliche ID, Ereignis- und
+Handlungsfrist, zulässige Ergebnisabfrage, Verhalten bei Ungewissheit,
+Kapazitätsgrenze und einfache Vergleichsregel. Persönliche Daten oder ein
+Sprachmodell sind dafür nicht erforderlich. Offene Werte bleiben als offen
+markiert; sie werden nicht aus fremden Einstellungen oder Unterlagen ergänzt.
 
 
 <a id="reihenfolge"></a>
