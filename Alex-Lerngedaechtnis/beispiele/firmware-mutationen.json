@@ -1,0 +1,613 @@
+{
+  "schema": "oscan-mutations-v1",
+  "source_hashes": {
+    "kern.py": "5c285af1cf53b68ad7536d9640213362a10db1ce07ba6129481e433e58cf07cd",
+    "vokabular.py": "f0543a0e8586ef7be9261eeb371a433f6af6160223bcf983630c8ec09160b868",
+    "neustart.py": "809024117551ddbf646c52665ec2c9d146b81b872c056a86a0bacf32c43d6a3f",
+    "esp32/host.cpp": "e975afe506b87c0b19da7b634d1fa3a37d11ea424d9e78fbe480727c03274058",
+    "esp32/Lernknoten/Knoten.h": "ceccf137a89546ee20e67fb72e41265840cc7cc3bf8f4a081a8a3c85112e3f17",
+    "esp32/Lernknoten/Lernknoten.ino": "ef048c1a77b49f448ceedae96f216bb426bcf88d1a0d09cb4ee95937009f20ba",
+    "esp32/Lernknoten/Koerper.h": "ab867d2ad27ad8fc032024ede38953e21bed40116d7f886e4856779161c026b8",
+    "esp32/Lernknoten/Reize.h": "4b6151daacfd00495462e694faed5da698b855a02c5c7f9b19b93bb0bcb50530"
+  },
+  "measurement_hashes": {
+    "firmwarepruefung.py": "d68c4696cf34e9561d4b57a8d1ac160e79df4ddf5258611b839939b6cfd4fab1",
+    "firmwaremutationen.py": "cb8b7fd44f6b9e208554e53b0ca23c27f494d1ebfb13cf593a5ea325b57c09d1",
+    "test_firmwarepruefung.py": "6c9ac062b28ffdc8020fdc1d02e59eea777a101a55ed4fe1fb3c67123883d869",
+    "FIRMWARE-PRUEFPLAN.md": "c26d72eee6070d58eb5b5a422f274ace8a43704493c77c0d3e442e1bb127585d"
+  },
+  "fixture": "Synthetischer Ersatz: 6 VERBUNDEN, 6 ABGELEHNT; keine Aufnahme gelesen/kopiert",
+  "mutation_catalog_sha256": "1db78dddfd2dc4f0aef3af9a7aa09cb0d6db4a008dc8914a9b6c689811f175af",
+  "mutants": [
+    {
+      "id": "kern_threshold",
+      "file": "kern.py",
+      "original": "anteil >= 0.6",
+      "replacement": "anteil > 0.6",
+      "regression": "test_firmwarepruefung.PythonRegressionen.test_kern_schwelle_inklusive",
+      "existing": {
+        "tests": 59,
+        "failures": [],
+        "errors": [],
+        "skipped": 0,
+        "exit_code": 0,
+        "classification": "PASS"
+      },
+      "targeted": {
+        "tests": 1,
+        "failures": [
+          {
+            "test": "test_firmwarepruefung.PythonRegressionen.test_kern_schwelle_inklusive",
+            "kind": "AssertionError"
+          }
+        ],
+        "errors": [],
+        "skipped": 0,
+        "exit_code": 1,
+        "classification": "ASSERTION_FAILURE"
+      },
+      "existing_survivor": true,
+      "targeted_killed": true
+    },
+    {
+      "id": "kern_horizon",
+      "file": "kern.py",
+      "original": "MAX_BLICK = 600",
+      "replacement": "MAX_BLICK = 599",
+      "regression": "test_firmwarepruefung.PythonRegressionen.test_kern_blick_600",
+      "existing": {
+        "tests": 59,
+        "failures": [],
+        "errors": [
+          {
+            "test": "test_labor.BlickTests.test_blick_hat_grenzen",
+            "kind": "ValueError"
+          }
+        ],
+        "skipped": 0,
+        "exit_code": 2,
+        "classification": "ERROR"
+      },
+      "targeted": {
+        "tests": 1,
+        "failures": [
+          {
+            "test": "test_firmwarepruefung.PythonRegressionen.test_kern_blick_600",
+            "kind": "AssertionError"
+          }
+        ],
+        "errors": [],
+        "skipped": 0,
+        "exit_code": 1,
+        "classification": "ASSERTION_FAILURE"
+      },
+      "existing_survivor": false,
+      "targeted_killed": true
+    },
+    {
+      "id": "kern_gap",
+      "file": "kern.py",
+      "original": "self.zustand if abstand == 1 else None",
+      "replacement": "self.zustand if abstand <= 2 else None",
+      "regression": "test_firmwarepruefung.PythonRegressionen.test_kern_luecke_keine_transition",
+      "existing": {
+        "tests": 59,
+        "failures": [],
+        "errors": [],
+        "skipped": 0,
+        "exit_code": 0,
+        "classification": "PASS"
+      },
+      "targeted": {
+        "tests": 1,
+        "failures": [
+          {
+            "test": "test_firmwarepruefung.PythonRegressionen.test_kern_luecke_keine_transition",
+            "kind": "AssertionError"
+          }
+        ],
+        "errors": [],
+        "skipped": 0,
+        "exit_code": 1,
+        "classification": "ASSERTION_FAILURE"
+      },
+      "existing_survivor": true,
+      "targeted_killed": true
+    },
+    {
+      "id": "kern_dwell",
+      "file": "kern.py",
+      "original": "if vorher is not None and jetzt != vorher:",
+      "replacement": "if vorher is not None:",
+      "regression": "test_firmwarepruefung.PythonRegressionen.test_kern_startwert_bleiben",
+      "existing": {
+        "tests": 59,
+        "failures": [
+          {
+            "test": "test_labor.ErbeTests.test_startwert_verblasst_nur_mit_eigenen_ausgaengen",
+            "kind": "AssertionError"
+          },
+          {
+            "test": "test_labor.SketchTests.test_sketch_paritaet_fuer_demo_und_alle_kontrollspuren",
+            "kind": "TEST_FAILURE"
+          },
+          {
+            "test": "test_labor.VokabularTests.test_grobe_sicht_entscheidet_wie_der_knoten_bei_jedem_blick (blick=30, familie='Rückkehr', startwert=True)",
+            "kind": "TEST_FAILURE"
+          }
+        ],
+        "errors": [
+          {
+            "test": "test_labor.VokabularTests.test_grobe_sicht_entscheidet_wie_der_knoten_bei_jedem_blick",
+            "kind": "KeyError"
+          }
+        ],
+        "skipped": 0,
+        "exit_code": 2,
+        "classification": "ERROR"
+      },
+      "targeted": {
+        "tests": 1,
+        "failures": [
+          {
+            "test": "test_firmwarepruefung.PythonRegressionen.test_kern_startwert_bleiben",
+            "kind": "AssertionError"
+          }
+        ],
+        "errors": [],
+        "skipped": 0,
+        "exit_code": 1,
+        "classification": "ASSERTION_FAILURE"
+      },
+      "existing_survivor": false,
+      "targeted_killed": true
+    },
+    {
+      "id": "vok_threshold",
+      "file": "vokabular.py",
+      "original": "modell.kritisch_binnen(wort, horizont) >= schwelle",
+      "replacement": "modell.kritisch_binnen(wort, horizont) > schwelle",
+      "regression": "test_firmwarepruefung.PythonRegressionen.test_vokabular_schwelle_inklusive",
+      "existing": {
+        "tests": 59,
+        "failures": [],
+        "errors": [],
+        "skipped": 0,
+        "exit_code": 0,
+        "classification": "PASS"
+      },
+      "targeted": {
+        "tests": 1,
+        "failures": [
+          {
+            "test": "test_firmwarepruefung.PythonRegressionen.test_vokabular_schwelle_inklusive",
+            "kind": "TEST_FAILURE"
+          }
+        ],
+        "errors": [],
+        "skipped": 0,
+        "exit_code": 1,
+        "classification": "ASSERTION_FAILURE"
+      },
+      "existing_survivor": true,
+      "targeted_killed": true
+    },
+    {
+      "id": "vok_horizon",
+      "file": "vokabular.py",
+      "original": "naechster - t <= horizont",
+      "replacement": "naechster - t < horizont",
+      "regression": "test_firmwarepruefung.PythonRegressionen.test_vokabular_horizont_inklusive",
+      "existing": {
+        "tests": 59,
+        "failures": [
+          {
+            "test": "test_labor.VokabularTests.test_je_takt_trifft_immer_warnen_nur_die_grundrate",
+            "kind": "TEST_FAILURE"
+          }
+        ],
+        "errors": [],
+        "skipped": 0,
+        "exit_code": 1,
+        "classification": "ASSERTION_FAILURE"
+      },
+      "targeted": {
+        "tests": 1,
+        "failures": [
+          {
+            "test": "test_firmwarepruefung.PythonRegressionen.test_vokabular_horizont_inklusive",
+            "kind": "TEST_FAILURE"
+          }
+        ],
+        "errors": [],
+        "skipped": 0,
+        "exit_code": 1,
+        "classification": "ASSERTION_FAILURE"
+      },
+      "existing_survivor": false,
+      "targeted_killed": true
+    },
+    {
+      "id": "vok_initial_phase",
+      "file": "vokabular.py",
+      "original": "return [p for p in laeufe([kritisch(w) for w in woerter], zusammen) if p[0] > 0]",
+      "replacement": "return [p for p in laeufe([kritisch(w) for w in woerter], zusammen) if p[0] >= 0]",
+      "regression": "test_firmwarepruefung.PythonRegressionen.test_vokabular_anfangsphase",
+      "existing": {
+        "tests": 59,
+        "failures": [],
+        "errors": [],
+        "skipped": 0,
+        "exit_code": 0,
+        "classification": "PASS"
+      },
+      "targeted": {
+        "tests": 1,
+        "failures": [
+          {
+            "test": "test_firmwarepruefung.PythonRegressionen.test_vokabular_anfangsphase",
+            "kind": "TEST_FAILURE"
+          }
+        ],
+        "errors": [],
+        "skipped": 0,
+        "exit_code": 1,
+        "classification": "ASSERTION_FAILURE"
+      },
+      "existing_survivor": true,
+      "targeted_killed": true
+    },
+    {
+      "id": "vok_dwell",
+      "file": "vokabular.py",
+      "original": "if self.startwert and jetzt != vorher:",
+      "replacement": "if self.startwert:",
+      "regression": "test_firmwarepruefung.PythonRegressionen.test_vokabular_startwert_bleiben",
+      "existing": {
+        "tests": 59,
+        "failures": [
+          {
+            "test": "test_labor.VokabularTests.test_grobe_sicht_entscheidet_wie_der_knoten_bei_jedem_blick (blick=30, familie='Rückkehr', startwert=True)",
+            "kind": "TEST_FAILURE"
+          }
+        ],
+        "errors": [
+          {
+            "test": "test_labor.VokabularTests.test_grobe_sicht_entscheidet_wie_der_knoten_bei_jedem_blick",
+            "kind": "KeyError"
+          }
+        ],
+        "skipped": 0,
+        "exit_code": 2,
+        "classification": "ERROR"
+      },
+      "targeted": {
+        "tests": 1,
+        "failures": [
+          {
+            "test": "test_firmwarepruefung.PythonRegressionen.test_vokabular_startwert_bleiben",
+            "kind": "AssertionError"
+          }
+        ],
+        "errors": [],
+        "skipped": 0,
+        "exit_code": 1,
+        "classification": "ASSERTION_FAILURE"
+      },
+      "existing_survivor": false,
+      "targeted_killed": true
+    },
+    {
+      "id": "restart_checksum",
+      "file": "neustart.py",
+      "original": "if not hmac.compare_digest(umschlag[\"sha256\"], hashlib.sha256(kodiert(d)).hexdigest()):",
+      "replacement": "if False:",
+      "regression": "test_firmwarepruefung.PythonRegressionen.test_neustart_checksum",
+      "existing": {
+        "tests": 59,
+        "failures": [
+          {
+            "test": "test_labor.NeustartTests.test_pruefsumme_quelle_und_version",
+            "kind": "AssertionError"
+          }
+        ],
+        "errors": [],
+        "skipped": 0,
+        "exit_code": 1,
+        "classification": "ASSERTION_FAILURE"
+      },
+      "targeted": {
+        "tests": 1,
+        "failures": [
+          {
+            "test": "test_firmwarepruefung.PythonRegressionen.test_neustart_checksum",
+            "kind": "AssertionError"
+          }
+        ],
+        "errors": [],
+        "skipped": 0,
+        "exit_code": 1,
+        "classification": "ASSERTION_FAILURE"
+      },
+      "existing_survivor": false,
+      "targeted_killed": true
+    },
+    {
+      "id": "restart_source",
+      "file": "neustart.py",
+      "original": "if d[\"quelle\"] != quelle:",
+      "replacement": "if False:",
+      "regression": "test_firmwarepruefung.PythonRegressionen.test_neustart_quelle",
+      "existing": {
+        "tests": 59,
+        "failures": [
+          {
+            "test": "test_labor.NeustartTests.test_pruefsumme_quelle_und_version",
+            "kind": "AssertionError"
+          }
+        ],
+        "errors": [],
+        "skipped": 0,
+        "exit_code": 1,
+        "classification": "ASSERTION_FAILURE"
+      },
+      "targeted": {
+        "tests": 1,
+        "failures": [
+          {
+            "test": "test_firmwarepruefung.PythonRegressionen.test_neustart_quelle",
+            "kind": "AssertionError"
+          }
+        ],
+        "errors": [],
+        "skipped": 0,
+        "exit_code": 1,
+        "classification": "ASSERTION_FAILURE"
+      },
+      "existing_survivor": false,
+      "targeted_killed": true
+    },
+    {
+      "id": "restart_total",
+      "file": "neustart.py",
+      "original": "if sum(sum(row.values()) for row in g.gewichte.values()) > d[\"takt\"]:",
+      "replacement": "if False:",
+      "regression": "test_firmwarepruefung.PythonRegressionen.test_neustart_gesamtmasse",
+      "existing": {
+        "tests": 59,
+        "failures": [],
+        "errors": [],
+        "skipped": 0,
+        "exit_code": 0,
+        "classification": "PASS"
+      },
+      "targeted": {
+        "tests": 1,
+        "failures": [
+          {
+            "test": "test_firmwarepruefung.PythonRegressionen.test_neustart_gesamtmasse",
+            "kind": "AssertionError"
+          }
+        ],
+        "errors": [],
+        "skipped": 0,
+        "exit_code": 1,
+        "classification": "ASSERTION_FAILURE"
+      },
+      "existing_survivor": true,
+      "targeted_killed": true
+    },
+    {
+      "id": "restart_bool",
+      "file": "neustart.py",
+      "original": "type(d[\"takt\"]) is not int",
+      "replacement": "not isinstance(d[\"takt\"], int)",
+      "regression": "test_firmwarepruefung.PythonRegressionen.test_neustart_bool_takt",
+      "existing": {
+        "tests": 59,
+        "failures": [
+          {
+            "test": "test_labor.NeustartTests.test_pruefsumme_quelle_und_version",
+            "kind": "AssertionError"
+          }
+        ],
+        "errors": [],
+        "skipped": 0,
+        "exit_code": 1,
+        "classification": "ASSERTION_FAILURE"
+      },
+      "targeted": {
+        "tests": 1,
+        "failures": [
+          {
+            "test": "test_firmwarepruefung.PythonRegressionen.test_neustart_bool_takt",
+            "kind": "AssertionError"
+          }
+        ],
+        "errors": [],
+        "skipped": 0,
+        "exit_code": 1,
+        "classification": "ASSERTION_FAILURE"
+      },
+      "existing_survivor": false,
+      "targeted_killed": true
+    },
+    {
+      "id": "cpp_threshold",
+      "file": "esp32/Lernknoten/Knoten.h",
+      "original": "ausfallBinnen(jetzt) >= 0.6",
+      "replacement": "ausfallBinnen(jetzt) > 0.6",
+      "regression": "test_firmwarepruefung.FirmwareRegressionen.test_cpp_schwelle_inklusive",
+      "existing": {
+        "tests": 59,
+        "failures": [],
+        "errors": [],
+        "skipped": 0,
+        "exit_code": 0,
+        "classification": "PASS"
+      },
+      "targeted": {
+        "tests": 1,
+        "failures": [
+          {
+            "test": "test_firmwarepruefung.FirmwareRegressionen.test_cpp_schwelle_inklusive",
+            "kind": "TEST_FAILURE"
+          }
+        ],
+        "errors": [],
+        "skipped": 0,
+        "exit_code": 1,
+        "classification": "ASSERTION_FAILURE"
+      },
+      "existing_survivor": true,
+      "targeted_killed": true
+    },
+    {
+      "id": "cpp_horizon",
+      "file": "esp32/Lernknoten/Knoten.h",
+      "original": "maxBlick = 600",
+      "replacement": "maxBlick = 599",
+      "regression": "test_firmwarepruefung.FirmwareRegressionen.test_cpp_blick_600",
+      "existing": {
+        "tests": 59,
+        "failures": [
+          {
+            "test": "test_labor.SketchTests.test_blick_befehl_und_neuer_lauf (regel='zeit')",
+            "kind": "TEST_FAILURE"
+          },
+          {
+            "test": "test_labor.SketchTests.test_blick_befehl_und_neuer_lauf (regel='kontext')",
+            "kind": "TEST_FAILURE"
+          },
+          {
+            "test": "test_labor.SketchTests.test_blick_befehl_und_neuer_lauf (regel='erbe')",
+            "kind": "TEST_FAILURE"
+          },
+          {
+            "test": "test_labor.SketchTests.test_blick_befehl_und_neuer_lauf (regel='startwert')",
+            "kind": "TEST_FAILURE"
+          }
+        ],
+        "errors": [],
+        "skipped": 0,
+        "exit_code": 1,
+        "classification": "ASSERTION_FAILURE"
+      },
+      "targeted": {
+        "tests": 1,
+        "failures": [
+          {
+            "test": "test_firmwarepruefung.FirmwareRegressionen.test_cpp_blick_600",
+            "kind": "TEST_FAILURE"
+          }
+        ],
+        "errors": [],
+        "skipped": 0,
+        "exit_code": 1,
+        "classification": "ASSERTION_FAILURE"
+      },
+      "existing_survivor": false,
+      "targeted_killed": true
+    },
+    {
+      "id": "cpp_dwell",
+      "file": "esp32/Lernknoten/Knoten.h",
+      "original": "regel == Regel::STARTWERT && vorher != UNBEKANNT && jetzt != vorher",
+      "replacement": "regel == Regel::STARTWERT && vorher != UNBEKANNT",
+      "regression": "test_firmwarepruefung.FirmwareRegressionen.test_cpp_startwert_bleiben",
+      "existing": {
+        "tests": 59,
+        "failures": [
+          {
+            "test": "test_labor.SketchTests.test_sketch_paritaet_fuer_demo_und_alle_kontrollspuren",
+            "kind": "TEST_FAILURE"
+          }
+        ],
+        "errors": [],
+        "skipped": 0,
+        "exit_code": 1,
+        "classification": "ASSERTION_FAILURE"
+      },
+      "targeted": {
+        "tests": 1,
+        "failures": [
+          {
+            "test": "test_firmwarepruefung.FirmwareRegressionen.test_cpp_startwert_bleiben",
+            "kind": "AssertionError"
+          }
+        ],
+        "errors": [],
+        "skipped": 0,
+        "exit_code": 1,
+        "classification": "ASSERTION_FAILURE"
+      },
+      "existing_survivor": false,
+      "targeted_killed": true
+    },
+    {
+      "id": "cpp_total",
+      "file": "esp32/Lernknoten/Knoten.h",
+      "original": "if (summe > takt) return false;",
+      "replacement": "if (summe > takt + 1.0) return false;",
+      "regression": "test_firmwarepruefung.FirmwareRegressionen.test_cpp_gesamtmasse",
+      "existing": {
+        "tests": 59,
+        "failures": [],
+        "errors": [],
+        "skipped": 0,
+        "exit_code": 0,
+        "classification": "PASS"
+      },
+      "targeted": {
+        "tests": 1,
+        "failures": [
+          {
+            "test": "test_firmwarepruefung.FirmwareRegressionen.test_cpp_gesamtmasse",
+            "kind": "TEST_FAILURE"
+          }
+        ],
+        "errors": [],
+        "skipped": 0,
+        "exit_code": 1,
+        "classification": "ASSERTION_FAILURE"
+      },
+      "existing_survivor": true,
+      "targeted_killed": true
+    }
+  ],
+  "baseline_existing": {
+    "tests": 59,
+    "failures": [],
+    "errors": [],
+    "skipped": 0,
+    "exit_code": 0,
+    "classification": "PASS"
+  },
+  "baseline_new": {
+    "tests": 19,
+    "failures": [],
+    "errors": [],
+    "skipped": 0,
+    "exit_code": 0,
+    "classification": "PASS"
+  },
+  "source_hashes_after": {
+    "kern.py": "5c285af1cf53b68ad7536d9640213362a10db1ce07ba6129481e433e58cf07cd",
+    "vokabular.py": "f0543a0e8586ef7be9261eeb371a433f6af6160223bcf983630c8ec09160b868",
+    "neustart.py": "809024117551ddbf646c52665ec2c9d146b81b872c056a86a0bacf32c43d6a3f",
+    "esp32/host.cpp": "e975afe506b87c0b19da7b634d1fa3a37d11ea424d9e78fbe480727c03274058",
+    "esp32/Lernknoten/Knoten.h": "ceccf137a89546ee20e67fb72e41265840cc7cc3bf8f4a081a8a3c85112e3f17",
+    "esp32/Lernknoten/Lernknoten.ino": "ef048c1a77b49f448ceedae96f216bb426bcf88d1a0d09cb4ee95937009f20ba",
+    "esp32/Lernknoten/Koerper.h": "ab867d2ad27ad8fc032024ede38953e21bed40116d7f886e4856779161c026b8",
+    "esp32/Lernknoten/Reize.h": "4b6151daacfd00495462e694faed5da698b855a02c5c7f9b19b93bb0bcb50530"
+  },
+  "sources_unchanged": true,
+  "measurement_unchanged": true,
+  "totals": {
+    "mutants": 16,
+    "existing_survivors": 7,
+    "existing_assertion_failures": 6,
+    "existing_errors": 3,
+    "targeted_killed": 16
+  }
+}
