@@ -60,6 +60,30 @@ class BootstrapTests(unittest.TestCase):
             self.assertAlmostEqual(row["obergrenze"],erwartet)
 
 
+class SchwellenwechselTests(unittest.TestCase):
+    @staticmethod
+    def auswahl():
+        return [dict(signal="temperatur",kostenmodell="takt",suche="erbe_schwelle",verhaeltnis=r,
+                     **k.konfig("erbe",index=11 if r in (3,100) else 12)) for r in range(1,101)]
+
+    def test_aa_b_a_wird_nur_ueber_benachbarte_verhaeltnisse_zusammengefasst(self):
+        original = self.auswahl()
+        # Eingabereihenfolge ist kein zusätzlicher Auswahlparameter.
+        rows = list(b.schwellenwechsel(list(reversed(original))))
+        self.assertEqual([(z["r_von"],z["r_bis"],z["konfiguration"]) for z in rows],
+                         [(1,2,"erbe-s12"),(3,3,"erbe-s11"),(4,99,"erbe-s12"),(100,100,"erbe-s11")])
+        wiederhergestellt = [(r,z["konfiguration"]) for z in rows for r in range(z["r_von"],z["r_bis"]+1)]
+        self.assertEqual(wiederhergestellt,[(z["verhaeltnis"],z["konfiguration"]) for z in original])
+        self.assertEqual(rows[0]["schwelle"],.6)
+        self.assertEqual(rows[1]["schwelle"],.55)
+
+    def test_luecken_und_doppelte_verhaeltnisse_werden_abgewiesen(self):
+        original = self.auswahl()
+        for falsch in (original[:-1],original+[original[0]],[]):
+            with self.subTest(anzahl=len(falsch)), self.assertRaises(ValueError):
+                list(b.schwellenwechsel(falsch))
+
+
 def fixture(root):
     """Kleine erfundene Zähler, keine Generator- oder Produktionskontrollspuren."""
     dev, con = root/"entwicklung", root/"kontrolle"
@@ -178,12 +202,68 @@ class EingabeTests(unittest.TestCase):
         _,c,a,_,cs,configs = b.pruefe_eingaben(self.dev,self.con)
         with self.assertRaises(ValueError): b.lese_paare(self.con,c,a,cs,configs)
 
+    def test_verschiedene_spurmerkmale_trotz_gleicher_summen_werden_abgewiesen(self):
+        p = self.con/"einzel.csv"
+        with p.open(newline="") as f:
+            original = list(csv.DictReader(f))
+        for feld,abgeleitet in (("auswertbar",None),("zieltakte","verpasste_zieltakte"),("phasen","verpasst")):
+            with self.subTest(feld=feld):
+                rows = [dict(row) for row in original]
+                paar = [row for row in rows if row["familie"] == k.s.FAMILIEN[0]
+                        and row["signal"] == "temperatur" and row["konfiguration"] == "erbe-s12"]
+                self.assertEqual(len(paar),2)
+                # Gegenläufige Änderungen halten sämtliche aggregierten Zähler exakt gleich.
+                for row,delta in zip(paar,(1,-1)):
+                    row[feld] = str(int(row[feld])+delta)
+                    if abgeleitet: row[abgeleitet] = str(int(row[abgeleitet])+delta)
+                k.csv_schreiben(p,rows)
+                m = json.loads((self.con/"manifest.json").read_text())
+                m["ergebnisse"]["einzel.csv"] = k.sha(p)
+                k.json_schreiben(self.con/"manifest.json",m)
+                _,c,a,_,cs,configs = b.pruefe_eingaben(self.dev,self.con)
+                with self.assertRaisesRegex(ValueError,"unterschiedliche Kontrollspuren"):
+                    b.lese_paare(self.con,c,a,cs,configs)
+
+    def test_eingefrorene_wahl_mit_falschem_tiebreak_wird_abgewiesen(self):
+        p = self.dev/"auswahl.json"
+        a = json.loads(p.read_text())
+        self.assertEqual(a["auswahl"][0]["konfiguration"],"erbe-s12")
+        # Gleiche Entwicklungskosten aller Erbe-Schwellen: s12 ist der festgelegte Tiebreak.
+        a["auswahl"][0].update(k.konfig("erbe",index=11))
+        k.json_schreiben(p,a)
+        m = json.loads((self.dev/"manifest.json").read_text())
+        m["ergebnisse"]["auswahl.json"] = k.sha(p)
+        k.json_schreiben(self.dev/"manifest.json",m)
+        m = json.loads((self.con/"manifest.json").read_text())
+        m["auswahl_sha256"] = k.sha(p)
+        k.json_schreiben(self.con/"manifest.json",m)
+        with self.assertRaisesRegex(ValueError,"Eingefrorene Entwicklungsauswahl verletzt"):
+            b.pruefe_eingaben(self.dev,self.con)
+
+    def test_familienwahl_mit_falschem_tiebreak_wird_abgewiesen(self):
+        p = self.dev/"familien-auswahl.csv"
+        with p.open(newline="") as f:
+            rows = list(csv.DictReader(f))
+        rows[0].update(k.konfig("erbe",index=11))
+        k.csv_schreiben(p,rows)
+        m = json.loads((self.dev/"manifest.json").read_text())
+        m["ergebnisse"]["familien-auswahl.csv"] = k.sha(p)
+        k.json_schreiben(self.dev/"manifest.json",m)
+        with self.assertRaisesRegex(ValueError,"Familienweise Entwicklungsauswahl verletzt"):
+            b.pruefe_eingaben(self.dev,self.con)
+
     def test_kommando_manifest_pruefsummen_und_ueberschreibschutz(self):
         out = self.root/"bericht"
         args = ["kostenbericht.py","--entwicklung",str(self.dev),"--kontrolle",str(self.con),"--ausgabe",str(out)]
         with mock.patch("sys.argv",args), contextlib.redirect_stdout(io.StringIO()): b.main()
         meta = json.loads((out/"manifest.json").read_text())
         self.assertEqual((meta["status"],meta["intervalle"]),("vollstaendig",72))
+        self.assertEqual(meta["schwellenbereiche"],24)
+        self.assertIn("schwellenwechsel.csv",meta["ergebnisse"])
+        with (out/"schwellenwechsel.csv").open(newline="") as f:
+            wechsel = list(csv.DictReader(f))
+        self.assertEqual(len(wechsel),24)
+        self.assertTrue(all(z["r_von"]=="1" and z["r_bis"]=="100" for z in wechsel))
         self.assertTrue(all(k.sha(out/name)==digest for name,digest in meta["ergebnisse"].items()))
         self.assertNotIn(str(self.root),(out/"manifest.json").read_text())
         vorher = (out/"manifest.json").read_bytes()

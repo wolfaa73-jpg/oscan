@@ -8,3 +8,6 @@ __pycache__/
 
 # Reproduzierbare Rohreihen bleiben lokal; freigegebene Ergebnisse separat.
 Alex-Lerngedaechtnis/rechen-ergebnisse/
+
+# Aus dem geprüften Kontrollarchiv entpackte Rohwerte nicht doppelt versionieren.
+Alex-Lerngedaechtnis/beispiele/kostenlabor-2026-11-06/kontrolle/einzel.csv

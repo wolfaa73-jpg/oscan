@@ -6,6 +6,13 @@ Wann sollte ein kleiner Knoten eine Erfahrung vergessen? Dieses Labor setzt drei
 
 Das Konzept steht in Alex’ Ideensammlung eine Ordnerebene höher (`../Ideensammlung Lernendes Betriebssystem mit verblassendem Gedächtnis.md`). Sie ist die maßgebliche Fassung. Ihr Abschnitt „Versuchsstand“ hält fest, was dieses Labor gezeigt hat.
 
+## Kosten und Vergessensgeschwindigkeit: Aufgaben 1 und 3
+
+Die [Kosten-Übergabe](KOSTEN-UEBERGABE.md) enthält das geprüfte Raster aus 19
+Warnschwellen und 24 Erb-Halbwertszeiten, eine vorab eingefrorene Auswahl und
+2.000 neue synthetische Kontrollverläufe. Einfache Vergleichsregeln bleiben dabei
+wesentliche Maßstäbe; eine neue Firmwareeinstellung wird nicht vorweggenommen.
+
 ## Signallabor für die Rechenaufgabe 2
 
 `signallabor.py` erzeugt getrennte Verläufe für Temperatur, Speicher und Schleife.
@@ -64,7 +71,7 @@ Die Schwierigkeit beim Vergessen ist die Wahl des richtigen Maßstabs. Eine lang
 - **Körpersignale.** Seit 0.4 misst der S3 im Körpermodus in eigenem Takt Chiptemperatur, freien Speicher und Schleifenlücke, stuft sie ein und lernt damit. `koerper.py` zeichnet auf und rechnet jede Entscheidung nach. Mit `--last` arbeitet Kern 0 in einem Rhythmus und wärmt den Chip, die eingebaute LED zeigt den Zustand. Seit 0.5 machen `--leck` und `--bremse` dem Knoten auch Speicher und Hauptschleife knapp, und `--blick` lässt ihn seine Vorwarnung bis zu 600 Takte vorausdenken. Auf dem S3 entscheidet er dabei in jeder Probe wie Python, auch mit nur 13.860 Byte freiem Speicher. 600 Takte Vorausschau kosten ihn 2,6 ms je Takt.
 - **Ein Vokabular.** `vokabular.py` legt zehn Wörter fest und wertet Körperaufnahmen mit weiterem Blick aus. Die Wörter gibt es bisher nur auf dem Rechner, das Gerät spricht weiter OK, SCHWACH und AUSFALL. Den weiten Blick über diese drei rechnet es seit 0.5 selbst.
 - **Zwei Teilversuche von Daniel.** `verbund.py` gibt jeder Meldung Knotennummer, Sitzung und Abfragerunde, `Verbund.html` zeigt einen gestörten Lauf. `systemkern.py` lässt einen festen Disponenten Aufträge an zwei echte Arbeiterprozesse verteilen, `Systembericht.html` vergleicht die Regeln mit Kosten. Einstieg in `SYSTEM-UEBERGABE.md` und `VERBUND-UEBERGABE.md`. Seit dem 6. November sind auch Anschluss, Auftragsjournal und Arbeiter-Wiederanlauf übernommen (`ANSCHLUSS-`, `JOURNAL-` und `WIEDERANLAUF-UEBERGABE.md`). Rechenaufgaben, bei denen Daniel weiterhelfen kann, stehen in `RECHEN-UEBERGABE.md`.
-- **Ein reproduzierbarer Übergabestand.** 193 automatisierte Tests waren erfolgreich, davon 19 im neuen Signallabor und 107 aus Daniels bisherigen Teilversuchen, gestartet im Laborordner. Von außerhalb findet ein Kindprozess in `test_auftragsjournal.py` sein Modul nicht. Der Versuchsbericht läuft offline. Quellcode, Messdateien und eine eingefrorene Kopie der Originalnotizen liegen im Ordner, die Lieferungen 0.1 und 0.2 unter `../archiv`.
+- **Ein reproduzierbarer Übergabestand.** 228 automatisierte Tests waren erfolgreich, darunter 21 im Signallabor, 18 im Kostenlabor, 15 Berichtsprüfungen und 107 aus Daniels bisherigen Teilversuchen, gestartet im Laborordner. Von außerhalb findet ein Kindprozess in `test_auftragsjournal.py` sein Modul nicht. Der Versuchsbericht läuft offline. Quellcode, Messdateien und eine eingefrorene Kopie der Originalnotizen liegen im Ordner, die Lieferungen 0.1 und 0.2 unter `../archiv`.
 
 ## Womit Alex und Claude weitermachen sollten
 

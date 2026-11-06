@@ -1,0 +1,39 @@
+{
+  "anzahl": 500,
+  "auswahl_sha256": "1ff54ae27c1f11244c9290835e4f1109291d485ce7f519c3facbcf70001740f2",
+  "einstellungen": {
+    "ausnahme_p": 0.05,
+    "horizont": 30,
+    "schwelle": 0.6,
+    "takte": 960,
+    "waerme_p": 0.38
+  },
+  "ergebnisse": {
+    "auswahl-pruefung.csv": "8f9e0087cdb8e277e2a91159e267f95b4fda5cb0275f6ccdc949f83faca8a03b",
+    "einzel.csv": "9543928699602920dfe35933c396558bb89de7bcebbdcf6ec2be21fca98b6e7e",
+    "summen.csv": "1963ddf822fb343a097938af02ab935617b80085d80de78ff9a3567b95fe93df"
+  },
+  "familien": [
+    "bloecke",
+    "zufallsmaske",
+    "seltene_ausnahme",
+    "ueberlagerung"
+  ],
+  "python": [
+    3,
+    9,
+    6
+  ],
+  "quellhashes": {
+    "KOSTEN-PLAN.md": "669dfd0e97d1b7bc3a3376b7371fae252d695ca5c214802532fb86175e2ae1b3",
+    "kern.py": "5c285af1cf53b68ad7536d9640213362a10db1ce07ba6129481e433e58cf07cd",
+    "kostenlabor.py": "a0241537b04d0c62126b212697b0e833385c18200d7e9b4ed8cd6abc1a3a4cf7",
+    "signallabor.py": "802ad62b2e67ad852f54981b7e85b8503eac68f06cf02d63603d72a22618eced",
+    "vokabular.py": "f0543a0e8586ef7be9261eeb371a433f6af6160223bcf983630c8ec09160b868"
+  },
+  "satz": "kontrolle",
+  "schema": 1,
+  "seedstart": 10000,
+  "spuren": 2000,
+  "status": "vollstaendig"
+}

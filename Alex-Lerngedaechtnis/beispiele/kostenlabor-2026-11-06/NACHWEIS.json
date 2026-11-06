@@ -1,0 +1,26 @@
+{
+  "artefakte": {
+    "bericht/KOSTEN-ERGEBNISSE.md": "b9ac047c480595d00f541ef5c575df6f33758cf8d19ba8c22d7b134e4b2b8287",
+    "bericht/halbwertsprofil.csv": "970b5246ced9bd9325808dd744d241532102fb584e9d630af6fcf79b959079fa",
+    "bericht/intervalle.csv": "81cdcc2315b078687e61e5be16447dc1095b09384d21ce041452509753c2a931",
+    "bericht/manifest.json": "08adafe1a8fb6ebbabf4acc4c264683bfaabf3d267dc9315aa9874819517a2c5",
+    "bericht/schwellenwechsel.csv": "d6aeb9fbd740c78defa70b4fd33c728ea93b31f6e8e48fd10deb66f11b875cc5",
+    "entwicklung/auswahl.json": "1ff54ae27c1f11244c9290835e4f1109291d485ce7f519c3facbcf70001740f2",
+    "entwicklung/familien-auswahl.csv": "c06ba5a582b4a797013b577a7154d80fd80dd2dee0bc3e60286c15ae8bcad2ba",
+    "entwicklung/manifest.json": "91c0700679e1a74a3a84dab22be8976acbc65fbf6a0ec2e1aaf74750779ad85e",
+    "entwicklung/summen.csv": "955029f7a70cbbaa8adbf2640a46472cc42db86c53d087da63fd21db9a493f1b",
+    "kontrolle/auswahl-pruefung.csv": "8f9e0087cdb8e277e2a91159e267f95b4fda5cb0275f6ccdc949f83faca8a03b",
+    "kontrolle/einzelwerte.zip": "b2944acdbc2bb7314f8fbec79017a79f050c2a308a756a55f83652d1f7122117",
+    "kontrolle/manifest.json": "8dffb52f36a67040a4fd176ee8ae51cc74c694a4def6643005e8726be5dce3c6",
+    "kontrolle/summen.csv": "1963ddf822fb343a097938af02ab935617b80085d80de78ff9a3567b95fe93df"
+  },
+  "auswahl_commit": "17b9391f9ff8a68c8baaac8bcd084bdf50b9fdf1",
+  "auswahl_sha256": "1ff54ae27c1f11244c9290835e4f1109291d485ce7f519c3facbcf70001740f2",
+  "bootstrap_intervalle": 72,
+  "bootstrap_wiederholungen": 500,
+  "entwicklungsspuren": 1000,
+  "kontroll_rohzeilen": 206000,
+  "kontrollspuren": 2000,
+  "schema": 1,
+  "tests": 228
+}

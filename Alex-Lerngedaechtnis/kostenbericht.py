@@ -163,11 +163,17 @@ def pruefe_eingaben(entwicklung, kontrolle):
         raise ValueError("Manifeste, Splitdefinition oder eingefrorene Auswahl widersprechen sich.")
     devconfigs = {signal: k.alle_konfigurationen() for signal, _, _ in k.s.SIGNALE}
     devsummen = _summen(entwicklung, dev, devconfigs)
-    consummen = _summen(kontrolle, con, configs)
+    # Nur die vorhandene Entwicklungsentscheidung einschließlich Tiebreak bestätigen.
+    # Kontrollwerte werden weder an waehle übergeben noch für eine neue Wahl genutzt.
+    kandidaten = {(f,signal): [row for key,row in devsummen.items() if key[:2] == (f,signal)]
+                  for f in ("alle",*k.s.FAMILIEN) for signal,_,_ in k.s.SIGNALE}
     for z in auswahl["auswahl"]:
         row = devsummen["alle", z["signal"], z["konfiguration"]]
         if z["entwicklungskosten"] != k.kostenzahl(row, z["kostenmodell"], z["verhaeltnis"]):
             raise ValueError("Eingefrorene Entwicklungskosten widersprechen den Summen.")
+        beste = k.waehle(kandidaten["alle",z["signal"]],z["kostenmodell"],z["verhaeltnis"],z["suche"])
+        if beste["konfiguration"] != z["konfiguration"]:
+            raise ValueError("Eingefrorene Entwicklungsauswahl verletzt Optimum oder Tiebreak.")
     familien_erwartet = {(f,signal,art,r,suche) for f in k.s.FAMILIEN for signal,_,_ in k.s.SIGNALE
                          for art in k.KOSTEN for r in range(1,101) for suche in k.SUCHEN}
     familien_gesehen = set()
@@ -182,9 +188,13 @@ def pruefe_eingaben(entwicklung, kontrolle):
             kosten = k.kostenzahl(devsummen[key[0],key[1],row["konfiguration"]],key[2],key[3])
             if int(row["entwicklungskosten"]) != kosten:
                 raise ValueError("Familienweise Entwicklungskosten widersprechen ihren Summen.")
+            beste = k.waehle(kandidaten[key[0],key[1]],key[2],key[3],key[4])
+            if beste["konfiguration"] != row["konfiguration"]:
+                raise ValueError("Familienweise Entwicklungsauswahl verletzt Optimum oder Tiebreak.")
             familien_gesehen.add(key)
     if familien_gesehen != familien_erwartet:
         raise ValueError("Entwicklungsdiagnostik ist unvollständig.")
+    consummen = _summen(kontrolle, con, configs)
     erwartet = {(f,z["signal"],z["kostenmodell"],z["verhaeltnis"],z["suche"]): z
                 for f in ("alle",*k.s.FAMILIEN) for z in auswahl["auswahl"]}
     gesehen = set()
@@ -220,6 +230,7 @@ def lese_paare(kontrolle, meta, auswahl, summen, configs):
     erwartet = {(f, signal, c["konfiguration"]) for f in k.s.FAMILIEN for signal, werte in configs.items() for c in werte}
     seen = {key: 0 for key in erwartet}
     roh_summen = {key: [0] * len(k.FELDER) for key in erwartet}
+    spurmerkmale = {}
     takte = meta["einstellungen"]["takte"] - meta["einstellungen"]["horizont"]
     with (kontrolle / "einzel.csv").open(encoding="utf-8", newline="") as f:
         for row in csv.DictReader(f):
@@ -228,6 +239,10 @@ def lese_paare(kontrolle, meta, auswahl, summen, configs):
             index = z["seed"] - meta["seedstart"]
             if key not in erwartet or not 0 <= index < n or z["takte"] != takte:
                 raise ValueError("Unerwartete Kontrollspur oder Instrumenttakte.")
+            spurkey = z["familie"],z["signal"],z["seed"]
+            merkmale = tuple(z[feld] for feld in ("takte","auswertbar","zieltakte","phasen"))
+            if spurmerkmale.setdefault(spurkey,merkmale) != merkmale:
+                raise ValueError("Gepaarte Konfigurationen beschreiben unterschiedliche Kontrollspuren.")
             bit = 1 << index
             if seen[key] & bit:
                 raise ValueError("Doppelte Kontrollspur.")
@@ -265,6 +280,40 @@ def halbwertsprofil(devsummen):
         # h1..24 und alle Baselines einschließlich festem Erbe; keine neue Wahl.
         yield dict(**row, **{f"kosten_{art}_r{r}_pro_1000": k.kostenzahl(row,art,r)*1000/row["takte"]
                             for art in k.KOSTEN for r in VERHAELTNISSE})
+
+
+def schwellenwechsel(auswahlzeilen):
+    """Nur Darstellung: benachbarte Preisverhältnisse derselben eingefrorenen Wahl."""
+    gruppen = {}
+    for row in auswahlzeilen:
+        key = row["signal"],row["kostenmodell"],row["suche"]
+        if (key[0] not in {s for s,_,_ in k.s.SIGNALE} or key[1] not in k.KOSTEN or key[2] not in k.SUCHEN
+                or type(row["verhaeltnis"]) is not int or not 1 <= row["verhaeltnis"] <= 100):
+            raise ValueError("Ungültige eingefrorene Auswahlgruppe.")
+        c = k.konfig(row["modell"],row["halbwertszeit"],row["schwellenindex"])
+        if row["konfiguration"] != c["konfiguration"] or not k.passt(c,row["suche"]):
+            raise ValueError("Widersprüchliche eingefrorene Konfiguration.")
+        gruppe = gruppen.setdefault(key,{})
+        if row["verhaeltnis"] in gruppe:
+            raise ValueError("Doppeltes eingefrorenes Kostenverhältnis.")
+        gruppe[row["verhaeltnis"]] = c
+    if not gruppen:
+        raise ValueError("Keine eingefrorene Auswahl vorhanden.")
+    for key,gruppe in sorted(gruppen.items()):
+        if set(gruppe) != set(range(1,101)):
+            raise ValueError("Eingefrorene Auswahl deckt nicht alle Kostenverhältnisse 1–100 ab.")
+        bereich = None
+        for r in range(1,101):
+            c = gruppe[r]
+            if bereich is not None and bereich["konfiguration"] == c["konfiguration"]:
+                bereich["r_bis"] = r
+                continue
+            if bereich is not None:
+                yield bereich
+            bereich = dict(zip(("signal","kostenmodell","suche"),key),r_von=r,r_bis=r,
+                           konfiguration=c["konfiguration"],modell=c["modell"],
+                           halbwertszeit=c["halbwertszeit"],schwelle=c["schwellenindex"]/20)
+        yield bereich
 
 
 def bericht(dev, con, auswahl, devsummen, consummen, cis):
@@ -317,7 +366,10 @@ def bericht(dev, con, auswahl, devsummen, consummen, cis):
                "keine weitere unabhängige Kontrollbestätigung. Ein Optimum hängt vom Signal, der Musterfamilie und",
                "vom gewählten Kostenbegriff ab; aus einer einzelnen besten Rasterzelle folgt kein allgemeiner Gewinner.",
                "Die vollständig eingefrorenen Entscheidungen für r=1…100 stehen im Entwicklungsordner in `auswahl.json`;",
-               "die zugehörigen Kontrollkosten in `auswahl-pruefung.csv`. Preisgrenzen sind diskrete Entwicklungswechsel,",
+               "[schwellenwechsel.csv](schwellenwechsel.csv) fasst aufeinanderfolgende Preisverhältnisse mit gleicher Wahl zusammen:",
+               "je Signal, Kostenmodell und Suchraum stehen dort r_von, r_bis, Konfiguration, Erb-Halbwertszeit und Schwelle.",
+               "Diese Bereiche stellen ausschließlich die bereits eingefrorene Auswahl dar; es wird nichts neu optimiert.",
+               "Die zugehörigen Kontrollkosten stehen in `auswahl-pruefung.csv`. Preisgrenzen sind diskrete Entwicklungswechsel,",
                "keine universellen ökonomischen Grenzen. Kleinste Kostenunterschiede sind keine belastbare Geräteempfehlung.", "",
                "Alle künstlichen Ausfälle besitzen ein hohes Vorzeichen innerhalb des Horizonts. Das begünstigt die feste Regel.",
                "Es wurden keine Geräteaufnahmen zum Einstellen oder Prüfen verwendet. Physikalische Erwärmung, unbekannte Ausfälle",
@@ -326,8 +378,10 @@ def bericht(dev, con, auswahl, devsummen, consummen, cis):
                "kein unberührter Kontrollsatz mehr.", "",
                "## Nachprüfung", "",
                "Vor Berichtserstellung wurden sämtliche Ergebnisprüfsummen, Splitdefinitionen und die unveränderte Auswahl geprüft.",
+               "Optimum und Tiebreak jeder eingefrorenen Wahl wurden ausschließlich aus dem Entwicklungsraster bestätigt.",
                "Alle Kontrollsummen wurden aus den Einzelspuren neu addiert; jede erwartete Kombination aus Familie, Signal,",
-               "Konfiguration und Seed kommt genau einmal vor. Die Bootstrap-Paarung verwendet dieselbe Spur beider Verfahren.",
+               "Konfiguration und Seed kommt genau einmal vor. Taktzahl, nichtkritische Takte, Zieltakte und Phasen müssen",
+               "für alle Konfigurationen desselben Seeds übereinstimmen. Die Bootstrap-Paarung verwendet dieselbe Spur beider Verfahren.",
                "Der Berichtsmanifest enthält nur neutrale Dateinamen, Hashes und Verfahrensparameter.", ""]
     return "\n".join(zeilen)
 
@@ -350,11 +404,13 @@ def main():
                     berichtscode_sha256=k.sha(Path(__file__)),python=list(sys.version_info[:3]))
         k.json_schreiben(a.ausgabe/"manifest.json",meta)
         cis = list(intervalle(auswertungen,daten,con))
+        wechsel = list(schwellenwechsel(auswahl["auswahl"]))
         k.csv_schreiben(a.ausgabe/"intervalle.csv",cis)
         k.csv_schreiben(a.ausgabe/"halbwertsprofil.csv",halbwertsprofil(devsummen))
+        k.csv_schreiben(a.ausgabe/"schwellenwechsel.csv",wechsel)
         (a.ausgabe/"KOSTEN-ERGEBNISSE.md").write_text(bericht(dev,con,auswahl,devsummen,consummen,cis),encoding="utf-8")
-        meta.update(status="vollstaendig",intervalle=len(cis),kontrollspuren=con["spuren"],
-                    ergebnisse={name:k.sha(a.ausgabe/name) for name in ("intervalle.csv","halbwertsprofil.csv","KOSTEN-ERGEBNISSE.md")})
+        meta.update(status="vollstaendig",intervalle=len(cis),schwellenbereiche=len(wechsel),kontrollspuren=con["spuren"],
+                    ergebnisse={name:k.sha(a.ausgabe/name) for name in ("intervalle.csv","halbwertsprofil.csv","schwellenwechsel.csv","KOSTEN-ERGEBNISSE.md")})
         k.json_schreiben(a.ausgabe/"manifest.json",meta)
         print(f"Kostenbericht fertig: {len(cis)} Intervalle, {con['spuren']} gepaarte Kontrollspuren je Vergleich.")
     except (OSError,ValueError,KeyError,TypeError) as exc:

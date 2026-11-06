@@ -1,0 +1,34 @@
+{
+  "berichtscode_sha256": "0c9af04f9dc4a90e020fd713c289ddd50b6e772cde4fad250dc4a6a286a8b6bc",
+  "bootstrap": {
+    "einheit": "ganze gepaarte Spur, innerhalb jeder Familie",
+    "interpolation": "linear",
+    "quantile": [
+      0.025,
+      0.975
+    ],
+    "seed": 20261106,
+    "wiederholungen": 500
+  },
+  "eingaben": {
+    "auswahl": "1ff54ae27c1f11244c9290835e4f1109291d485ce7f519c3facbcf70001740f2",
+    "entwicklung_manifest": "91c0700679e1a74a3a84dab22be8976acbc65fbf6a0ec2e1aaf74750779ad85e",
+    "kontrolle_manifest": "8dffb52f36a67040a4fd176ee8ae51cc74c694a4def6643005e8726be5dce3c6"
+  },
+  "ergebnisse": {
+    "KOSTEN-ERGEBNISSE.md": "b9ac047c480595d00f541ef5c575df6f33758cf8d19ba8c22d7b134e4b2b8287",
+    "halbwertsprofil.csv": "970b5246ced9bd9325808dd744d241532102fb584e9d630af6fcf79b959079fa",
+    "intervalle.csv": "81cdcc2315b078687e61e5be16447dc1095b09384d21ce041452509753c2a931",
+    "schwellenwechsel.csv": "d6aeb9fbd740c78defa70b4fd33c728ea93b31f6e8e48fd10deb66f11b875cc5"
+  },
+  "intervalle": 72,
+  "kontrollspuren": 2000,
+  "python": [
+    3,
+    9,
+    6
+  ],
+  "schema": 1,
+  "schwellenbereiche": 110,
+  "status": "vollstaendig"
+}
