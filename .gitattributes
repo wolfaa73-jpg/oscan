@@ -1,2 +1,3 @@
 # Rechen-CSV behalten die CRLF-Bytes aus dem Manifest, auch beim Klonen.
 Alex-Lerngedaechtnis/beispiele/signallabor-2026-11-06/*.csv -text whitespace=cr-at-eol
+Alex-Lerngedaechtnis/beispiele/kostenlabor-2026-11-06/**/*.csv -text

@@ -39,8 +39,8 @@ class Einstellungen:
             wert = getattr(self, name)
             if type(wert) is not int or not unten <= wert <= oben:
                 raise ValueError(f"{name} muss ganzzahlig zwischen {unten} und {oben} liegen.")
-        if self.takte <= self.horizont:
-            raise ValueError("Die Spur muss länger als der Horizont sein.")
+        if self.takte <= 2 * self.horizont:
+            raise ValueError("Die Spur muss länger als der doppelte Horizont sein, damit Phasen auswertbar sind.")
         for name in ("waerme_p", "ausnahme_p", "schwelle"):
             wert = getattr(self, name)
             if not math.isfinite(wert) or not 0 <= wert <= 1:
@@ -144,6 +144,8 @@ class SchnellesDreiergedaechtnis(Wortgedaechtnis):
             raise ValueError("Der schnelle Blick braucht genau zwei ruhige und ein kritisches Wort.")
 
     def kritisch_binnen(self, wort, horizont):
+        if type(horizont) is not int or not 1 <= horizont <= 600:
+            raise ValueError("Der Horizont muss ganzzahlig zwischen 1 und 600 liegen.")
         if wort not in self.ruhig:
             return super().kritisch_binnen(wort, horizont)
         a, b = self.ruhig

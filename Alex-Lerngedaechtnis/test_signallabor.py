@@ -42,6 +42,15 @@ class GeneratorTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 s.generiere(f, seed, satz)
 
+    def test_spur_braucht_vollstaendiges_phasenfenster(self):
+        for h in (1, 30, 600):
+            for takte in (h + 1, 2 * h):
+                with self.subTest(horizont=h, takte=takte):
+                    with self.assertRaises(ValueError):
+                        s.Einstellungen(takte=takte, horizont=h)
+            # Genau ein möglicher Phasenbeginn mit vollem Vor- und Nachfenster.
+            self.assertEqual(s.Einstellungen(takte=2 * h + 1, horizont=h).takte, 2 * h + 1)
+
     def test_waerme_extreme_und_seltene_ausnahme(self):
         for p in (0, 1):
             e = s.Einstellungen(takte=600, waerme_p=p, ausnahme_p=p)
@@ -113,6 +122,14 @@ class VergleichTests(unittest.TestCase):
                 for w in ("OK", "SCHWACH"):
                     self.assertAlmostEqual(m.kritisch_binnen(w, h),
                                            Wortgedaechtnis.kritisch_binnen(m, w, h), places=11)
+
+    def test_schneller_blick_weist_ungueltige_horizonte_ab(self):
+        m = s.SchnellesDreiergedaechtnis(s.GROBWOERTER, s.GROBERBE)
+        for h in (-1, 0, 601, 1.0, True, "30", None):
+            for wort in ("OK", "AUSFALL"):
+                with self.subTest(horizont=h, wort=wort):
+                    with self.assertRaises(ValueError):
+                        m.kritisch_binnen(wort, h)
 
     def test_schwellennahe_originalrechnung(self):
         m = s.SchnellesDreiergedaechtnis(s.GROBWOERTER, ())
@@ -203,7 +220,7 @@ class KommandoTests(unittest.TestCase):
             ordner = [Path(tmp) / name for name in ("eins", "zwei")]
             for n, ziel in enumerate(ordner, 1):
                 args = [sys.executable, "-B", script, "--satz", "entwicklung", "--anzahl", "1",
-                        "--takte", "60", "--familien", "bloecke", "--prozesse", str(n), "--ausgabe", str(ziel)]
+                        "--takte", "90", "--familien", "bloecke", "--prozesse", str(n), "--ausgabe", str(ziel)]
                 subprocess.run(args, capture_output=True, check=True)
                 meta = json.loads((ziel / "manifest.json").read_text())
                 self.assertEqual(meta["status"], "vollstaendig")
