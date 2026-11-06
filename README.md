@@ -39,3 +39,7 @@ Das sind Laufzeitexperimente auf dem vorhandenen Betriebssystem. Die Vergleichsz
 ## Aufträge nach einem Absturz wiederfinden
 
 Das optionale [dauerhafte Auftragsjournal](Alex-Lerngedaechtnis/JOURNAL-UEBERGABE.md) erhält Quittungen über Prozessneustarts. Angefangene Arbeit ohne bestätigten Abschluss bleibt ungeklärt und wird unter derselben Kennung nicht erneut ausgeführt. `python3 -B neustartlabor.py` prüft drei harte Abbrüche eigener Prozesse und wiederholte Anfragen. Die Erweiterung benötigt macOS oder Linux; ihre Testwirkung ist eine Dateizeile. Eine atomare Wirkung auf einem echten Gerät oder ein Schutz über gelöschte bzw. zurückgesetzte Journale hinweg ist damit nicht belegt.
+
+## Echten Arbeiter-Ausfall und Wiederanlauf messen
+
+Die [Wiederanlauf-Übergabe](Alex-Lerngedaechtnis/WIEDERANLAUF-UEBERGABE.md) ergänzt einen lokalen Hashdienst mit dauerhaften fachlichen Kennungen, bestätigter Reservebereitschaft und kontrolliertem Prozessneustart. `python3 -B wiederanlauflabor.py --wiederholungen 1` prüft Abbruch vor/nach dem Speichern und einen hängenden Arbeiter. Der [Messbericht](Alex-Lerngedaechtnis/Wiederanlaufbericht.md) enthält 80 Durchläufe und weist die vorgezogene Startzeit einer vorbereiteten Reserve gesondert aus. Die sichere Wiederholung gilt für den transaktionalen Ergebnisdatensatz dieses Backends; für externe Gerätewirkungen braucht es einen eigenen Vertrag.

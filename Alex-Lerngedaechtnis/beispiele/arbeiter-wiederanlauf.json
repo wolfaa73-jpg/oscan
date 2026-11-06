@@ -1,0 +1,4485 @@
+{
+  "art": "Lokaler Hashdienst, reale Arbeiterprozesse, kontrollierte Fehler",
+  "erstellt_utc": "2026-11-05T17:29:12.757230+00:00",
+  "umgebung": {
+    "system": "Darwin",
+    "version": "25.6.0",
+    "architektur": "arm64",
+    "python": "3.9.6"
+  },
+  "methodik": {
+    "wiederholungen": 10,
+    "last_bytes": 262144,
+    "antwortfrist_s": 0.25,
+    "startfrist_s": 5,
+    "uhr": "perf_counter_ns, nur im Supervisor",
+    "hinweis": "Künstliche Vorwarnung, keine Messung der Prognosegüte; keine Echtzeitgarantie"
+  },
+  "quell_sha256": {
+    "arbeitsspeicher.py": "2aae1bf2e6dec72330a74acc6f5c6db3ebc1a3f68983a2e8bf121a0e6a4548f0",
+    "arbeiterlaufzeit.py": "0488c2c4daceaf8e63695af0c98b772c2d334b2ac0c7dc94c78f967866c1b4a1",
+    "wiederanlauflabor.py": "19bf17846f60211c0a9dda8b7dd2a44dcdff23c50448e75db042e2404d2d5e6f",
+    "systemkern.py": "a956328deafd924d9be1822bcf2219da09ed551262d32b9442ae2a7b46e63039",
+    "kern.py": "4c6d2d74230c481ec3a7b766098dbe6095878e86bb2e2298a1050d4a47c918aa"
+  },
+  "zusammenfassung": [
+    {
+      "stoerung": "keine",
+      "reserve": "kalt",
+      "anzahl": 10,
+      "werte": {
+        "gesamt_ms": {
+          "min": 8.198708,
+          "median": 8.9118965,
+          "max": 14.419834
+        },
+        "wiederanlauf_ms": {
+          "min": 0.0,
+          "median": 0.0,
+          "max": 0.0
+        },
+        "primaer_start_ms": {
+          "min": 71.31,
+          "median": 73.59329149999999,
+          "max": 81.447084
+        },
+        "vorbereitung_ms": {
+          "min": 0.0,
+          "median": 0.0,
+          "max": 0.0
+        },
+        "inklusive_vorbereitung_ms": {
+          "min": 8.201417,
+          "median": 8.914542,
+          "max": 14.422666
+        },
+        "reserve_bereit_gesamt_ms": {
+          "min": 0.0,
+          "median": 0.0,
+          "max": 0.0
+        },
+        "primaer_neustart_ms": {
+          "min": 0.0,
+          "median": 0.0,
+          "max": 0.0
+        }
+      }
+    },
+    {
+      "stoerung": "keine",
+      "reserve": "vorbereitet",
+      "anzahl": 10,
+      "werte": {
+        "gesamt_ms": {
+          "min": 9.271792,
+          "median": 9.949375,
+          "max": 10.797042
+        },
+        "wiederanlauf_ms": {
+          "min": 0.0,
+          "median": 0.0,
+          "max": 0.0
+        },
+        "primaer_start_ms": {
+          "min": 71.672791,
+          "median": 73.4154585,
+          "max": 78.235375
+        },
+        "vorbereitung_ms": {
+          "min": 66.587708,
+          "median": 69.10360449999999,
+          "max": 75.540167
+        },
+        "inklusive_vorbereitung_ms": {
+          "min": 76.708042,
+          "median": 79.512146,
+          "max": 86.410083
+        },
+        "reserve_bereit_gesamt_ms": {
+          "min": 14.814042,
+          "median": 16.0495,
+          "max": 17.115
+        },
+        "primaer_neustart_ms": {
+          "min": 0.0,
+          "median": 0.0,
+          "max": 0.0
+        }
+      }
+    },
+    {
+      "stoerung": "vor_commit",
+      "reserve": "kalt",
+      "anzahl": 10,
+      "werte": {
+        "gesamt_ms": {
+          "min": 77.825333,
+          "median": 79.8689375,
+          "max": 85.90925
+        },
+        "wiederanlauf_ms": {
+          "min": 73.252792,
+          "median": 74.9090625,
+          "max": 81.3025
+        },
+        "primaer_start_ms": {
+          "min": 71.357834,
+          "median": 72.89756249999999,
+          "max": 77.730375
+        },
+        "vorbereitung_ms": {
+          "min": 0.0,
+          "median": 0.0,
+          "max": 0.0
+        },
+        "inklusive_vorbereitung_ms": {
+          "min": 77.829917,
+          "median": 79.87329199999999,
+          "max": 85.92325
+        },
+        "reserve_bereit_gesamt_ms": {
+          "min": 78.92175,
+          "median": 81.200729,
+          "max": 87.948959
+        },
+        "primaer_neustart_ms": {
+          "min": 66.323959,
+          "median": 67.86025000000001,
+          "max": 73.567583
+        }
+      }
+    },
+    {
+      "stoerung": "vor_commit",
+      "reserve": "vorbereitet",
+      "anzahl": 10,
+      "werte": {
+        "gesamt_ms": {
+          "min": 11.083834,
+          "median": 11.391125,
+          "max": 12.541417
+        },
+        "wiederanlauf_ms": {
+          "min": 5.235792,
+          "median": 5.655521,
+          "max": 6.106042
+        },
+        "primaer_start_ms": {
+          "min": 71.414667,
+          "median": 72.090625,
+          "max": 74.946875
+        },
+        "vorbereitung_ms": {
+          "min": 66.448708,
+          "median": 67.06339600000001,
+          "max": 71.513875
+        },
+        "inklusive_vorbereitung_ms": {
+          "min": 77.88775,
+          "median": 79.0106665,
+          "max": 83.621042
+        },
+        "reserve_bereit_gesamt_ms": {
+          "min": 84.273917,
+          "median": 85.86850050000001,
+          "max": 89.01175
+        },
+        "primaer_neustart_ms": {
+          "min": 66.381708,
+          "median": 67.37160399999999,
+          "max": 70.685375
+        }
+      }
+    },
+    {
+      "stoerung": "nach_commit",
+      "reserve": "kalt",
+      "anzahl": 10,
+      "werte": {
+        "gesamt_ms": {
+          "min": 8.664167,
+          "median": 9.324563,
+          "max": 10.227625
+        },
+        "wiederanlauf_ms": {
+          "min": 0.257792,
+          "median": 0.2715835,
+          "max": 0.437959
+        },
+        "primaer_start_ms": {
+          "min": 70.740584,
+          "median": 71.82710449999999,
+          "max": 76.350625
+        },
+        "vorbereitung_ms": {
+          "min": 0.0,
+          "median": 0.0,
+          "max": 0.0
+        },
+        "inklusive_vorbereitung_ms": {
+          "min": 8.683625,
+          "median": 9.349854,
+          "max": 10.251917
+        },
+        "reserve_bereit_gesamt_ms": {
+          "min": 0.0,
+          "median": 0.0,
+          "max": 0.0
+        },
+        "primaer_neustart_ms": {
+          "min": 66.076084,
+          "median": 67.5853125,
+          "max": 72.576333
+        }
+      }
+    },
+    {
+      "stoerung": "nach_commit",
+      "reserve": "vorbereitet",
+      "anzahl": 10,
+      "werte": {
+        "gesamt_ms": {
+          "min": 8.492375,
+          "median": 10.6541455,
+          "max": 12.342209
+        },
+        "wiederanlauf_ms": {
+          "min": 0.293542,
+          "median": 0.303313,
+          "max": 0.456875
+        },
+        "primaer_start_ms": {
+          "min": 71.697,
+          "median": 73.1271665,
+          "max": 75.428625
+        },
+        "vorbereitung_ms": {
+          "min": 66.573791,
+          "median": 67.4606665,
+          "max": 71.293
+        },
+        "inklusive_vorbereitung_ms": {
+          "min": 76.492083,
+          "median": 79.1283545,
+          "max": 82.215
+        },
+        "reserve_bereit_gesamt_ms": {
+          "min": 82.34225,
+          "median": 84.59400049999999,
+          "max": 88.139625
+        },
+        "primaer_neustart_ms": {
+          "min": 66.479541,
+          "median": 67.60008350000001,
+          "max": 70.69275
+        }
+      }
+    },
+    {
+      "stoerung": "haengt",
+      "reserve": "kalt",
+      "anzahl": 10,
+      "werte": {
+        "gesamt_ms": {
+          "min": 403.934542,
+          "median": 406.9154375,
+          "max": 409.281791
+        },
+        "wiederanlauf_ms": {
+          "min": 149.413708,
+          "median": 152.3474165,
+          "max": 155.231583
+        },
+        "primaer_start_ms": {
+          "min": 72.016792,
+          "median": 72.94885400000001,
+          "max": 75.340958
+        },
+        "vorbereitung_ms": {
+          "min": 0.0,
+          "median": 0.0,
+          "max": 0.0
+        },
+        "inklusive_vorbereitung_ms": {
+          "min": 403.939292,
+          "median": 406.9201875,
+          "max": 409.286583
+        },
+        "reserve_bereit_gesamt_ms": {
+          "min": 78.650917,
+          "median": 81.1782915,
+          "max": 82.499958
+        },
+        "primaer_neustart_ms": {
+          "min": 66.250667,
+          "median": 67.23777100000001,
+          "max": 69.779208
+        }
+      }
+    },
+    {
+      "stoerung": "haengt",
+      "reserve": "vorbereitet",
+      "anzahl": 10,
+      "werte": {
+        "gesamt_ms": {
+          "min": 318.382125,
+          "median": 320.448396,
+          "max": 323.557833
+        },
+        "wiederanlauf_ms": {
+          "min": 63.364667,
+          "median": 64.80562499999999,
+          "max": 68.861458
+        },
+        "primaer_start_ms": {
+          "min": 70.158458,
+          "median": 71.80695800000001,
+          "max": 74.840542
+        },
+        "vorbereitung_ms": {
+          "min": 66.316625,
+          "median": 66.7962085,
+          "max": 71.395083
+        },
+        "inklusive_vorbereitung_ms": {
+          "min": 385.28675,
+          "median": 387.7438125,
+          "max": 392.175458
+        },
+        "reserve_bereit_gesamt_ms": {
+          "min": 413.421042,
+          "median": 416.5421875,
+          "max": 421.781208
+        },
+        "primaer_neustart_ms": {
+          "min": 85.919542,
+          "median": 88.93006199999999,
+          "max": 93.957917
+        }
+      }
+    }
+  ],
+  "laeufe": [
+    {
+      "nummer": 0,
+      "stoerung": "keine",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-0",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "ac8fdf9cf2824187815290ac420315e4"
+      },
+      "primaer_start_ms": 81.447084,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 9.338125,
+      "reserve_start_ms": 0.0,
+      "reserve_bereit_gesamt_ms": 0.0,
+      "primaer_neustart_ms": 0.0,
+      "auftrag": {
+        "kennung": "auftrag-0",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "ac8fdf9cf2824187815290ac420315e4",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.629667
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.0,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 9.334542
+      },
+      "folgeauftrag_ms": 5.994709,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 0,
+      "stoerung": "keine",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-0",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "cca50a31f83640ccb828e71766a4a1c7"
+      },
+      "primaer_start_ms": 76.204708,
+      "vorbereitung_ms": 73.231584,
+      "inklusive_vorbereitung_ms": 84.229666,
+      "reserve_start_ms": 73.231584,
+      "reserve_bereit_gesamt_ms": 17.115,
+      "primaer_neustart_ms": 0.0,
+      "auftrag": {
+        "kennung": "auftrag-0",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "cca50a31f83640ccb828e71766a4a1c7",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.629541
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.0,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 10.797042
+      },
+      "folgeauftrag_ms": 6.006583,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 0,
+      "stoerung": "vor_commit",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-0",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "d6ca42367d71429aa280c66dc7c4ca11"
+      },
+      "primaer_start_ms": 72.599958,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 80.99625,
+      "reserve_start_ms": 68.828375,
+      "reserve_bereit_gesamt_ms": 84.690625,
+      "primaer_neustart_ms": 70.218458,
+      "auftrag": {
+        "kennung": "auftrag-0",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "444964316f77493b890cb1b298538bb8",
+            "status": "AUSFALL",
+            "grund": "Arbeiterprozess beendet",
+            "erkennung_ms": 1.338833,
+            "dauer_ms": 1.403375,
+            "exitcode": 74,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "d6ca42367d71429aa280c66dc7c4ca11",
+            "status": "ERLEDIGT",
+            "dauer_ms": 6.625208
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 68.828375,
+        "wiederanlauf_ms": 75.852209,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 0.078625,
+        "gesamt_ms": 80.989959
+      },
+      "folgeauftrag_ms": 7.182375,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 0,
+      "stoerung": "vor_commit",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-0",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "ba9cc21ddc6b4797a5d76c1efd8e761d"
+      },
+      "primaer_start_ms": 72.232,
+      "vorbereitung_ms": 66.52875,
+      "inklusive_vorbereitung_ms": 79.239125,
+      "reserve_start_ms": 66.52875,
+      "reserve_bereit_gesamt_ms": 87.164,
+      "primaer_neustart_ms": 67.731416,
+      "auftrag": {
+        "kennung": "auftrag-0",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "6017d94c66ca4436bb7e8ef7b7cde76a",
+            "status": "AUSFALL",
+            "grund": "Kanal beendet oder Antwort beschädigt",
+            "erkennung_ms": 1.625125,
+            "dauer_ms": 1.687625,
+            "exitcode": 74,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "ba9cc21ddc6b4797a5d76c1efd8e761d",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.891
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 6.106042,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 6.704792,
+        "gesamt_ms": 12.541417
+      },
+      "folgeauftrag_ms": 6.427917,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 0,
+      "stoerung": "nach_commit",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-0",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "5cb87e56fad64b2fae66398e3b964903"
+      },
+      "primaer_start_ms": 72.980625,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 9.928792,
+      "reserve_start_ms": 0.0,
+      "reserve_bereit_gesamt_ms": 0.0,
+      "primaer_neustart_ms": 67.531125,
+      "auftrag": {
+        "kennung": "auftrag-0",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "5cb87e56fad64b2fae66398e3b964903",
+            "status": "AUSFALL",
+            "grund": "Kanal beendet oder Antwort beschädigt",
+            "erkennung_ms": 5.911708,
+            "dauer_ms": 5.965167,
+            "exitcode": 75,
+            "beendet_bestaetigt": true
+          }
+        ],
+        "aus_speicher": true,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.272042,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 9.910833
+      },
+      "folgeauftrag_ms": 6.925875,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 0,
+      "stoerung": "nach_commit",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-0",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "78b62526062d4afc83de9da8aac3b3a8"
+      },
+      "primaer_start_ms": 73.612375,
+      "vorbereitung_ms": 70.714833,
+      "inklusive_vorbereitung_ms": 79.414292,
+      "reserve_start_ms": 70.714833,
+      "reserve_bereit_gesamt_ms": 82.34225,
+      "primaer_neustart_ms": 68.713833,
+      "auftrag": {
+        "kennung": "auftrag-0",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "78b62526062d4afc83de9da8aac3b3a8",
+            "status": "AUSFALL",
+            "grund": "Kanal beendet oder Antwort beschädigt",
+            "erkennung_ms": 4.822916,
+            "dauer_ms": 4.8775,
+            "exitcode": 75,
+            "beendet_bestaetigt": true
+          }
+        ],
+        "aus_speicher": true,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.307084,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 8.492375
+      },
+      "folgeauftrag_ms": 4.610042,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 0,
+      "stoerung": "haengt",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-0",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "76fec77ad8054da79381c870e2eed59c"
+      },
+      "primaer_start_ms": 75.340958,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 408.416583,
+      "reserve_start_ms": 92.121833,
+      "reserve_bereit_gesamt_ms": 80.707125,
+      "primaer_neustart_ms": 66.447417,
+      "auftrag": {
+        "kennung": "auftrag-0",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "b6e1a07192424d378b34a3dd08f8eb61",
+            "status": "AUSFALL",
+            "grund": "Antwortfrist überschritten",
+            "erkennung_ms": 251.149375,
+            "dauer_ms": 304.637208,
+            "exitcode": -15,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "76fec77ad8054da79381c870e2eed59c",
+            "status": "ERLEDIGT",
+            "dauer_ms": 7.012458
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 92.121833,
+        "wiederanlauf_ms": 153.652625,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 0.043375,
+        "gesamt_ms": 408.398667
+      },
+      "folgeauftrag_ms": 6.782209,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 0,
+      "stoerung": "haengt",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-0",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "d62c97b1d8a9420ea785a3d6def7c3b5"
+      },
+      "primaer_start_ms": 71.671042,
+      "vorbereitung_ms": 67.696334,
+      "inklusive_vorbereitung_ms": 390.203583,
+      "reserve_start_ms": 67.696334,
+      "reserve_bereit_gesamt_ms": 417.24475,
+      "primaer_neustart_ms": 87.200625,
+      "auftrag": {
+        "kennung": "auftrag-0",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "afc1635e17214ac281cd8644c84d8df4",
+            "status": "AUSFALL",
+            "grund": "Antwortfrist überschritten",
+            "erkennung_ms": 252.882416,
+            "dauer_ms": 307.378,
+            "exitcode": -15,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "d62c97b1d8a9420ea785a3d6def7c3b5",
+            "status": "ERLEDIGT",
+            "dauer_ms": 9.478959
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 64.755875,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 312.903541,
+        "gesamt_ms": 322.330791
+      },
+      "folgeauftrag_ms": 6.806541,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 1,
+      "stoerung": "keine",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-1",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "2036999d3e1c495a97f0b14592f22cc6"
+      },
+      "primaer_start_ms": 72.394458,
+      "vorbereitung_ms": 66.587708,
+      "inklusive_vorbereitung_ms": 76.708042,
+      "reserve_start_ms": 66.587708,
+      "reserve_bereit_gesamt_ms": 16.242917,
+      "primaer_neustart_ms": 0.0,
+      "auftrag": {
+        "kennung": "auftrag-1",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "2036999d3e1c495a97f0b14592f22cc6",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.619917
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.0,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 9.940584
+      },
+      "folgeauftrag_ms": 5.978833,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 1,
+      "stoerung": "keine",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-1",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "801cbf66b36a466a97fdc1771107d516"
+      },
+      "primaer_start_ms": 72.705167,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 8.93875,
+      "reserve_start_ms": 0.0,
+      "reserve_bereit_gesamt_ms": 0.0,
+      "primaer_neustart_ms": 0.0,
+      "auftrag": {
+        "kennung": "auftrag-1",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "801cbf66b36a466a97fdc1771107d516",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.433292
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.0,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 8.936084
+      },
+      "folgeauftrag_ms": 5.320875,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 1,
+      "stoerung": "vor_commit",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-1",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "84402b4f02fb4b39ab17673f16367eff"
+      },
+      "primaer_start_ms": 72.668584,
+      "vorbereitung_ms": 69.422667,
+      "inklusive_vorbereitung_ms": 81.56325,
+      "reserve_start_ms": 69.422667,
+      "reserve_bereit_gesamt_ms": 87.422791,
+      "primaer_neustart_ms": 68.549792,
+      "auftrag": {
+        "kennung": "auftrag-1",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "ec79f982e803414e9a6445330d2a0d92",
+            "status": "AUSFALL",
+            "grund": "Arbeiterprozess beendet",
+            "erkennung_ms": 1.557541,
+            "dauer_ms": 1.630625,
+            "exitcode": 74,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "84402b4f02fb4b39ab17673f16367eff",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.421333
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 5.646292,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 6.590333,
+        "gesamt_ms": 11.932917
+      },
+      "folgeauftrag_ms": 6.404416,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 1,
+      "stoerung": "vor_commit",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-1",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "0f19a19c5067441bb321ef49d0d40f52"
+      },
+      "primaer_start_ms": 73.321584,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 85.92325,
+      "reserve_start_ms": 74.319041,
+      "reserve_bereit_gesamt_ms": 87.948959,
+      "primaer_neustart_ms": 73.567583,
+      "auftrag": {
+        "kennung": "auftrag-1",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "05340b35344e48d8803c1b5ffa16abb7",
+            "status": "AUSFALL",
+            "grund": "Arbeiterprozess beendet",
+            "erkennung_ms": 1.412375,
+            "dauer_ms": 1.487125,
+            "exitcode": 74,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "0f19a19c5067441bb321ef49d0d40f52",
+            "status": "ERLEDIGT",
+            "dauer_ms": 6.566
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 74.319041,
+        "wiederanlauf_ms": 81.3025,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 0.076584,
+        "gesamt_ms": 85.90925
+      },
+      "folgeauftrag_ms": 7.173709,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 1,
+      "stoerung": "nach_commit",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-1",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "5a77788702b9494881108075694304cd"
+      },
+      "primaer_start_ms": 74.274542,
+      "vorbereitung_ms": 71.293,
+      "inklusive_vorbereitung_ms": 81.894459,
+      "reserve_start_ms": 71.293,
+      "reserve_bereit_gesamt_ms": 88.139625,
+      "primaer_neustart_ms": 70.69275,
+      "auftrag": {
+        "kennung": "auftrag-1",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "5a77788702b9494881108075694304cd",
+            "status": "AUSFALL",
+            "grund": "Kanal beendet oder Antwort beschädigt",
+            "erkennung_ms": 5.915167,
+            "dauer_ms": 5.97875,
+            "exitcode": 75,
+            "beendet_bestaetigt": true
+          }
+        ],
+        "aus_speicher": true,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.301667,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 10.393625
+      },
+      "folgeauftrag_ms": 6.542084,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 1,
+      "stoerung": "nach_commit",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-1",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "6ca36b5b73944d1e971905f667fad4f2"
+      },
+      "primaer_start_ms": 76.350625,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 9.84975,
+      "reserve_start_ms": 0.0,
+      "reserve_bereit_gesamt_ms": 0.0,
+      "primaer_neustart_ms": 70.815542,
+      "auftrag": {
+        "kennung": "auftrag-1",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "6ca36b5b73944d1e971905f667fad4f2",
+            "status": "AUSFALL",
+            "grund": "Arbeiterprozess beendet",
+            "erkennung_ms": 6.095291,
+            "dauer_ms": 6.171541,
+            "exitcode": 75,
+            "beendet_bestaetigt": true
+          }
+        ],
+        "aus_speicher": true,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.336292,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 9.82825
+      },
+      "folgeauftrag_ms": 6.297209,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 1,
+      "stoerung": "haengt",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-1",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "9ab4fa3ecf2d41b5aba71de5ba76d7d3"
+      },
+      "primaer_start_ms": 74.840542,
+      "vorbereitung_ms": 71.395083,
+      "inklusive_vorbereitung_ms": 391.863542,
+      "reserve_start_ms": 71.395083,
+      "reserve_bereit_gesamt_ms": 415.653792,
+      "primaer_neustart_ms": 88.838416,
+      "auftrag": {
+        "kennung": "auftrag-1",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "468f50dc02bf444683f971b227f57951",
+            "status": "AUSFALL",
+            "grund": "Antwortfrist überschritten",
+            "erkennung_ms": 251.236667,
+            "dauer_ms": 304.987458,
+            "exitcode": -15,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "9ab4fa3ecf2d41b5aba71de5ba76d7d3",
+            "status": "ERLEDIGT",
+            "dauer_ms": 9.997875
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 64.458875,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 310.346042,
+        "gesamt_ms": 320.265917
+      },
+      "folgeauftrag_ms": 5.785083,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 1,
+      "stoerung": "haengt",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-1",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "a4b26abf17ca4b0d8d11fc0c9c3033cb"
+      },
+      "primaer_start_ms": 72.664917,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 406.155875,
+      "reserve_start_ms": 89.327416,
+      "reserve_bereit_gesamt_ms": 82.346875,
+      "primaer_neustart_ms": 67.625083,
+      "auftrag": {
+        "kennung": "auftrag-1",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "b0a835734fd44beb916633532a626e4a",
+            "status": "AUSFALL",
+            "grund": "Antwortfrist überschritten",
+            "erkennung_ms": 251.181083,
+            "dauer_ms": 305.702166,
+            "exitcode": -15,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "a4b26abf17ca4b0d8d11fc0c9c3033cb",
+            "status": "ERLEDIGT",
+            "dauer_ms": 6.826292
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 89.327416,
+        "wiederanlauf_ms": 151.919542,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 0.0535,
+        "gesamt_ms": 406.151292
+      },
+      "folgeauftrag_ms": 7.352458,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 2,
+      "stoerung": "keine",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-2",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "6a86ef15d498458fa23293c318d37a45"
+      },
+      "primaer_start_ms": 71.31,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 8.473333,
+      "reserve_start_ms": 0.0,
+      "reserve_bereit_gesamt_ms": 0.0,
+      "primaer_neustart_ms": 0.0,
+      "auftrag": {
+        "kennung": "auftrag-2",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "6a86ef15d498458fa23293c318d37a45",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.24
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.0,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 8.471041
+      },
+      "folgeauftrag_ms": 5.324125,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 2,
+      "stoerung": "keine",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-2",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "f6abccafce4d44058c56d004c9736063"
+      },
+      "primaer_start_ms": 72.024875,
+      "vorbereitung_ms": 67.941917,
+      "inklusive_vorbereitung_ms": 77.66375,
+      "reserve_start_ms": 67.941917,
+      "reserve_bereit_gesamt_ms": 15.856083,
+      "primaer_neustart_ms": 0.0,
+      "auftrag": {
+        "kennung": "auftrag-2",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "f6abccafce4d44058c56d004c9736063",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.540084
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.0,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 9.553834
+      },
+      "folgeauftrag_ms": 6.011667,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 2,
+      "stoerung": "vor_commit",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-2",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "c8f2fa7231cb4943bb61964d6538301e"
+      },
+      "primaer_start_ms": 73.961667,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 80.484584,
+      "reserve_start_ms": 68.556417,
+      "reserve_bereit_gesamt_ms": 78.92175,
+      "primaer_neustart_ms": 66.323959,
+      "auftrag": {
+        "kennung": "auftrag-2",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "382419bdcff54d20ba6fa2a4be7359e6",
+            "status": "AUSFALL",
+            "grund": "Arbeiterprozess beendet",
+            "erkennung_ms": 1.458792,
+            "dauer_ms": 1.539375,
+            "exitcode": 74,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "c8f2fa7231cb4943bb61964d6538301e",
+            "status": "ERLEDIGT",
+            "dauer_ms": 6.227833
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 68.556417,
+        "wiederanlauf_ms": 75.17625,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 0.039375,
+        "gesamt_ms": 80.480209
+      },
+      "folgeauftrag_ms": 5.867292,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 2,
+      "stoerung": "vor_commit",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-2",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "33adcf9f979149a0bba500fea1a8e828"
+      },
+      "primaer_start_ms": 71.559333,
+      "vorbereitung_ms": 67.732916,
+      "inklusive_vorbereitung_ms": 79.247292,
+      "reserve_start_ms": 67.732916,
+      "reserve_bereit_gesamt_ms": 86.119667,
+      "primaer_neustart_ms": 68.108291,
+      "auftrag": {
+        "kennung": "auftrag-2",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "e51bc566d53c46f9bf3c6bd98fbdb5cd",
+            "status": "AUSFALL",
+            "grund": "Kanal beendet oder Antwort beschädigt",
+            "erkennung_ms": 1.496666,
+            "dauer_ms": 1.552375,
+            "exitcode": 74,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "33adcf9f979149a0bba500fea1a8e828",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.032875
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 5.235792,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 6.365334,
+        "gesamt_ms": 11.35225
+      },
+      "folgeauftrag_ms": 6.214166,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 2,
+      "stoerung": "nach_commit",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-2",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "f2084d94b8324c50aaf1ca92d1e58610"
+      },
+      "primaer_start_ms": 70.740584,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 9.393083,
+      "reserve_start_ms": 0.0,
+      "reserve_bereit_gesamt_ms": 0.0,
+      "primaer_neustart_ms": 66.170083,
+      "auftrag": {
+        "kennung": "auftrag-2",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "f2084d94b8324c50aaf1ca92d1e58610",
+            "status": "AUSFALL",
+            "grund": "Kanal beendet oder Antwort beschädigt",
+            "erkennung_ms": 5.770625,
+            "dauer_ms": 5.826125,
+            "exitcode": 75,
+            "beendet_bestaetigt": true
+          }
+        ],
+        "aus_speicher": true,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.269209,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 9.375084
+      },
+      "folgeauftrag_ms": 6.559,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 2,
+      "stoerung": "nach_commit",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-2",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "84c52dc66d7b4614aefcd79b42ecc4e0"
+      },
+      "primaer_start_ms": 71.823917,
+      "vorbereitung_ms": 69.649791,
+      "inklusive_vorbereitung_ms": 82.215,
+      "reserve_start_ms": 69.649791,
+      "reserve_bereit_gesamt_ms": 88.081959,
+      "primaer_neustart_ms": 68.914125,
+      "auftrag": {
+        "kennung": "auftrag-2",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "84c52dc66d7b4614aefcd79b42ecc4e0",
+            "status": "AUSFALL",
+            "grund": "Kanal beendet oder Antwort beschädigt",
+            "erkennung_ms": 6.676625,
+            "dauer_ms": 6.740542,
+            "exitcode": 75,
+            "beendet_bestaetigt": true
+          }
+        ],
+        "aus_speicher": true,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.304959,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 12.342209
+      },
+      "folgeauftrag_ms": 6.30725,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 2,
+      "stoerung": "haengt",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-2",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "f7463f98477845d29eac450cfcee5214"
+      },
+      "primaer_start_ms": 72.016792,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 405.56275,
+      "reserve_start_ms": 90.0145,
+      "reserve_bereit_gesamt_ms": 80.495417,
+      "primaer_neustart_ms": 66.526458,
+      "auftrag": {
+        "kennung": "auftrag-2",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "42f901eb4dde4b5d98f72d595e28cd9e",
+            "status": "AUSFALL",
+            "grund": "Antwortfrist überschritten",
+            "erkennung_ms": 250.20975,
+            "dauer_ms": 304.053834,
+            "exitcode": -15,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "f7463f98477845d29eac450cfcee5214",
+            "status": "ERLEDIGT",
+            "dauer_ms": 6.697542
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 90.0145,
+        "wiederanlauf_ms": 151.67075,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 0.053875,
+        "gesamt_ms": 405.558208
+      },
+      "folgeauftrag_ms": 6.760875,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 2,
+      "stoerung": "haengt",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-2",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "9db23b8e3b874fb99b898a9dd656e42a"
+      },
+      "primaer_start_ms": 71.818708,
+      "vorbereitung_ms": 66.809542,
+      "inklusive_vorbereitung_ms": 389.022458,
+      "reserve_start_ms": 66.809542,
+      "reserve_bereit_gesamt_ms": 417.084583,
+      "primaer_neustart_ms": 87.7845,
+      "auftrag": {
+        "kennung": "auftrag-2",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "c9d49f35af384edeb183e37aad497205",
+            "status": "AUSFALL",
+            "grund": "Antwortfrist überschritten",
+            "erkennung_ms": 252.6855,
+            "dauer_ms": 306.540208,
+            "exitcode": -15,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "9db23b8e3b874fb99b898a9dd656e42a",
+            "status": "ERLEDIGT",
+            "dauer_ms": 10.585
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 65.097875,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 311.515375,
+        "gesamt_ms": 322.021417
+      },
+      "folgeauftrag_ms": 6.507625,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 3,
+      "stoerung": "keine",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-3",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "cd5ce3cffab84b4a81350a26fa6c6afc"
+      },
+      "primaer_start_ms": 74.667542,
+      "vorbereitung_ms": 72.5955,
+      "inklusive_vorbereitung_ms": 82.7995,
+      "reserve_start_ms": 72.5955,
+      "reserve_bereit_gesamt_ms": 15.787459,
+      "primaer_neustart_ms": 0.0,
+      "auftrag": {
+        "kennung": "auftrag-3",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "cd5ce3cffab84b4a81350a26fa6c6afc",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.5935
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.0,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 10.010416
+      },
+      "folgeauftrag_ms": 5.46575,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 3,
+      "stoerung": "keine",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-3",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "38ebba738c07418fab3f67e49f0c85b1"
+      },
+      "primaer_start_ms": 73.291791,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 8.890334,
+      "reserve_start_ms": 0.0,
+      "reserve_bereit_gesamt_ms": 0.0,
+      "primaer_neustart_ms": 0.0,
+      "auftrag": {
+        "kennung": "auftrag-3",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "38ebba738c07418fab3f67e49f0c85b1",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.561291
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.0,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 8.887709
+      },
+      "folgeauftrag_ms": 5.622458,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 3,
+      "stoerung": "vor_commit",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-3",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "2d600d3aa2ca46118257e016989cb1db"
+      },
+      "primaer_start_ms": 71.414667,
+      "vorbereitung_ms": 67.160667,
+      "inklusive_vorbereitung_ms": 78.782208,
+      "reserve_start_ms": 67.160667,
+      "reserve_bereit_gesamt_ms": 84.865542,
+      "primaer_neustart_ms": 66.516375,
+      "auftrag": {
+        "kennung": "auftrag-3",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "0dbb1c01f59e4c608a554db7b5d61198",
+            "status": "AUSFALL",
+            "grund": "Arbeiterprozess beendet",
+            "erkennung_ms": 1.536417,
+            "dauer_ms": 1.603167,
+            "exitcode": 74,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "2d600d3aa2ca46118257e016989cb1db",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.608583
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 5.821333,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 5.882042,
+        "gesamt_ms": 11.407875
+      },
+      "folgeauftrag_ms": 6.424417,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 3,
+      "stoerung": "vor_commit",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-3",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "788af9d08bfd45d4a65b2229fb949a56"
+      },
+      "primaer_start_ms": 72.493958,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 79.041541,
+      "reserve_start_ms": 67.488333,
+      "reserve_bereit_gesamt_ms": 81.840125,
+      "primaer_neustart_ms": 67.469834,
+      "auftrag": {
+        "kennung": "auftrag-3",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "9cb2a81386db4f959b915ae16529e7c0",
+            "status": "AUSFALL",
+            "grund": "Kanal beendet oder Antwort beschädigt",
+            "erkennung_ms": 1.352167,
+            "dauer_ms": 1.406833,
+            "exitcode": 74,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "788af9d08bfd45d4a65b2229fb949a56",
+            "status": "ERLEDIGT",
+            "dauer_ms": 6.576042
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 67.488333,
+        "wiederanlauf_ms": 74.411916,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 0.053667,
+        "gesamt_ms": 79.037291
+      },
+      "folgeauftrag_ms": 7.308667,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 3,
+      "stoerung": "nach_commit",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-3",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "2740646aa3dc41a59a8802bcc50cf8dc"
+      },
+      "primaer_start_ms": 72.641958,
+      "vorbereitung_ms": 66.823708,
+      "inklusive_vorbereitung_ms": 77.657834,
+      "reserve_start_ms": 66.823708,
+      "reserve_bereit_gesamt_ms": 85.2975,
+      "primaer_neustart_ms": 67.708792,
+      "auftrag": {
+        "kennung": "auftrag-3",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "2740646aa3dc41a59a8802bcc50cf8dc",
+            "status": "AUSFALL",
+            "grund": "Arbeiterprozess beendet",
+            "erkennung_ms": 6.265166,
+            "dauer_ms": 6.331333,
+            "exitcode": 75,
+            "beendet_bestaetigt": true
+          }
+        ],
+        "aus_speicher": true,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.456875,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 10.651541
+      },
+      "folgeauftrag_ms": 6.256292,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 3,
+      "stoerung": "nach_commit",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-3",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "e0756ac069b24bd084c3f4745e6a6a88"
+      },
+      "primaer_start_ms": 71.498416,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 8.805541,
+      "reserve_start_ms": 0.0,
+      "reserve_bereit_gesamt_ms": 0.0,
+      "primaer_neustart_ms": 66.965084,
+      "auftrag": {
+        "kennung": "auftrag-3",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "e0756ac069b24bd084c3f4745e6a6a88",
+            "status": "AUSFALL",
+            "grund": "Kanal beendet oder Antwort beschädigt",
+            "erkennung_ms": 5.441416,
+            "dauer_ms": 5.496541,
+            "exitcode": 75,
+            "beendet_bestaetigt": true
+          }
+        ],
+        "aus_speicher": true,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.267959,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 8.785584
+      },
+      "folgeauftrag_ms": 5.993875,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 3,
+      "stoerung": "haengt",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-3",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "93351cf30e6f47c095aea3516dd39702"
+      },
+      "primaer_start_ms": 70.88775,
+      "vorbereitung_ms": 66.73475,
+      "inklusive_vorbereitung_ms": 385.28675,
+      "reserve_start_ms": 66.73475,
+      "reserve_bereit_gesamt_ms": 415.999792,
+      "primaer_neustart_ms": 90.306667,
+      "auftrag": {
+        "kennung": "auftrag-3",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "00ad4e272bee4926abc671246778d102",
+            "status": "AUSFALL",
+            "grund": "Antwortfrist überschritten",
+            "erkennung_ms": 250.66,
+            "dauer_ms": 303.120667,
+            "exitcode": -15,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "93351cf30e6f47c095aea3516dd39702",
+            "status": "ERLEDIGT",
+            "dauer_ms": 10.30275
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 63.594834,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 308.131459,
+        "gesamt_ms": 318.382125
+      },
+      "folgeauftrag_ms": 6.482792,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 3,
+      "stoerung": "haengt",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-3",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "472dd4ee36ba4035b64d380721882b7c"
+      },
+      "primaer_start_ms": 72.519,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 406.631791,
+      "reserve_start_ms": 90.840667,
+      "reserve_bereit_gesamt_ms": 80.58125,
+      "primaer_neustart_ms": 66.827708,
+      "auftrag": {
+        "kennung": "auftrag-3",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "556f11bb1c9c48fe9fa6389266b2dc4e",
+            "status": "AUSFALL",
+            "grund": "Antwortfrist überschritten",
+            "erkennung_ms": 251.271916,
+            "dauer_ms": 305.226333,
+            "exitcode": -15,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "472dd4ee36ba4035b64d380721882b7c",
+            "status": "ERLEDIGT",
+            "dauer_ms": 6.258417
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 90.840667,
+        "wiederanlauf_ms": 152.179417,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 0.053041,
+        "gesamt_ms": 406.627042
+      },
+      "folgeauftrag_ms": 6.974167,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 4,
+      "stoerung": "keine",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-4",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "3ccf4c71163e4db4b0ec6bab700bf0fe"
+      },
+      "primaer_start_ms": 73.894792,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 8.333042,
+      "reserve_start_ms": 0.0,
+      "reserve_bereit_gesamt_ms": 0.0,
+      "primaer_neustart_ms": 0.0,
+      "auftrag": {
+        "kennung": "auftrag-4",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "3ccf4c71163e4db4b0ec6bab700bf0fe",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.299333
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.0,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 8.330625
+      },
+      "folgeauftrag_ms": 5.420625,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 4,
+      "stoerung": "keine",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-4",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "7fff94a0ab404c8795d8c0581d3153bd"
+      },
+      "primaer_start_ms": 75.517792,
+      "vorbereitung_ms": 75.540167,
+      "inklusive_vorbereitung_ms": 86.410083,
+      "reserve_start_ms": 75.540167,
+      "reserve_bereit_gesamt_ms": 17.020541,
+      "primaer_neustart_ms": 0.0,
+      "auftrag": {
+        "kennung": "auftrag-4",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "7fff94a0ab404c8795d8c0581d3153bd",
+            "status": "ERLEDIGT",
+            "dauer_ms": 6.284333
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.0,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 10.664542
+      },
+      "folgeauftrag_ms": 6.011,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 4,
+      "stoerung": "vor_commit",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-4",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "ed9a2f4a0bba4a08bb063a21f69bd750"
+      },
+      "primaer_start_ms": 75.422542,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 83.174042,
+      "reserve_start_ms": 71.657041,
+      "reserve_bereit_gesamt_ms": 86.001084,
+      "primaer_neustart_ms": 72.736917,
+      "auftrag": {
+        "kennung": "auftrag-4",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "4dc9fda21341491abeab72e36e09fe61",
+            "status": "AUSFALL",
+            "grund": "Kanal beendet oder Antwort beschädigt",
+            "erkennung_ms": 1.442291,
+            "dauer_ms": 1.494333,
+            "exitcode": 74,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "ed9a2f4a0bba4a08bb063a21f69bd750",
+            "status": "ERLEDIGT",
+            "dauer_ms": 6.261875
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 71.657041,
+        "wiederanlauf_ms": 78.279334,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 0.052084,
+        "gesamt_ms": 83.169084
+      },
+      "folgeauftrag_ms": 6.489458,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 4,
+      "stoerung": "vor_commit",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-4",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "b52759a92e9640d294b03d3baf5433fd"
+      },
+      "primaer_start_ms": 71.94925,
+      "vorbereitung_ms": 66.834167,
+      "inklusive_vorbereitung_ms": 78.38975,
+      "reserve_start_ms": 66.834167,
+      "reserve_bereit_gesamt_ms": 87.72125,
+      "primaer_neustart_ms": 69.035708,
+      "auftrag": {
+        "kennung": "auftrag-4",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "2b7980e457cc4628862f6d8ba70fcfbb",
+            "status": "AUSFALL",
+            "grund": "Arbeiterprozess beendet",
+            "erkennung_ms": 1.521084,
+            "dauer_ms": 1.590792,
+            "exitcode": 74,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "b52759a92e9640d294b03d3baf5433fd",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.639417
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 5.867416,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 5.805666,
+        "gesamt_ms": 11.374375
+      },
+      "folgeauftrag_ms": 6.721417,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 4,
+      "stoerung": "nach_commit",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-4",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "7238684defb44810bc285b377e725ee9"
+      },
+      "primaer_start_ms": 73.169375,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 8.879084,
+      "reserve_start_ms": 0.0,
+      "reserve_bereit_gesamt_ms": 0.0,
+      "primaer_neustart_ms": 67.673208,
+      "auftrag": {
+        "kennung": "auftrag-4",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "7238684defb44810bc285b377e725ee9",
+            "status": "AUSFALL",
+            "grund": "Kanal beendet oder Antwort beschädigt",
+            "erkennung_ms": 5.666,
+            "dauer_ms": 5.716792,
+            "exitcode": 75,
+            "beendet_bestaetigt": true
+          }
+        ],
+        "aus_speicher": true,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.257792,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 8.861625
+      },
+      "folgeauftrag_ms": 6.247042,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 4,
+      "stoerung": "nach_commit",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-4",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "3581894ced6947e2ac8c78a97ab50476"
+      },
+      "primaer_start_ms": 72.303416,
+      "vorbereitung_ms": 66.790958,
+      "inklusive_vorbereitung_ms": 77.664708,
+      "reserve_start_ms": 66.790958,
+      "reserve_bereit_gesamt_ms": 84.268334,
+      "primaer_neustart_ms": 67.35675,
+      "auftrag": {
+        "kennung": "auftrag-4",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "3581894ced6947e2ac8c78a97ab50476",
+            "status": "AUSFALL",
+            "grund": "Kanal beendet oder Antwort beschädigt",
+            "erkennung_ms": 6.244291,
+            "dauer_ms": 6.3715,
+            "exitcode": 75,
+            "beendet_bestaetigt": true
+          }
+        ],
+        "aus_speicher": true,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.382917,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 10.65675
+      },
+      "folgeauftrag_ms": 5.708709,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 4,
+      "stoerung": "haengt",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-4",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "26d94acf9f6944cd9c40a02df2f08b06"
+      },
+      "primaer_start_ms": 72.508125,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 409.286583,
+      "reserve_start_ms": 93.345,
+      "reserve_bereit_gesamt_ms": 81.998542,
+      "primaer_neustart_ms": 68.780625,
+      "auftrag": {
+        "kennung": "auftrag-4",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "e4ed5c884693460ab8df9ca69797cd0a",
+            "status": "AUSFALL",
+            "grund": "Antwortfrist überschritten",
+            "erkennung_ms": 251.153667,
+            "dauer_ms": 304.861834,
+            "exitcode": -15,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "26d94acf9f6944cd9c40a02df2f08b06",
+            "status": "ERLEDIGT",
+            "dauer_ms": 6.596167
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 93.345,
+        "wiederanlauf_ms": 155.231583,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 0.048708,
+        "gesamt_ms": 409.281791
+      },
+      "folgeauftrag_ms": 6.151584,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 4,
+      "stoerung": "haengt",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-4",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "8aee7ef6ce394218a9f35e0b8f65369e"
+      },
+      "primaer_start_ms": 70.158458,
+      "vorbereitung_ms": 66.782875,
+      "inklusive_vorbereitung_ms": 387.249958,
+      "reserve_start_ms": 66.782875,
+      "reserve_bereit_gesamt_ms": 421.781208,
+      "primaer_neustart_ms": 93.957917,
+      "auftrag": {
+        "kennung": "auftrag-4",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "2c8bf7e1c16c44a2995b955bb733e199",
+            "status": "AUSFALL",
+            "grund": "Antwortfrist überschritten",
+            "erkennung_ms": 251.204167,
+            "dauer_ms": 305.015625,
+            "exitcode": -15,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "8aee7ef6ce394218a9f35e0b8f65369e",
+            "status": "ERLEDIGT",
+            "dauer_ms": 10.25775
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 64.855375,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 310.084166,
+        "gesamt_ms": 320.292667
+      },
+      "folgeauftrag_ms": 6.431166,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 5,
+      "stoerung": "keine",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-5",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "5cc1f8e2273d49cfa49be626a59feebb"
+      },
+      "primaer_start_ms": 73.687042,
+      "vorbereitung_ms": 69.229834,
+      "inklusive_vorbereitung_ms": 80.123542,
+      "reserve_start_ms": 69.229834,
+      "reserve_bereit_gesamt_ms": 16.387291,
+      "primaer_neustart_ms": 0.0,
+      "auftrag": {
+        "kennung": "auftrag-5",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "5cc1f8e2273d49cfa49be626a59feebb",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.96525
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.0,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 10.715791
+      },
+      "folgeauftrag_ms": 5.338,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 5,
+      "stoerung": "keine",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-5",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "304f93aacf2d4b84b947be3d73c5ac10"
+      },
+      "primaer_start_ms": 77.742,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 9.435916,
+      "reserve_start_ms": 0.0,
+      "reserve_bereit_gesamt_ms": 0.0,
+      "primaer_neustart_ms": 0.0,
+      "auftrag": {
+        "kennung": "auftrag-5",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "304f93aacf2d4b84b947be3d73c5ac10",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.868875
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.0,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 9.433125
+      },
+      "folgeauftrag_ms": 5.433833,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 5,
+      "stoerung": "vor_commit",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-5",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "0506eff7815e4b2e9c2ba79651bb56b0"
+      },
+      "primaer_start_ms": 74.946875,
+      "vorbereitung_ms": 71.513875,
+      "inklusive_vorbereitung_ms": 83.621042,
+      "reserve_start_ms": 71.513875,
+      "reserve_bereit_gesamt_ms": 89.01175,
+      "primaer_neustart_ms": 70.685375,
+      "auftrag": {
+        "kennung": "auftrag-5",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "d6457f43618345d69ff9ae35573eb8c3",
+            "status": "AUSFALL",
+            "grund": "Arbeiterprozess beendet",
+            "erkennung_ms": 1.670709,
+            "dauer_ms": 1.726417,
+            "exitcode": 74,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "0506eff7815e4b2e9c2ba79651bb56b0",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.898417
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 6.103375,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 6.0765,
+        "gesamt_ms": 11.912
+      },
+      "folgeauftrag_ms": 5.921583,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 5,
+      "stoerung": "vor_commit",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-5",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "13710eb293e94bdbb301d59beda8ef17"
+      },
+      "primaer_start_ms": 77.730375,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 82.539708,
+      "reserve_start_ms": 70.879625,
+      "reserve_bereit_gesamt_ms": 79.662417,
+      "primaer_neustart_ms": 67.816875,
+      "auftrag": {
+        "kennung": "auftrag-5",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "f9ec71dbba874612b4746fc4c96332ec",
+            "status": "AUSFALL",
+            "grund": "Arbeiterprozess beendet",
+            "erkennung_ms": 1.736041,
+            "dauer_ms": 1.802666,
+            "exitcode": 74,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "13710eb293e94bdbb301d59beda8ef17",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.931375
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 70.879625,
+        "wiederanlauf_ms": 77.186292,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 0.04575,
+        "gesamt_ms": 82.535042
+      },
+      "folgeauftrag_ms": 5.4265,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 5,
+      "stoerung": "nach_commit",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-5",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "81fac9acbe9b46e289f2b07900c95d30"
+      },
+      "primaer_start_ms": 73.968375,
+      "vorbereitung_ms": 67.8795,
+      "inklusive_vorbereitung_ms": 79.154084,
+      "reserve_start_ms": 67.8795,
+      "reserve_bereit_gesamt_ms": 84.19375,
+      "primaer_neustart_ms": 66.479541,
+      "auftrag": {
+        "kennung": "auftrag-5",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "81fac9acbe9b46e289f2b07900c95d30",
+            "status": "AUSFALL",
+            "grund": "Kanal beendet oder Antwort beschädigt",
+            "erkennung_ms": 6.236542,
+            "dauer_ms": 6.3015,
+            "exitcode": 75,
+            "beendet_bestaetigt": true
+          }
+        ],
+        "aus_speicher": true,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.311375,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 11.07975
+      },
+      "folgeauftrag_ms": 6.12075,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 5,
+      "stoerung": "nach_commit",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-5",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "fdab3d1ade9348b7845539d588338dcb"
+      },
+      "primaer_start_ms": 71.557583,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 9.306625,
+      "reserve_start_ms": 0.0,
+      "reserve_bereit_gesamt_ms": 0.0,
+      "primaer_neustart_ms": 66.076084,
+      "auftrag": {
+        "kennung": "auftrag-5",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "fdab3d1ade9348b7845539d588338dcb",
+            "status": "AUSFALL",
+            "grund": "Kanal beendet oder Antwort beschädigt",
+            "erkennung_ms": 5.762792,
+            "dauer_ms": 5.817917,
+            "exitcode": 75,
+            "beendet_bestaetigt": true
+          }
+        ],
+        "aus_speicher": true,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.271417,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 9.274042
+      },
+      "folgeauftrag_ms": 5.964917,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 5,
+      "stoerung": "haengt",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-5",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "2a731bd2c059460381d0cae69737c311"
+      },
+      "primaer_start_ms": 72.533,
+      "vorbereitung_ms": 67.277125,
+      "inklusive_vorbereitung_ms": 388.050041,
+      "reserve_start_ms": 67.277125,
+      "reserve_bereit_gesamt_ms": 413.421042,
+      "primaer_neustart_ms": 85.919542,
+      "auftrag": {
+        "kennung": "auftrag-5",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "462a2d8409854f81bd7070424ea33f7b",
+            "status": "AUSFALL",
+            "grund": "Antwortfrist überschritten",
+            "erkennung_ms": 251.134333,
+            "dauer_ms": 306.485042,
+            "exitcode": -15,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "2a731bd2c059460381d0cae69737c311",
+            "status": "ERLEDIGT",
+            "dauer_ms": 9.444167
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 65.265625,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 311.216333,
+        "gesamt_ms": 320.604125
+      },
+      "folgeauftrag_ms": 5.981209,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 5,
+      "stoerung": "haengt",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-5",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "45709c2eb4394b07bf7cffc308e02ff8"
+      },
+      "primaer_start_ms": 73.962916,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 403.939292,
+      "reserve_start_ms": 89.326792,
+      "reserve_bereit_gesamt_ms": 82.499958,
+      "primaer_neustart_ms": 69.779208,
+      "auftrag": {
+        "kennung": "auftrag-5",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "47a0de3eb65e4268833e37ba240b7507",
+            "status": "AUSFALL",
+            "grund": "Antwortfrist überschritten",
+            "erkennung_ms": 251.109417,
+            "dauer_ms": 304.07425,
+            "exitcode": -15,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "45709c2eb4394b07bf7cffc308e02ff8",
+            "status": "ERLEDIGT",
+            "dauer_ms": 6.354708
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 89.326792,
+        "wiederanlauf_ms": 149.413708,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 0.06425,
+        "gesamt_ms": 403.934542
+      },
+      "folgeauftrag_ms": 5.861917,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 6,
+      "stoerung": "keine",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-6",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "d676232ee3b84ee193aa0febe937cda4"
+      },
+      "primaer_start_ms": 76.768,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 14.422666,
+      "reserve_start_ms": 0.0,
+      "reserve_bereit_gesamt_ms": 0.0,
+      "primaer_neustart_ms": 0.0,
+      "auftrag": {
+        "kennung": "auftrag-6",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "d676232ee3b84ee193aa0febe937cda4",
+            "status": "ERLEDIGT",
+            "dauer_ms": 6.871
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.0,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 14.419834
+      },
+      "folgeauftrag_ms": 5.063417,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 6,
+      "stoerung": "keine",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-6",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "4ff02d16801a4c3184ca3c5252fd518e"
+      },
+      "primaer_start_ms": 72.556958,
+      "vorbereitung_ms": 66.815584,
+      "inklusive_vorbereitung_ms": 76.926667,
+      "reserve_start_ms": 66.815584,
+      "reserve_bereit_gesamt_ms": 16.285041,
+      "primaer_neustart_ms": 0.0,
+      "auftrag": {
+        "kennung": "auftrag-6",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "4ff02d16801a4c3184ca3c5252fd518e",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.328208
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.0,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 9.958166
+      },
+      "folgeauftrag_ms": 6.035958,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 6,
+      "stoerung": "vor_commit",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-6",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "8f0f6045c76845d5905d7ed783855ac0"
+      },
+      "primaer_start_ms": 71.357834,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 79.262,
+      "reserve_start_ms": 67.859625,
+      "reserve_bereit_gesamt_ms": 80.127833,
+      "primaer_neustart_ms": 67.179917,
+      "auftrag": {
+        "kennung": "auftrag-6",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "5bc929fb05b24b919fa688cb60fef949",
+            "status": "AUSFALL",
+            "grund": "Kanal beendet oder Antwort beschädigt",
+            "erkennung_ms": 1.321375,
+            "dauer_ms": 1.372917,
+            "exitcode": 74,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "8f0f6045c76845d5905d7ed783855ac0",
+            "status": "ERLEDIGT",
+            "dauer_ms": 6.225042
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 67.859625,
+        "wiederanlauf_ms": 74.408375,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 0.044083,
+        "gesamt_ms": 79.257666
+      },
+      "folgeauftrag_ms": 6.21525,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 6,
+      "stoerung": "vor_commit",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-6",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "5c1fe59eea22450c87b2705ce80abecd"
+      },
+      "primaer_start_ms": 71.653,
+      "vorbereitung_ms": 66.966125,
+      "inklusive_vorbereitung_ms": 78.245208,
+      "reserve_start_ms": 66.966125,
+      "reserve_bereit_gesamt_ms": 84.273917,
+      "primaer_neustart_ms": 66.776292,
+      "auftrag": {
+        "kennung": "auftrag-6",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "c3e03331ac184a4eb1849d028d8bf672",
+            "status": "AUSFALL",
+            "grund": "Kanal beendet oder Antwort beschädigt",
+            "erkennung_ms": 1.652833,
+            "dauer_ms": 1.706083,
+            "exitcode": 74,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "5c1fe59eea22450c87b2705ce80abecd",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.47025
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 5.66475,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 5.697875,
+        "gesamt_ms": 11.118792
+      },
+      "folgeauftrag_ms": 5.934625,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 6,
+      "stoerung": "nach_commit",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-6",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "6453d47f0adc40119a35bb6fa58db777"
+      },
+      "primaer_start_ms": 73.086916,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 10.251917,
+      "reserve_start_ms": 0.0,
+      "reserve_bereit_gesamt_ms": 0.0,
+      "primaer_neustart_ms": 72.576333,
+      "auftrag": {
+        "kennung": "auftrag-6",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "6453d47f0adc40119a35bb6fa58db777",
+            "status": "AUSFALL",
+            "grund": "Kanal beendet oder Antwort beschädigt",
+            "erkennung_ms": 6.680666,
+            "dauer_ms": 6.7535,
+            "exitcode": 75,
+            "beendet_bestaetigt": true
+          }
+        ],
+        "aus_speicher": true,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.311625,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 10.227625
+      },
+      "folgeauftrag_ms": 6.447375,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 6,
+      "stoerung": "nach_commit",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-6",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "81a609bd8f254c458c4b02c546632f5f"
+      },
+      "primaer_start_ms": 75.428625,
+      "vorbereitung_ms": 69.67825,
+      "inklusive_vorbereitung_ms": 80.159375,
+      "reserve_start_ms": 69.67825,
+      "reserve_bereit_gesamt_ms": 83.927417,
+      "primaer_neustart_ms": 66.953,
+      "auftrag": {
+        "kennung": "auftrag-6",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "81a609bd8f254c458c4b02c546632f5f",
+            "status": "AUSFALL",
+            "grund": "Kanal beendet oder Antwort beschädigt",
+            "erkennung_ms": 5.884833,
+            "dauer_ms": 5.944667,
+            "exitcode": 75,
+            "beendet_bestaetigt": true
+          }
+        ],
+        "aus_speicher": true,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.299542,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 10.25275
+      },
+      "folgeauftrag_ms": 6.264708,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 6,
+      "stoerung": "haengt",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-6",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "f7ad2bc6dd914a52912294c1f82a9c44"
+      },
+      "primaer_start_ms": 73.232791,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 406.677833,
+      "reserve_start_ms": 90.426458,
+      "reserve_bereit_gesamt_ms": 79.371583,
+      "primaer_neustart_ms": 66.850459,
+      "auftrag": {
+        "kennung": "auftrag-6",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "13ebe3934db843479be4b092c5067472",
+            "status": "AUSFALL",
+            "grund": "Antwortfrist überschritten",
+            "erkennung_ms": 251.147583,
+            "dauer_ms": 306.018,
+            "exitcode": -15,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "f7ad2bc6dd914a52912294c1f82a9c44",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.943416
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 90.426458,
+        "wiederanlauf_ms": 152.22375,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 0.046542,
+        "gesamt_ms": 406.673042
+      },
+      "folgeauftrag_ms": 6.09425,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 6,
+      "stoerung": "haengt",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-6",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "57dfe903ee6c4f12a0d46b37a5847c8d"
+      },
+      "primaer_start_ms": 71.795208,
+      "vorbereitung_ms": 66.36775,
+      "inklusive_vorbereitung_ms": 385.779625,
+      "reserve_start_ms": 66.36775,
+      "reserve_bereit_gesamt_ms": 414.318,
+      "primaer_neustart_ms": 88.076834,
+      "auftrag": {
+        "kennung": "auftrag-6",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "5258c9867d3f48488d6318f9aa5e803f",
+            "status": "AUSFALL",
+            "grund": "Antwortfrist überschritten",
+            "erkennung_ms": 251.215958,
+            "dauer_ms": 305.467333,
+            "exitcode": -15,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "57dfe903ee6c4f12a0d46b37a5847c8d",
+            "status": "ERLEDIGT",
+            "dauer_ms": 8.7185
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 63.76525,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 310.580875,
+        "gesamt_ms": 319.2445
+      },
+      "folgeauftrag_ms": 6.072583,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 7,
+      "stoerung": "keine",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-7",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "4df6bf66321f4e2282dacf5411d211a5"
+      },
+      "primaer_start_ms": 71.672791,
+      "vorbereitung_ms": 67.834667,
+      "inklusive_vorbereitung_ms": 77.271333,
+      "reserve_start_ms": 67.834667,
+      "reserve_bereit_gesamt_ms": 14.814042,
+      "primaer_neustart_ms": 0.0,
+      "auftrag": {
+        "kennung": "auftrag-7",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "4df6bf66321f4e2282dacf5411d211a5",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.417833
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.0,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 9.271792
+      },
+      "folgeauftrag_ms": 5.220333,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 7,
+      "stoerung": "keine",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-7",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "581b57ab82424c42bebd49aaef293e8f"
+      },
+      "primaer_start_ms": 75.110875,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 8.74,
+      "reserve_start_ms": 0.0,
+      "reserve_bereit_gesamt_ms": 0.0,
+      "primaer_neustart_ms": 0.0,
+      "auftrag": {
+        "kennung": "auftrag-7",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "581b57ab82424c42bebd49aaef293e8f",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.422167
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.0,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 8.737334
+      },
+      "folgeauftrag_ms": 5.340375,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 7,
+      "stoerung": "vor_commit",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-7",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "e165a58a578d4e1683b400be7d72e7bf"
+      },
+      "primaer_start_ms": 73.663583,
+      "vorbereitung_ms": 66.448708,
+      "inklusive_vorbereitung_ms": 77.88775,
+      "reserve_start_ms": 66.448708,
+      "reserve_bereit_gesamt_ms": 85.617334,
+      "primaer_neustart_ms": 66.381708,
+      "auftrag": {
+        "kennung": "auftrag-7",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "b5c392460541465e891474f79515ba86",
+            "status": "AUSFALL",
+            "grund": "Arbeiterprozess beendet",
+            "erkennung_ms": 1.613375,
+            "dauer_ms": 1.684083,
+            "exitcode": 74,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "e165a58a578d4e1683b400be7d72e7bf",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.29025
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 5.506875,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 6.036709,
+        "gesamt_ms": 11.279834
+      },
+      "folgeauftrag_ms": 7.500709,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 7,
+      "stoerung": "vor_commit",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-7",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "0b08b75c281148e3b172b16dd8e45c23"
+      },
+      "primaer_start_ms": 71.530083,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 79.157625,
+      "reserve_start_ms": 68.380417,
+      "reserve_bereit_gesamt_ms": 82.00675,
+      "primaer_neustart_ms": 69.666083,
+      "auftrag": {
+        "kennung": "auftrag-7",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "5a2ecfe09eea4897b730ea225456e7a1",
+            "status": "AUSFALL",
+            "grund": "Kanal beendet oder Antwort beschädigt",
+            "erkennung_ms": 1.271042,
+            "dauer_ms": 1.324,
+            "exitcode": 74,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "0b08b75c281148e3b172b16dd8e45c23",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.924375
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 68.380417,
+        "wiederanlauf_ms": 74.641875,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 0.047625,
+        "gesamt_ms": 79.153417
+      },
+      "folgeauftrag_ms": 5.933,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 7,
+      "stoerung": "nach_commit",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-7",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "fb2dd37c8bd44f87872af283f5211e58"
+      },
+      "primaer_start_ms": 71.697,
+      "vorbereitung_ms": 66.695291,
+      "inklusive_vorbereitung_ms": 76.492083,
+      "reserve_start_ms": 66.695291,
+      "reserve_bereit_gesamt_ms": 83.565917,
+      "primaer_neustart_ms": 67.491375,
+      "auftrag": {
+        "kennung": "auftrag-7",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "fb2dd37c8bd44f87872af283f5211e58",
+            "status": "AUSFALL",
+            "grund": "Kanal beendet oder Antwort beschädigt",
+            "erkennung_ms": 5.566458,
+            "dauer_ms": 5.623458,
+            "exitcode": 75,
+            "beendet_bestaetigt": true
+          }
+        ],
+        "aus_speicher": true,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.293542,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 9.597417
+      },
+      "folgeauftrag_ms": 5.956417,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 7,
+      "stoerung": "nach_commit",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-7",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "b59fcff995334a52a70d714631573f29"
+      },
+      "primaer_start_ms": 71.696291,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 8.683625,
+      "reserve_start_ms": 0.0,
+      "reserve_bereit_gesamt_ms": 0.0,
+      "primaer_neustart_ms": 66.404292,
+      "auftrag": {
+        "kennung": "auftrag-7",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "b59fcff995334a52a70d714631573f29",
+            "status": "AUSFALL",
+            "grund": "Arbeiterprozess beendet",
+            "erkennung_ms": 5.37975,
+            "dauer_ms": 5.43425,
+            "exitcode": 75,
+            "beendet_bestaetigt": true
+          }
+        ],
+        "aus_speicher": true,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.262292,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 8.664167
+      },
+      "folgeauftrag_ms": 6.3025,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 7,
+      "stoerung": "haengt",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-7",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "ae114ad7f3c74aaaa6dc8de10dba0b7b"
+      },
+      "primaer_start_ms": 71.544458,
+      "vorbereitung_ms": 66.433125,
+      "inklusive_vorbereitung_ms": 387.437584,
+      "reserve_start_ms": 66.433125,
+      "reserve_bereit_gesamt_ms": 417.714667,
+      "primaer_neustart_ms": 89.761167,
+      "auftrag": {
+        "kennung": "auftrag-7",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "4ef07aeec5f74c84af9b9a5e0e5215a8",
+            "status": "AUSFALL",
+            "grund": "Antwortfrist überschritten",
+            "erkennung_ms": 251.200125,
+            "dauer_ms": 304.672208,
+            "exitcode": -15,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "ae114ad7f3c74aaaa6dc8de10dba0b7b",
+            "status": "ERLEDIGT",
+            "dauer_ms": 11.29525
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 65.43225,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 309.59225,
+        "gesamt_ms": 320.822833
+      },
+      "folgeauftrag_ms": 6.236166,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 7,
+      "stoerung": "haengt",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-7",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "17e7863a17724fb7acdc218da2f24438"
+      },
+      "primaer_start_ms": 75.22725,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 407.9085,
+      "reserve_start_ms": 91.078666,
+      "reserve_bereit_gesamt_ms": 82.129959,
+      "primaer_neustart_ms": 68.659167,
+      "auftrag": {
+        "kennung": "auftrag-7",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "e8e70e6861e04f0a9784dd14c5b130b6",
+            "status": "AUSFALL",
+            "grund": "Antwortfrist überschritten",
+            "erkennung_ms": 250.534125,
+            "dauer_ms": 305.802166,
+            "exitcode": -15,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "17e7863a17724fb7acdc218da2f24438",
+            "status": "ERLEDIGT",
+            "dauer_ms": 6.784167
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 91.078666,
+        "wiederanlauf_ms": 154.033583,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 0.058125,
+        "gesamt_ms": 407.903833
+      },
+      "folgeauftrag_ms": 6.163833,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 8,
+      "stoerung": "keine",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-8",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "95032a387cd545aeb9d9edf23c1f2b3d"
+      },
+      "primaer_start_ms": 72.110875,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 9.414083,
+      "reserve_start_ms": 0.0,
+      "reserve_bereit_gesamt_ms": 0.0,
+      "primaer_neustart_ms": 0.0,
+      "auftrag": {
+        "kennung": "auftrag-8",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "95032a387cd545aeb9d9edf23c1f2b3d",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.256
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.0,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 9.409292
+      },
+      "folgeauftrag_ms": 5.536375,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 8,
+      "stoerung": "keine",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-8",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "5193f090dbec426ebdd8aaa9af0902c5"
+      },
+      "primaer_start_ms": 78.235375,
+      "vorbereitung_ms": 73.744708,
+      "inklusive_vorbereitung_ms": 83.327375,
+      "reserve_start_ms": 73.744708,
+      "reserve_bereit_gesamt_ms": 15.161917,
+      "primaer_neustart_ms": 0.0,
+      "auftrag": {
+        "kennung": "auftrag-8",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "5193f090dbec426ebdd8aaa9af0902c5",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.277625
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.0,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 9.395375
+      },
+      "folgeauftrag_ms": 5.456583,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 8,
+      "stoerung": "vor_commit",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-8",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "81909e9367e84ddc9a6bfd74370db261"
+      },
+      "primaer_start_ms": 72.823167,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 77.829917,
+      "reserve_start_ms": 66.562917,
+      "reserve_bereit_gesamt_ms": 79.697416,
+      "primaer_neustart_ms": 66.926625,
+      "auftrag": {
+        "kennung": "auftrag-8",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "7f6927c39df04937a927ae9e3b6c0599",
+            "status": "AUSFALL",
+            "grund": "Kanal beendet oder Antwort beschädigt",
+            "erkennung_ms": 1.332875,
+            "dauer_ms": 1.384042,
+            "exitcode": 74,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "81909e9367e84ddc9a6bfd74370db261",
+            "status": "ERLEDIGT",
+            "dauer_ms": 6.355417
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 66.562917,
+        "wiederanlauf_ms": 73.252792,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 0.054416,
+        "gesamt_ms": 77.825333
+      },
+      "folgeauftrag_ms": 5.906833,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 8,
+      "stoerung": "vor_commit",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-8",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "d297d714d4624660b0a7d193a49ef3da"
+      },
+      "primaer_start_ms": 74.692416,
+      "vorbereitung_ms": 68.031875,
+      "inklusive_vorbereitung_ms": 79.325208,
+      "reserve_start_ms": 68.031875,
+      "reserve_bereit_gesamt_ms": 85.466417,
+      "primaer_neustart_ms": 67.011792,
+      "auftrag": {
+        "kennung": "auftrag-8",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "3f5c1bed92ed40949c54689a9bac53e0",
+            "status": "AUSFALL",
+            "grund": "Arbeiterprozess beendet",
+            "erkennung_ms": 1.760084,
+            "dauer_ms": 1.815,
+            "exitcode": 74,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "d297d714d4624660b0a7d193a49ef3da",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.077458
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 5.288625,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 6.093667,
+        "gesamt_ms": 11.083834
+      },
+      "folgeauftrag_ms": 6.856167,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 8,
+      "stoerung": "nach_commit",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-8",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "24754f20783b4580ba0e8ecfd65a2aa2"
+      },
+      "primaer_start_ms": 71.784084,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 8.830292,
+      "reserve_start_ms": 0.0,
+      "reserve_bereit_gesamt_ms": 0.0,
+      "primaer_neustart_ms": 68.364875,
+      "auftrag": {
+        "kennung": "auftrag-8",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "24754f20783b4580ba0e8ecfd65a2aa2",
+            "status": "AUSFALL",
+            "grund": "Kanal beendet oder Antwort beschädigt",
+            "erkennung_ms": 5.393,
+            "dauer_ms": 5.450583,
+            "exitcode": 75,
+            "beendet_bestaetigt": true
+          }
+        ],
+        "aus_speicher": true,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.27175,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 8.804375
+      },
+      "folgeauftrag_ms": 6.842292,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 8,
+      "stoerung": "nach_commit",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-8",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "82a8baf95bcf476094c59b9cb4ade5c0"
+      },
+      "primaer_start_ms": 72.449375,
+      "vorbereitung_ms": 66.573791,
+      "inklusive_vorbereitung_ms": 77.470375,
+      "reserve_start_ms": 66.573791,
+      "reserve_bereit_gesamt_ms": 86.313375,
+      "primaer_neustart_ms": 68.241333,
+      "auftrag": {
+        "kennung": "auftrag-8",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "82a8baf95bcf476094c59b9cb4ade5c0",
+            "status": "AUSFALL",
+            "grund": "Kanal beendet oder Antwort beschädigt",
+            "erkennung_ms": 5.975875,
+            "dauer_ms": 6.03775,
+            "exitcode": 75,
+            "beendet_bestaetigt": true
+          }
+        ],
+        "aus_speicher": true,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.296,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 10.700041
+      },
+      "folgeauftrag_ms": 6.867917,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 8,
+      "stoerung": "haengt",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-8",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "0b9f1de3920746478adb3ada0cd80093"
+      },
+      "primaer_start_ms": 72.0925,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 407.162542,
+      "reserve_start_ms": 91.671166,
+      "reserve_bereit_gesamt_ms": 78.650917,
+      "primaer_neustart_ms": 66.250667,
+      "auftrag": {
+        "kennung": "auftrag-8",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "82c8ffde3a12461e8df2673bbdf5975c",
+            "status": "AUSFALL",
+            "grund": "Antwortfrist überschritten",
+            "erkennung_ms": 251.174167,
+            "dauer_ms": 305.1055,
+            "exitcode": -15,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "0b9f1de3920746478adb3ada0cd80093",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.773584
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 91.671166,
+        "wiederanlauf_ms": 152.471083,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 0.06225,
+        "gesamt_ms": 407.157833
+      },
+      "folgeauftrag_ms": 6.12125,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 8,
+      "stoerung": "haengt",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-8",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "d9cc0ebea8044323892e689a69334916"
+      },
+      "primaer_start_ms": 73.656625,
+      "vorbereitung_ms": 68.412042,
+      "inklusive_vorbereitung_ms": 392.175458,
+      "reserve_start_ms": 68.412042,
+      "reserve_bereit_gesamt_ms": 421.273,
+      "primaer_neustart_ms": 89.716792,
+      "auftrag": {
+        "kennung": "auftrag-8",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "d2f4abe14b6e465787e9cf587a6a5ba4",
+            "status": "AUSFALL",
+            "grund": "Antwortfrist überschritten",
+            "erkennung_ms": 251.2,
+            "dauer_ms": 304.654666,
+            "exitcode": -15,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "d9cc0ebea8044323892e689a69334916",
+            "status": "ERLEDIGT",
+            "dauer_ms": 14.738958
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 68.861458,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 308.879875,
+        "gesamt_ms": 323.557833
+      },
+      "folgeauftrag_ms": 6.875667,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 9,
+      "stoerung": "keine",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-9",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "8e660e6490214fe58c6109372c02b64b"
+      },
+      "primaer_start_ms": 73.143875,
+      "vorbereitung_ms": 68.977375,
+      "inklusive_vorbereitung_ms": 78.90075,
+      "reserve_start_ms": 68.977375,
+      "reserve_bereit_gesamt_ms": 14.909958,
+      "primaer_neustart_ms": 0.0,
+      "auftrag": {
+        "kennung": "auftrag-9",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "8e660e6490214fe58c6109372c02b64b",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.495333
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.0,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 9.762167
+      },
+      "folgeauftrag_ms": 4.859625,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 9,
+      "stoerung": "keine",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-9",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "b03fc1494dd641e1bf94c101fb603b10"
+      },
+      "primaer_start_ms": 72.459583,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 8.201417,
+      "reserve_start_ms": 0.0,
+      "reserve_bereit_gesamt_ms": 0.0,
+      "primaer_neustart_ms": 0.0,
+      "auftrag": {
+        "kennung": "auftrag-9",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "b03fc1494dd641e1bf94c101fb603b10",
+            "status": "ERLEDIGT",
+            "dauer_ms": 4.981667
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.0,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 8.198708
+      },
+      "folgeauftrag_ms": 5.61275,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 9,
+      "stoerung": "vor_commit",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-9",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "7a5be9a614774b61addcc79177a95084"
+      },
+      "primaer_start_ms": 71.477541,
+      "vorbereitung_ms": 66.455875,
+      "inklusive_vorbereitung_ms": 78.090458,
+      "reserve_start_ms": 66.455875,
+      "reserve_bereit_gesamt_ms": 85.305208,
+      "primaer_neustart_ms": 66.963084,
+      "auftrag": {
+        "kennung": "auftrag-9",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "c7063e9b885947058af4ef7d262d7499",
+            "status": "AUSFALL",
+            "grund": "Kanal beendet oder Antwort beschädigt",
+            "erkennung_ms": 1.61575,
+            "dauer_ms": 1.6735,
+            "exitcode": 74,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "7a5be9a614774b61addcc79177a95084",
+            "status": "ERLEDIGT",
+            "dauer_ms": 5.351958
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 5.5555,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 6.156375,
+        "gesamt_ms": 11.455333
+      },
+      "folgeauftrag_ms": 6.428792,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 9,
+      "stoerung": "vor_commit",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-9",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "a422ecf6befc4388a002d4c03c124789"
+      },
+      "primaer_start_ms": 72.971958,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 78.168542,
+      "reserve_start_ms": 67.141833,
+      "reserve_bereit_gesamt_ms": 80.561333,
+      "primaer_neustart_ms": 67.903625,
+      "auftrag": {
+        "kennung": "auftrag-9",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "73dbc1010c3a44559270abaf3b1925e1",
+            "status": "AUSFALL",
+            "grund": "Kanal beendet oder Antwort beschädigt",
+            "erkennung_ms": 1.415084,
+            "dauer_ms": 1.46775,
+            "exitcode": 74,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "a422ecf6befc4388a002d4c03c124789",
+            "status": "ERLEDIGT",
+            "dauer_ms": 6.236292
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 67.141833,
+        "wiederanlauf_ms": 73.7445,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 0.051125,
+        "gesamt_ms": 78.164042
+      },
+      "folgeauftrag_ms": 5.911208,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 9,
+      "stoerung": "nach_commit",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-9",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "2140a9e4c08f494a877d91917c0635d5"
+      },
+      "primaer_start_ms": 75.413583,
+      "vorbereitung_ms": 67.041833,
+      "inklusive_vorbereitung_ms": 79.102625,
+      "reserve_start_ms": 67.041833,
+      "reserve_bereit_gesamt_ms": 84.919667,
+      "primaer_neustart_ms": 66.519292,
+      "auftrag": {
+        "kennung": "auftrag-9",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "2140a9e4c08f494a877d91917c0635d5",
+            "status": "AUSFALL",
+            "grund": "Kanal beendet oder Antwort beschädigt",
+            "erkennung_ms": 6.841333,
+            "dauer_ms": 6.900791,
+            "exitcode": 75,
+            "beendet_bestaetigt": true
+          }
+        ],
+        "aus_speicher": true,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.294208,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 11.8765
+      },
+      "folgeauftrag_ms": 6.050083,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 9,
+      "stoerung": "nach_commit",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-9",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "f4b53d96210842d9886880da3e33e8b4"
+      },
+      "primaer_start_ms": 71.870125,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 9.746916,
+      "reserve_start_ms": 0.0,
+      "reserve_bereit_gesamt_ms": 0.0,
+      "primaer_neustart_ms": 67.6395,
+      "auftrag": {
+        "kennung": "auftrag-9",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "f4b53d96210842d9886880da3e33e8b4",
+            "status": "AUSFALL",
+            "grund": "Kanal beendet oder Antwort beschädigt",
+            "erkennung_ms": 5.859166,
+            "dauer_ms": 5.932916,
+            "exitcode": 75,
+            "beendet_bestaetigt": true
+          }
+        ],
+        "aus_speicher": true,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 0.437959,
+        "uebernahme_nach_bestaetigtem_ende": false,
+        "gesamt_ms": 9.712959
+      },
+      "folgeauftrag_ms": 6.643666,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 9,
+      "stoerung": "haengt",
+      "reserve": "vorbereitet",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-9",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "a3e47195a9fd47afa273bbb99469c16c"
+      },
+      "primaer_start_ms": 72.259541,
+      "vorbereitung_ms": 66.316625,
+      "inklusive_vorbereitung_ms": 386.290042,
+      "reserve_start_ms": 66.316625,
+      "reserve_bereit_gesamt_ms": 415.858708,
+      "primaer_neustart_ms": 89.021708,
+      "auftrag": {
+        "kennung": "auftrag-9",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "ab7e1ef92eba420c9cc171bb3041f8ec",
+            "status": "AUSFALL",
+            "grund": "Antwortfrist überschritten",
+            "erkennung_ms": 251.918458,
+            "dauer_ms": 305.254125,
+            "exitcode": -15,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "a3e47195a9fd47afa273bbb99469c16c",
+            "status": "ERLEDIGT",
+            "dauer_ms": 9.343458
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 0.0,
+        "wiederanlauf_ms": 63.364667,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 310.51525,
+        "gesamt_ms": 319.796125
+      },
+      "folgeauftrag_ms": 6.096333,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    },
+    {
+      "nummer": 9,
+      "stoerung": "haengt",
+      "reserve": "kalt",
+      "last_bytes": 262144,
+      "vorwarnplan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "ergebnis": {
+        "kennung": "auftrag-9",
+        "sha256": "38aaae6df3986b6d76aa76631525e4f3aa8b963b4cbfb554d523096268a346eb",
+        "arbeiter": "bf43853551f94a1f8413bff824cbeba7"
+      },
+      "primaer_start_ms": 73.856166,
+      "vorbereitung_ms": 0.0,
+      "inklusive_vorbereitung_ms": 407.467417,
+      "reserve_start_ms": 91.287459,
+      "reserve_bereit_gesamt_ms": 81.649458,
+      "primaer_neustart_ms": 67.649417,
+      "auftrag": {
+        "kennung": "auftrag-9",
+        "versuche": [
+          {
+            "rolle": "PRIMAER",
+            "instanz": "4aaba067ffbe4549baf0df2a2a602856",
+            "status": "AUSFALL",
+            "grund": "Antwortfrist überschritten",
+            "erkennung_ms": 251.186167,
+            "dauer_ms": 305.200375,
+            "exitcode": -15,
+            "beendet_bestaetigt": true
+          },
+          {
+            "rolle": "RESERVE",
+            "instanz": "bf43853551f94a1f8413bff824cbeba7",
+            "status": "ERLEDIGT",
+            "dauer_ms": 6.617
+          }
+        ],
+        "aus_speicher": false,
+        "reserve_start_nach_fehler_ms": 91.287459,
+        "wiederanlauf_ms": 153.096,
+        "uebernahme_nach_bestaetigtem_ende": true,
+        "reserve_bereit_bis_einsatz_ms": 0.066,
+        "gesamt_ms": 407.462292
+      },
+      "folgeauftrag_ms": 6.87175,
+      "wiederholung_ohne_arbeit": true,
+      "supervisor_neustart_ohne_doppelarbeit": true
+    }
+  ]
+}
