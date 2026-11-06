@@ -16,7 +16,8 @@ import koerper
 import vokabular
 import wiederanlauf
 from boardprobe import antwort, vergleiche_board
-from kern import Erbgedaechtnis, Gedaechtnis, Kontextgedaechtnis, Knoten, MAX_TAKT, REGELN, ZUSTAENDE
+from kern import (Erbgedaechtnis, Gedaechtnis, Kontextgedaechtnis, Knoten, MAX_TAKT, REGELN,
+                  Startwertgedaechtnis, ZUSTAENDE)
 from labor import FAMILIEN, generiere
 from messen import klassifizieren, probe
 from neustart import kodiert, laden, sichern
@@ -167,6 +168,30 @@ class ErbeTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     Erbgedaechtnis(erbe)
 
+    def test_startwert_verblasst_nur_mit_eigenen_ausgaengen(self):
+        g = Startwertgedaechtnis()
+        for _ in range(50):
+            g.beobachte("SCHWACH", "SCHWACH")
+        g.beobachte("OK", "SCHWACH")
+        self.assertEqual(g.erbe["SCHWACH"]["AUSFALL"], 3)
+        # Jeder Ausgang zählt, auch der in den Ausfall. Dann trägt eigene Erfahrung die Warnung.
+        g.beobachte("SCHWACH", "OK")
+        self.assertEqual(g.erbe["SCHWACH"]["AUSFALL"], 3 * g.faktor)
+        g.beobachte("SCHWACH", "AUSFALL")
+        self.assertEqual(g.erbe["SCHWACH"]["AUSFALL"], 3 * g.faktor * g.faktor)
+
+    def test_startwert_traegt_die_erste_warnung_und_laesst_die_ausnahme_zu(self):
+        self.assertTrue(Knoten(Startwertgedaechtnis()).schritt(1, "SCHWACH").vorwarnung)
+        k = Knoten(Startwertgedaechtnis())
+        warnt = [k.schritt(t, z).vorwarnung for t, z in enumerate(["SCHWACH", "OK"] * 4, 1)]
+        # Zwei Gegenbeispiele reichen, beim festen Erbe sind es drei.
+        self.assertEqual(warnt[::2], [True, True, False, False])
+        g = Startwertgedaechtnis()
+        for _ in range(200):
+            g.beobachte("SCHWACH", "OK")
+        # Das feste Erbe hält den Ausfallanteil über 0,24, der Startwert ist so gut wie fort.
+        self.assertLess(g.schaetze("SCHWACH")[0], 1e-9)
+
 
 class NeustartTests(unittest.TestCase):
     def test_fortsetzung_ist_schrittweise_identisch_auch_an_luecken(self):
@@ -230,6 +255,27 @@ class NeustartTests(unittest.TestCase):
             sichern(Path(ort, "anders"), "A", anders)
             with self.assertRaises(ValueError):
                 laden(Path(ort, "anders"), "A")
+
+    def test_startwert_stand_traegt_das_verblasste_erbe(self):
+        with tempfile.TemporaryDirectory() as ort:
+            k = Knoten(Startwertgedaechtnis())
+            for t, z in enumerate(["SCHWACH", "OK"] * 3, 1):
+                k.schritt(t, z)
+            p = Path(ort, "stand")
+            sichern(p, "A", k)
+            geladen = laden(p, "A").gedaechtnis.erbe["SCHWACH"]["AUSFALL"]
+            self.assertEqual(geladen, k.gedaechtnis.erbe["SCHWACH"]["AUSFALL"])
+            self.assertLess(geladen, 3)
+            d = json.loads(p.read_bytes())["daten"]
+            # Ein Erbe wächst nie über seinen Anfang und entsteht nicht, wo die Regel keines hat.
+            for i, erbe in enumerate(([[0, 0, 0], [0, 0, 3.5], [0, 0, 0]], [[0.5, 0, 0], [0, 0, 1], [0, 0, 0]],
+                                      [[0, 0, 0], [0, 0, -1], [0, 0, 0]], [[0, 0, 0], [0, 0]], "3")):
+                with self.subTest(erbe=erbe):
+                    falsch = dict(d, erbe=erbe)
+                    q = Path(ort, f"falsch-{i}")
+                    q.write_bytes(kodiert(dict(daten=falsch, sha256=hashlib.sha256(kodiert(falsch)).hexdigest())))
+                    with self.assertRaises(ValueError):
+                        laden(q, "A")
 
     def test_stand_ohne_erbe_aus_version_02_bleibt_ladbar(self):
         with tempfile.TemporaryDirectory() as ort:
@@ -488,14 +534,22 @@ class VokabularTests(unittest.TestCase):
 
     def test_grobe_sicht_entscheidet_wie_der_knoten_bei_jedem_blick(self):
         # Die Auswertung am Rechner und der Knoten im Gerät rechnen denselben Blick.
+        anders = []
         for blick in (1, 30, 60):
             for f in FAMILIEN:
-                with self.subTest(blick=blick, familie=f):
-                    spur = generiere(f, 3)
-                    knoten = Knoten(Erbgedaechtnis(), blick=blick)
-                    erwartet = [knoten.schritt(t, z).vorwarnung for t, z in enumerate(spur, 1)]
-                    modell = vokabular.Wortgedaechtnis(vokabular.GROBWOERTER, vokabular.GROBERBE)
-                    self.assertEqual(vokabular.warnungen(spur, modell, blick), erwartet)
+                spur = generiere(f, 3)
+                je_regel = {}
+                for regel, startwert in ((Erbgedaechtnis, False), (Startwertgedaechtnis, True)):
+                    with self.subTest(blick=blick, familie=f, startwert=startwert):
+                        knoten = Knoten(regel(), blick=blick)
+                        erwartet = [knoten.schritt(t, z).vorwarnung for t, z in enumerate(spur, 1)]
+                        modell = vokabular.Wortgedaechtnis(vokabular.GROBWOERTER, vokabular.GROBERBE,
+                                                           startwert=startwert)
+                        self.assertEqual(vokabular.warnungen(spur, modell, blick), erwartet)
+                        je_regel[startwert] = erwartet
+                anders.append(je_regel[False] != je_regel[True])
+        # Sonst prüfte der Vergleich den Startwert nur dort, wo er wie das feste Erbe entscheidet.
+        self.assertTrue(any(anders))
 
     def test_weiter_blick_warnt_vor_der_hitze(self):
         rhythmus = ["OK"] * 10 + ["TEMP_HOCH"] * 8 + ["TEMP_KRITISCH"] * 3
@@ -727,24 +781,36 @@ int main() {
                                  ["GESICHERT", "GESICHERT", "FEHLER"])
                 self.assertEqual(replay(["LADEN"]+teile[121:]), ["GELADEN"] + voll[121:])
                 daten = bytearray(p.read_bytes())
-                self.assertEqual(len(daten), 86)
-                self.assertEqual(daten[:4], b"AG01")
-                self.assertEqual(daten[4], {"zeit": 1, "kontext": 2, "erbe": 3}[regel])
-                self.assertEqual(int.from_bytes(daten[82:], "little"), zlib.crc32(daten[:82]))
+                # Der Startwert trägt sein verblasstes Erbe als AG02 hinter den Gewichten.
+                startwert = regel == "startwert"
+                n = 158 if startwert else 86
+                self.assertEqual(len(daten), n)
+                self.assertEqual(daten[:4], b"AG02" if startwert else b"AG01")
+                self.assertEqual(daten[4], {"zeit": 1, "kontext": 2, "erbe": 3, "startwert": 4}[regel])
+                self.assertEqual(int.from_bytes(daten[n - 4:], "little"), zlib.crc32(daten[:n - 4]))
                 self.assertEqual(int.from_bytes(daten[6:10], "little"), 121)
                 k = Knoten(REGELN[regel]())
                 for t, z in enumerate(spur[:121], 1):
                     k.schritt(t, z)
-                for i, wert in enumerate(struct.unpack_from("<9d", daten, 10)):
-                    original = k.gedaechtnis.gewichte[ZUSTAENDE[i//3]][ZUSTAENDE[i%3]]
+                g = k.gedaechtnis
+                tabellen = [g.gewichte] + ([g.erbe] if startwert else [])
+                erwartet = [tab[ZUSTAENDE[i // 3]][ZUSTAENDE[i % 3]] for tab in tabellen for i in range(9)]
+                for wert, original in zip(struct.unpack_from(f"<{len(erwartet)}d", daten, 10), erwartet):
                     self.assertAlmostEqual(wert, original, places=11)
+                if startwert:
+                    self.assertLess(g.erbe["SCHWACH"]["AUSFALL"], 3)
                 daten[10] ^= 1
                 p.write_bytes(daten)
                 self.assertEqual(replay(["LADEN", "1,OK"]), ["FEHLER", "1,OK,0,0"])
-                daten[10:18] = struct.pack("<d", float("nan"))
-                daten[82:] = zlib.crc32(daten[:82]).to_bytes(4, "little")
-                p.write_bytes(daten)
-                self.assertEqual(replay(["LADEN", "1,OK"]), ["FEHLER", "1,OK,0,0"])
+                daten[10] ^= 1
+                # NaN in den Gewichten, beim Startwert ein gewachsenes und ein neu entstandenes Erbe.
+                for stelle, wert in [(10, float("nan"))] + ([(82 + 5 * 8, 3.5), (82, 0.5)] if startwert else []):
+                    with self.subTest(regel=regel, stelle=stelle):
+                        kaputt = bytearray(daten)
+                        kaputt[stelle:stelle + 8] = struct.pack("<d", wert)
+                        kaputt[n - 4:] = zlib.crc32(kaputt[:n - 4]).to_bytes(4, "little")
+                        p.write_bytes(kaputt)
+                        self.assertEqual(replay(["LADEN", "1,OK"]), ["FEHLER", "1,OK,0,0"])
 
     def test_geraetestand_einer_anderen_regel_wird_abgewiesen(self):
         teile = [f"{t},{z}" for t, z in enumerate(beispielspur()[:30], 1)]

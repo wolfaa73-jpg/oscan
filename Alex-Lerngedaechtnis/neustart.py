@@ -10,7 +10,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from kern import Knoten, MAX_TAKT, REGELN, ZUSTAENDE
+from kern import Knoten, MAX_TAKT, REGELN, Startwertgedaechtnis, ZUSTAENDE
 from versuch import lies_spur, messpunkte
 
 
@@ -69,7 +69,17 @@ def laden(pfad, quelle):
         if d["halbwertszeit"] != g.halbwertszeit:
             raise ValueError("Halbwertszeit passt nicht zur Regelversion.")
         # Stände aus Version 0.2 tragen kein Erbe. Ihre Regeln hatten auch keines.
-        if d.get("erbe", [[0] * 3] * 3) != als_matrix(g.erbe):
+        erbe, anfang = d.get("erbe", [[0] * 3] * 3), als_matrix(g.erbe)
+        if isinstance(g, Startwertgedaechtnis):
+            # Der Startwert verblasst mit eigenen Ausgängen. Er liegt zwischen null und seinem Anfang.
+            if not isinstance(erbe, list) or len(erbe) != 3 or any(not isinstance(z, list) or len(z) != 3 for z in erbe):
+                raise ValueError("Ungültiges Erbe.")
+            for z, zeile, start in zip(ZUSTAENDE, erbe, anfang):
+                for f, wert, hoechstens in zip(ZUSTAENDE, zeile, start):
+                    if type(wert) not in (int, float) or not math.isfinite(wert) or not 0 <= wert <= hoechstens:
+                        raise ValueError("Erbe passt nicht zur Regelversion.")
+                    g.erbe[z][f] = wert
+        elif erbe != anfang:
             raise ValueError("Erbe passt nicht zur Regelversion.")
         matrix = d["gewichte"]
         if not isinstance(matrix, list) or len(matrix) != 3:

@@ -17,23 +17,25 @@ struct Entscheidung {
     bool warnung;
 };
 
-// Werte entsprechen dem Regelbyte im Format AG01 und REGELN in kern.py.
-enum class Regel : uint8_t { ZEIT = 1, KONTEXT = 2, ERBE = 3 };
+// Werte entsprechen dem Regelbyte im Gerätestand und REGELN in kern.py.
+enum class Regel : uint8_t { ZEIT = 1, KONTEXT = 2, ERBE = 3, STARTWERT = 4 };
 
 class Knoten {
 public:
     explicit Knoten(Regel r = Regel::ZEIT) : regel(r),
         faktor(pow(0.5, r == Regel::ZEIT ? 1.0 / 24.0 : 1.0 / 6.0)) {
-        // Wie ERBE in kern.py: drei feste Beobachtungen SCHWACH -> AUSFALL.
-        if (r == Regel::ERBE) erbe[SCHWACH][AUSFALL] = 3.0;
+        erbeSetzen();
     }
 
-    // Portables Format AG01. Die Zahlen werden einzeln in Little Endian kodiert.
-    static constexpr unsigned standBytes = 86;
+    // Portables Format AG01. Die Zahlen werden einzeln in Little Endian kodiert. Beim Startwert
+    // verblasst das Erbe, sein Stand heißt AG02 und trägt das Erbe hinter den Gewichten.
+    static constexpr unsigned maxStandBytes = 158;
+    unsigned standBytes() const { return regel == Regel::STARTWERT ? 158 : 86; }
     bool exportiere(uint8_t *p) const {
         static_assert(sizeof(double) == 8 && DBL_MANT_DIG == 53, "binary64 erforderlich");
         if (!letzterTakt) return false;
-        memcpy(p, "AG01", 4);
+        const unsigned n = standBytes();
+        memcpy(p, kennung(), 4);
         p[4] = static_cast<uint8_t>(regel);
         p[5] = static_cast<uint8_t>(letzterZustand) + 1;
         schreibe(p + 6, letzterTakt, 4);
@@ -42,13 +44,21 @@ public:
             memcpy(&bits, &gewichte[i / 3][i % 3], 8);
             schreibe(p + 10 + i * 8, bits, 8);
         }
-        schreibe(p + 82, crc32(p, 82), 4);
+        if (regel == Regel::STARTWERT) {
+            for (unsigned i = 0; i < 9; ++i) {
+                uint64_t bits = 0;
+                memcpy(&bits, &erbe[i / 3][i % 3], 8);
+                schreibe(p + 82 + i * 8, bits, 8);
+            }
+        }
+        schreibe(p + n - 4, crc32(p, n - 4), 4);
         return true;
     }
 
     bool importiere(const uint8_t *p) {
-        if (letzterTakt || memcmp(p, "AG01", 4) || p[4] != static_cast<uint8_t>(regel)
-            || p[5] < 1 || p[5] > 3 || lese(p + 82, 4) != crc32(p, 82)) return false;
+        const unsigned n = standBytes();
+        if (letzterTakt || memcmp(p, kennung(), 4) || p[4] != static_cast<uint8_t>(regel)
+            || p[5] < 1 || p[5] > 3 || lese(p + n - 4, 4) != crc32(p, n - 4)) return false;
         const uint32_t takt = static_cast<uint32_t>(lese(p + 6, 4));
         if (!takt) return false;
         double matrix[3][3];
@@ -62,7 +72,20 @@ public:
             matrix[i / 3][i % 3] = wert;
         }
         if (summe > takt) return false;
+        // Vor dem ersten Takt steht das Erbe auf seinem Anfang. Ein geladenes ist höchstens so groß.
+        double geerbt[3][3];
+        memcpy(geerbt, erbe, sizeof(geerbt));
+        if (regel == Regel::STARTWERT) {
+            for (unsigned i = 0; i < 9; ++i) {
+                uint64_t bits = lese(p + 82 + i * 8, 8);
+                double wert;
+                memcpy(&wert, &bits, 8);
+                if (!isfinite(wert) || wert < 0 || wert > erbe[i / 3][i % 3]) return false;
+                geerbt[i / 3][i % 3] = wert;
+            }
+        }
         memcpy(gewichte, matrix, sizeof(matrix));
+        memcpy(erbe, geerbt, sizeof(geerbt));
         letzterTakt = takt;
         letzterZustand = static_cast<Zustand>(p[5] - 1);
         return true;
@@ -83,6 +106,7 @@ public:
         for (auto &zeile : gewichte) {
             for (double &wert : zeile) wert = 0.0;
         }
+        erbeSetzen();
         letzterTakt = 0;
         letzterZustand = UNBEKANNT;
         blick = 1;
@@ -103,6 +127,10 @@ public:
             }
         }
         if (vorher != UNBEKANNT) gewichte[vorher][jetzt] += 1.0;
+        // Wie Startwertgedaechtnis in kern.py: Das Erbe verblasst mit jedem eigenen Ausgang.
+        if (regel == Regel::STARTWERT && vorher != UNBEKANNT && jetzt != vorher) {
+            for (double &wert : erbe[vorher]) wert *= faktor;
+        }
         // Summenfolge wie in Gedaechtnis.schaetze, damit beide Seiten bitgleich rechnen.
         const double *zeile = gewichte[jetzt];
         const double *geerbt = erbe[jetzt];
@@ -116,6 +144,16 @@ public:
     }
 
 private:
+    // Wie ERBE in kern.py: drei Beobachtungen SCHWACH -> AUSFALL, fest bei ERBE, beim Startwert ihr Anfang.
+    void erbeSetzen() {
+        for (auto &zeile : erbe) {
+            for (double &wert : zeile) wert = 0.0;
+        }
+        if (regel == Regel::ERBE || regel == Regel::STARTWERT) erbe[SCHWACH][AUSFALL] = 3.0;
+    }
+
+    const char *kennung() const { return regel == Regel::STARTWERT ? "AG02" : "AG01"; }
+
     // Wie blick_voraus in kern.py: Wie wahrscheinlich ist AUSFALL binnen blick Takten erreicht?
     // Die gelernte Tabelle wird Schritt für Schritt weitergedacht, AUSFALL beendet den Weg, ein
     // Zustand ohne Beleg bleibt, wie er ist. Bei blick 1 ist das der Ausfallanteil der Zeile.
@@ -176,7 +214,7 @@ private:
         return ~crc;
     }
     double gewichte[3][3] = {};
-    double erbe[3][3] = {};  // fester Teil der Regel, nie im Gerätestand gespeichert
+    double erbe[3][3] = {};  // Vorwissen der Regel, nur der verblassende Startwert steht im Gerätestand
     const Regel regel;
     const double faktor;
     uint32_t letzterTakt = 0;

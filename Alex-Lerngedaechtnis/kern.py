@@ -99,9 +99,24 @@ class Erbgedaechtnis(Kontextgedaechtnis):
             self.erbe[vorher][folge] = wert
 
 
+class Startwertgedaechtnis(Erbgedaechtnis):
+    """Das Erbe als Startwert. Es verblasst mit jedem eigenen Ausgang aus seinem Zustand, mit der
+    Halbwertszeit der Kontextregel, nur in Ausgängen gezählt. Bleiben zählt nicht, es sagt nichts
+    darüber, wohin der Zustand führt. So trägt das Erbe die erste Warnung und weicht, wenn der
+    Zustand anders endet."""
+
+    def beobachte(self, vorher, jetzt, schritte=1):
+        super().beobachte(vorher, jetzt, schritte)
+        if vorher is not None and jetzt != vorher:
+            zeile = self.erbe[vorher]
+            for folge in zeile:
+                zeile[folge] *= self.faktor
+
+
 # Name je Lernregel, gilt für Sicherungsformat, Firmwarevariante und Prüfer.
-# Im Gerätestand AG01 stehen sie als Regelbyte 1, 2 und 3.
-REGELN = {"zeit": Gedaechtnis, "kontext": Kontextgedaechtnis, "erbe": Erbgedaechtnis}
+# Im Gerätestand stehen sie als Regelbyte 1 bis 4, der Startwert im Format AG02 mit seinem Erbe.
+REGELN = {"zeit": Gedaechtnis, "kontext": Kontextgedaechtnis, "erbe": Erbgedaechtnis,
+          "startwert": Startwertgedaechtnis}
 
 
 @dataclass(frozen=True)

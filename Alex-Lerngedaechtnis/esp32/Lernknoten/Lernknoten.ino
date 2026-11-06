@@ -10,8 +10,12 @@
 #include <esp_system.h>
 #endif
 
-#if defined(ALEX_KONTEXT) && defined(ALEX_ERBE)
-#error "Pro Firmware nur eine Lernregel: ALEX_KONTEXT oder ALEX_ERBE"
+#if defined(ALEX_KONTEXT) + defined(ALEX_ERBE) + defined(ALEX_STARTWERT) > 1
+#error "Pro Firmware nur eine Lernregel: ALEX_KONTEXT, ALEX_ERBE oder ALEX_STARTWERT"
+#elif defined(ALEX_STARTWERT)
+Knoten knoten(Regel::STARTWERT);
+const char *const bereit = "BEREIT,STARTWERT";
+const char *const standKey = "startwert";
 #elif defined(ALEX_ERBE)
 Knoten knoten(Regel::ERBE);
 const char *const bereit = "BEREIT,ERBE";
@@ -268,18 +272,17 @@ void meldeNeustart() {
 #endif
 
 bool lernstand(bool speichern) {
-    uint8_t daten[Knoten::standBytes];
-    uint8_t alt[Knoten::standBytes];
+    uint8_t daten[Knoten::maxStandBytes];
+    uint8_t alt[Knoten::maxStandBytes];
+    const size_t n = knoten.standBytes();
     if (speichern && !knoten.exportiere(daten)) return false;
     Preferences nvs;
     if (!nvs.begin("alex-lernlabor", !speichern)) return false;
     const char *key = standKey;
-    const bool lesbar = nvs.getBytesLength(key) == sizeof(alt)
-                     && nvs.getBytes(key, alt, sizeof(alt)) == sizeof(alt);
+    const bool lesbar = nvs.getBytesLength(key) == n && nvs.getBytes(key, alt, n) == n;
     bool ok;
     if (speichern) {
-        ok = (lesbar && memcmp(daten, alt, sizeof(alt)) == 0)
-          || nvs.putBytes(key, daten, sizeof(daten)) == sizeof(daten);
+        ok = (lesbar && memcmp(daten, alt, n) == 0) || nvs.putBytes(key, daten, n) == n;
     } else {
         ok = lesbar && knoten.importiere(alt);
     }

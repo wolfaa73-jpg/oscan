@@ -102,11 +102,13 @@ def mit_richtung(woerter, temps, fenster):
 
 class Wortgedaechtnis:
     """Kontextregel über beliebige Wörter: Die Belege eines Ausgangsworts altern nur, wenn es
-    selbst wieder erlebt wird. Das Erbe liegt getrennt und verblasst nie."""
+    selbst wieder erlebt wird. Das Erbe liegt getrennt und verblasst nie. Mit startwert verblasst
+    es mit jedem eigenen Ausgang aus seinem Wort, wie in kern.Startwertgedaechtnis."""
 
-    def __init__(self, woerter, erbfolgen, erbe=3.0, halbwertszeit=6.0):
+    def __init__(self, woerter, erbfolgen, erbe=3.0, halbwertszeit=6.0, startwert=False):
         self.woerter = tuple(woerter)
         self.faktor = 0.5 ** (1 / halbwertszeit)
+        self.startwert = startwert
         self.gewichte = {w: Counter() for w in self.woerter}
         self.erbe = {w: Counter() for w in self.woerter}
         for vorher, folge in erbfolgen:
@@ -119,6 +121,10 @@ class Wortgedaechtnis:
         for folge in zeile:
             zeile[folge] *= self.faktor
         zeile[jetzt] += 1
+        if self.startwert and jetzt != vorher:
+            geerbt = self.erbe[vorher]
+            for folge in geerbt:
+                geerbt[folge] *= self.faktor
 
     def beleg(self, wort):
         return sum(self.gewichte[wort][f] + self.erbe[wort][f] for f in self.woerter)
@@ -237,11 +243,12 @@ def bewerte_je_signal(woerter, stufen, warn, horizont, zusammen=10, je_signal=No
     return ergebnis
 
 
-def warnungen_je_signal(stufen, horizont):
+def warnungen_je_signal(stufen, horizont, startwert=False):
     """Ein eigenes Gedächtnis je Signal über dessen eigene Stufen, jedes mit seinem Erbe hoch → kritisch.
     Kein Signal verdeckt so das Vorzeichen eines anderen. Jedes warnt vor seiner kritischen Stufe."""
     return {signal: warnungen([s[signal] for s in stufen],
-                              Wortgedaechtnis(("OK", hoch, kritischer), ((hoch, kritischer),)), horizont)
+                              Wortgedaechtnis(("OK", hoch, kritischer), ((hoch, kritischer),), startwert=startwert),
+                              horizont)
             for signal, hoch, kritischer in SIGNALE}
 
 
@@ -249,13 +256,15 @@ def verfahren(woerter, temps, horizont, fenster, stufen=None):
     """Die Verfahren auf denselben Körpertakten, dazu „immer warnen“ als Maßstab, je als (Name,
     Warnung in jedem Takt, Warnungen je Signal oder None). Mit stufen kommt ein eigenes Gedächtnis
     je Signal dazu. Es warnt im Takt, wenn eines seiner Signale warnt und kein Wort kritisch ist.
-    Gelernt wird über alle übergebenen Takte."""
+    „Startwert“ heißt, das Erbe verblasst mit eigenen Ausgängen. Gelernt wird über alle übergebenen Takte."""
     grobe = [grob(w) for w in woerter]
     richtung = mit_richtung(woerter, temps, fenster)
     liste = [
         ("Feste Regel", [grob(w) == "SCHWACH" for w in woerter], None),
         ("Grob, ein Takt", warnungen(grobe, Wortgedaechtnis(GROBWOERTER, GROBERBE), 1), None),
         (f"Grob, {horizont} Takte", warnungen(grobe, Wortgedaechtnis(GROBWOERTER, GROBERBE), horizont), None),
+        ("Grob, Startwert",
+         warnungen(grobe, Wortgedaechtnis(GROBWOERTER, GROBERBE, startwert=True), horizont), None),
         (f"Vokabular, {horizont} Takte",
          warnungen(woerter, Wortgedaechtnis(KOERPERWOERTER, ERBFOLGEN), horizont), None),
         (f"+ Richtung, {horizont} Takte",
@@ -263,9 +272,9 @@ def verfahren(woerter, temps, horizont, fenster, stufen=None):
                    horizont), None),
     ]
     if stufen is not None:
-        je = warnungen_je_signal(stufen, horizont)
-        liste.append((f"Je Signal, {horizont} Takte",
-                      [not kritisch(w) and any(je[s][t] for s in je) for t, w in enumerate(woerter)], je))
+        for name, startwert in ((f"Je Signal, {horizont} Takte", False), ("Je Signal, Startwert", True)):
+            je = warnungen_je_signal(stufen, horizont, startwert)
+            liste.append((name, [not kritisch(w) and any(je[s][t] for s in je) for t, w in enumerate(woerter)], je))
     liste.append(("Immer warnen", [not kritisch(w) for w in woerter], None))
     return liste
 
