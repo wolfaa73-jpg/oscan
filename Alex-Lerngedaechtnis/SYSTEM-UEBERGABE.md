@@ -79,7 +79,7 @@ Bei seltenen Vorzeichen verwirft das zeitliche Verblassen fast alle nützlichen 
 
 In der deterministischen Anpassungsprobe bestätigt Erbe + Kontext die Entwarnung nach 10 und die Rückkehr nach 9 schwachen Signalen. Lernen ohne Verblassen benötigt 30 beziehungsweise 23. Die feste Regel folgt der Entwarnung überhaupt nicht. Der Lerngewinn liegt damit in der Anpassung des Handelns; er ist kein universeller Genauigkeitsgewinn.
 
-## Tatsächlich geprüfte Ausführung
+## Tatsächlich geprüfte Ausführung im Systemversuch 1
 
 Alle 77 Tests bestanden: 48 Tests der aktuellen Basis, 15 Verbundtests und 14 neue Systemtests. Die Warnbilanz des neuen Ablaufs stimmt auf allen sechs Familien für jedes Verfahren mit Alex’ bisheriger Auswertung überein. Zusätzliche Prüfungen betreffen Kausalität, fehlendes Wissen, Taktlücken, Neustart, Zählergrenzen, unveränderten Zustand nach ungültigen Eingaben und handgerechnete Kennzahlen. Der HTML-Bericht wurde bei 390 und 1150 Pixel Breite geprüft; die sechs Familientabellen und 120 ausklappbaren Kostenvergleiche sind vorhanden und die Seite läuft nicht horizontal über.
 
@@ -93,7 +93,7 @@ Für die spätere Verbindung kann `vokabular.grob()` bestätigte Körperwörter 
 
 ## Verbindung zum bisherigen Verbund
 
-`verbund.py` und `Verbund.html` liefern den ergänzenden Versuch mit Knotenidentitäten, Sitzungen und ablaufenden Meldungen. Beide Bausteine sind in dieser Übergabe enthalten. Der neue Disponent ist noch nicht direkt an diesen Netzwerkkanal angeschlossen.
+`verbund.py` und `Verbund.html` liefern den ergänzenden Versuch mit Knotenidentitäten, Sitzungen und ablaufenden Meldungen. Die gemeinsame Verbindung dieser Bausteine ist inzwischen in `verbundsystem.py` umgesetzt; Ablauf und Grenzen stehen in [ANSCHLUSS-UEBERGABE.md](ANSCHLUSS-UEBERGABE.md). Dort wird nur in den sendenden Knoten gelernt. Der gemeinsame Versuch benutzt OC-Pakete über einen simulierten Kanal und echte lokale Arbeiter.
 
 Für den Anschluss muss festgelegt werden, wo gelernt wird: entweder im sendenden Organ oder in der zentralen Laufzeit. Bereits gelernte Entscheidungen dürfen auf dem Empfangsweg keine zweite Beobachtung erzeugen. `Sicht.zustand is None` muss eine ausstehende Reservierung ungültig machen. Ein Neustart verwirft Sitzungen und Aktionspläne, selbst wenn das Gedächtnis über `neustart.py` wiederhergestellt wird. Ein Statuspaket enthält derzeit weder Ressourcenkapazität noch Aktionsbestätigung; diese Felder dürfen nicht stillschweigend hinzugedeutet werden.
 

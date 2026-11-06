@@ -1,0 +1,198 @@
+{
+  "art": "OC-Pakete über simulierten Kanal, zwei echte lokale Arbeiter",
+  "lernen": "ausschließlich in den beiden sendenden Knoten",
+  "verlauf": [
+    {
+      "takt": 1,
+      "plan": {
+        "takt": 1,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 2,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "quittung": {
+        "sitzung": "00000000000000000000000000000064",
+        "takt": 1,
+        "status": "ERLEDIGT",
+        "ergebnis": "62bf8500817c7c7701849cc8ec817e2660551de8c81adfaae5781b144f88b9ae",
+        "grund": ""
+      },
+      "wiederholung_identisch": true,
+      "abgewiesen": [
+        "DOPPELT",
+        "DOPPELT"
+      ]
+    },
+    {
+      "takt": 2,
+      "plan": {
+        "takt": 2,
+        "zustand": "AUSFALL",
+        "ziel": "RESERVE",
+        "reserve_fuer": 3,
+        "vorwarnung": false,
+        "reflex": true,
+        "grund": "Primär gesperrt; Reserve bereit"
+      },
+      "quittung": {
+        "sitzung": "00000000000000000000000000000064",
+        "takt": 2,
+        "status": "ERLEDIGT",
+        "ergebnis": "6416c3e30da40231e2cabefa68972054314a12a3ae0b528f1aad4dac06890345",
+        "grund": ""
+      },
+      "wiederholung_identisch": true,
+      "abgewiesen": [
+        "DOPPELT",
+        "DOPPELT"
+      ]
+    },
+    {
+      "takt": 3,
+      "plan": {
+        "takt": 3,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 4,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "quittung": {
+        "sitzung": "00000000000000000000000000000064",
+        "takt": 3,
+        "status": "ERLEDIGT",
+        "ergebnis": "7d69cdb13e9f46ab548f1b0576b8954dc64cac264d51b67ad8407aebd86db925",
+        "grund": ""
+      },
+      "wiederholung_identisch": true,
+      "abgewiesen": [
+        "DOPPELT",
+        "DOPPELT"
+      ]
+    },
+    {
+      "takt": 4,
+      "plan": {
+        "takt": 4,
+        "zustand": "AUSFALL",
+        "ziel": "WARTEN",
+        "reserve_fuer": null,
+        "vorwarnung": false,
+        "reflex": true,
+        "grund": "Primär gesperrt; Reserve fehlt"
+      },
+      "quittung": {
+        "sitzung": "00000000000000000000000000000064",
+        "takt": 4,
+        "status": "AUSGESETZT",
+        "ergebnis": null,
+        "grund": "Primär gesperrt; Reserve fehlt"
+      },
+      "wiederholung_identisch": true,
+      "abgewiesen": [
+        "DOPPELT"
+      ]
+    },
+    {
+      "takt": 5,
+      "plan": {
+        "takt": 5,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 6,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "quittung": {
+        "sitzung": "00000000000000000000000000000064",
+        "takt": 5,
+        "status": "ERLEDIGT",
+        "ergebnis": "9d0cd56ad6c8e7f0c2848535c32ae1847f55e6163e7884e1545314256b725fec",
+        "grund": ""
+      },
+      "wiederholung_identisch": true,
+      "abgewiesen": [
+        "DOPPELT",
+        "DOPPELT"
+      ]
+    },
+    {
+      "takt": 6,
+      "plan": {
+        "takt": 6,
+        "zustand": "AUSFALL",
+        "ziel": "WARTEN",
+        "reserve_fuer": 7,
+        "vorwarnung": false,
+        "reflex": true,
+        "grund": "Primär gesperrt; Reserve fehlt"
+      },
+      "quittung": {
+        "sitzung": "00000000000000000000000000000064",
+        "takt": 6,
+        "status": "AUSGESETZT",
+        "ergebnis": null,
+        "grund": "Primär gesperrt; Reserve fehlt"
+      },
+      "wiederholung_identisch": true,
+      "abgewiesen": [
+        "ALTE_SITZUNG",
+        "DOPPELT",
+        "DOPPELT"
+      ]
+    },
+    {
+      "takt": 7,
+      "plan": {
+        "takt": 7,
+        "zustand": "SCHWACH",
+        "ziel": "PRIMAER",
+        "reserve_fuer": 8,
+        "vorwarnung": true,
+        "reflex": false,
+        "grund": "Primär aktuell verfügbar"
+      },
+      "quittung": {
+        "sitzung": "00000000000000000000000000000064",
+        "takt": 7,
+        "status": "ERLEDIGT",
+        "ergebnis": "1c3c4444de742e3b5dfe562a5046034fd546bc66520e041777b4f78d258d0e11",
+        "grund": ""
+      },
+      "wiederholung_identisch": true,
+      "abgewiesen": [
+        "DOPPELT",
+        "DOPPELT"
+      ]
+    },
+    {
+      "takt": 8,
+      "plan": {
+        "takt": 8,
+        "zustand": "AUSFALL",
+        "ziel": "RESERVE",
+        "reserve_fuer": 9,
+        "vorwarnung": false,
+        "reflex": true,
+        "grund": "Primär gesperrt; Reserve bereit"
+      },
+      "quittung": {
+        "sitzung": "00000000000000000000000000000064",
+        "takt": 8,
+        "status": "VERFALLEN",
+        "ergebnis": null,
+        "grund": "Freigabe vor Arbeitsbeginn veraltet"
+      },
+      "wiederholung_identisch": true,
+      "abgewiesen": [
+        "DOPPELT",
+        "DOPPELT"
+      ]
+    }
+  ]
+}
