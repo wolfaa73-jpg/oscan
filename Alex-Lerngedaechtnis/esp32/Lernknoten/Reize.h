@@ -10,6 +10,12 @@ inline bool reizTakte(uint32_t n) { return n >= 1 && n <= 3600; }
 // Boden passt. Dieser Takt ist der erste von halten Takten am Boden. Im Takt danach gibt
 // es alles frei, das ist der erste von pause Takten ohne Leck. Dann wächst es wieder.
 //
+// Der freie Speicher liegt in mehreren Stücken. Am Boden bleibt in jedem ein Rest, der für
+// einen ganzen Block zu klein ist. Ist über dem Boden noch genug frei, aber kein Stück groß
+// genug, nimmt der Sketch kleinere Blöcke, siehe kleiner(). Sonst hinge der Boden davon ab,
+// wie der Speicher gerade zerstückelt ist: Am 6. November liefen so 81 von 209 tiefen
+// Durchgängen nicht bis unter die Ausfallgrenze, in stundenlangen Blöcken.
+//
 // Mit flach und muster hat nicht jeder Durchgang denselben Boden. Bit n des Musters gilt für
 // Durchgang n, nach 32 Durchgängen von vorn. Ein gesetztes Bit hält schon am flachen Boden an.
 // So ändert ein Vorzeichen seine Bedeutung: Mal folgt auf knappen Speicher voller, mal nicht.
@@ -62,6 +68,10 @@ struct Leck {
             return NICHTS;
         }
     }
+
+    // Nächstkleinerer Versuch, wenn ein Block dieser Größe in kein freies Stück passt: die Hälfte,
+    // bis minBlock. 0 heißt, es gibt keinen kleineren mehr.
+    static uint32_t kleiner(uint32_t groesse) { return groesse / 2 >= minBlock ? groesse / 2 : 0; }
 
     // Der Sketch konnte nicht belegen: Boden erreicht.
     void voll() {

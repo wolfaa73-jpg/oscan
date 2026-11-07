@@ -6,6 +6,7 @@ import signal
 import statistics
 import sys
 import time
+from contextlib import ExitStack
 from dataclasses import asdict, astuple, dataclass
 from pathlib import Path
 
@@ -70,6 +71,22 @@ def lies_koerperzeile(zeile):
                 sofort=sofort, vorwarnung=warnung, reiz=reiz)
 
 
+# Speicherlage des Lecks, wie meldeSpeicher() im Sketch: am Boden, nach der Freigabe und wenn ein
+# ganzer Block in kein freies Stück mehr passte (KLEIN).
+SPEICHER_KOPF = ("takt", "ereignis", "versucht", "frei", "frei8", "groesster", "freie_bloecke",
+                 "belegte_bloecke", "leckbloecke")
+SPEICHER_EREIGNISSE = ("BODEN", "FREI", "KLEIN")
+
+
+def lies_speicherzeile(zeile):
+    """SPEICHER,takt,ereignis,versucht,frei,frei8,groesster,freie_bloecke,belegte_bloecke,leckbloecke"""
+    teile = zeile.decode("ascii", "replace").split(",")
+    if (len(teile) != 10 or teile[0] != "SPEICHER" or teile[2] not in SPEICHER_EREIGNISSE
+            or teile[3] not in ("0", "1") or not all(t.isdigit() for t in teile[1:2] + teile[4:])):
+        raise ValueError(f"Unerwartete Speicherzeile {zeile!r}.")
+    return {f: w if f == "ereignis" else int(w) for f, w in zip(SPEICHER_KOPF, teile[1:])}
+
+
 def exklusiv(port):
     """Belegt den seriellen Port für diesen Prozess allein, bis er geschlossen wird. Jedes weitere
     Öffnen scheitert dann mit EBUSY, auch das eines fremden Programms, das sonst über DTR/RTS das
@@ -109,6 +126,9 @@ def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=
 
     melder (aus melder.py) bekommt jede Körperzeile und meldet Warnungen weiter, etwa per MQTT.
 
+    Meldet die Firmware die Speicherlage des Lecks (SPEICHER,…), landen diese Zeilen in
+    <name>.speicher.csv. Ohne solche Zeilen entsteht die Datei nicht.
+
     Kommt statt einer Körperzeile etwas anderes, etwa das Startbanner nach einem Neustart,
     hebt <name>.abbruch.txt diese Zeile und alles danach auf, mit dem Grund des Neustarts."""
     if not 100 <= intervall_ms < 2**32:
@@ -130,8 +150,9 @@ def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=
         if lies_aufnahme(fortsetzen)[0]["regel"] != regel:
             raise ValueError("Fortgesetzt wird nur mit derselben Lernregel.")
     abbruch = ziel.with_name(ziel.stem + ".abbruch.txt")
-    if ziel.exists() or ziel.with_suffix(".json").exists() or abbruch.exists():
-        raise ValueError(f"{ziel} oder eine zugehörige .json oder .abbruch.txt gibt es schon.")
+    speicherziel = ziel.with_name(ziel.stem + ".speicher.csv")
+    if ziel.exists() or ziel.with_suffix(".json").exists() or abbruch.exists() or speicherziel.exists():
+        raise ValueError(f"{ziel} oder eine zugehörige .json, .speicher.csv oder .abbruch.txt gibt es schon.")
     bereit(port, regel)
     anzahl = 0
     stille = 3 * intervall_ms / 1000 + 1
@@ -163,13 +184,27 @@ def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=
                     fortsetzung=None if fortsetzen is None else fortsetzen.name, sichern_alle=sichern_alle)
         with ziel.with_suffix(".json").open("x", encoding="utf-8") as datei:
             json.dump(meta, datei, ensure_ascii=False, indent=1)
-        with ziel.open("x", encoding="utf-8", newline="") as datei:
+        with ziel.open("x", encoding="utf-8", newline="") as datei, ExitStack() as nebendateien:
             schreiber = csv.writer(datei)
             schreiber.writerow(KOPF)
             beginn = letzte = time.monotonic()
+            speicherlage = []  # Datei und Schreiber, sobald die erste Speicherzeile kommt
 
             def schreibe(zeile):
                 nonlocal anzahl, letzte
+                if zeile.startswith(b"SPEICHER,"):
+                    try:
+                        s = lies_speicherzeile(zeile)
+                    except ValueError:
+                        pass  # bricht unten ab wie jede andere unerwartete Zeile
+                    else:
+                        if not speicherlage:
+                            aus = nebendateien.enter_context(speicherziel.open("x", encoding="utf-8", newline=""))
+                            speicherlage.extend((aus, csv.writer(aus)))
+                            speicherlage[1].writerow(SPEICHER_KOPF)
+                        speicherlage[1].writerow([s[feld] for feld in SPEICHER_KOPF])
+                        speicherlage[0].flush()
+                        return
                 try:
                     k = lies_koerperzeile(zeile)
                 except ValueError:

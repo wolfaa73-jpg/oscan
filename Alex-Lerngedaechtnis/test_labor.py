@@ -1,3 +1,4 @@
+import csv
 import errno
 import hashlib
 from dataclasses import asdict as dataclasses_asdict
@@ -493,6 +494,46 @@ class KoerperTests(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         koerper.aufnehmen(self.port([], []), "erbe", self.G, 1000, 1, Path(ort, "x.csv"), **falsch)
 
+    def test_aufnahme_schreibt_speicherlage_nebenher(self):
+        # Am Boden des Lecks und nach der Freigabe folgt der Körperzeile eine Speicherzeile.
+        roh = [(410, 300000, 60), (410, 60000, 60), (410, 17804, 60), (410, 17804, 60), (410, 363212, 60),
+               (410, 363212, 60)]
+        k = [z.encode() for z in self.geraetezeilen(roh, self.G, "erbe", [0, 2, 2, 2, 0, 0])]
+        klein = b"SPEICHER,2,KLEIN,1,17804,17804,3968,6,179,83"
+        boden = b"SPEICHER,3,BODEN,0,15740,15740,1908,6,181,85"
+        frei = b"SPEICHER,5,FREI,0,363212,363212,200704,4,96,0"
+        start = [b"BEREIT,ERBE", b"GRENZEN,ok", b"BLICK,ok", b"KOERPER,an"]
+        with tempfile.TemporaryDirectory() as ort:
+            ziel = Path(ort, "lage.csv")
+            antworten = start + k[:2] + [klein] + k[2:3] + [boden] + k[3:5] + [frei] + k[5:]
+            # Speicherzeilen zählen nicht als Takt.
+            self.assertEqual(koerper.aufnehmen(self.port(antworten, []), "erbe", self.G, 1000, 6, ziel), 6)
+            self.assertEqual(len(koerper.pruefen(ziel)[1]), 6)
+            with Path(ort, "lage.speicher.csv").open(newline="") as datei:
+                zeilen = list(csv.reader(datei))
+            self.assertEqual(zeilen, [list(koerper.SPEICHER_KOPF)] + [z.decode().split(",")[1:]
+                                                                      for z in (klein, boden, frei)])
+            self.assertEqual(koerper.lies_speicherzeile(klein)["groesster"], 3968)
+            # Gibt es die Speicherdatei schon, beginnt keine Aufnahme unter dem Namen.
+            Path(ort, "alt.speicher.csv").write_text("bleibt\n")
+            with self.assertRaises(ValueError):
+                koerper.aufnehmen(self.port(antworten, []), "erbe", self.G, 1000, 6, Path(ort, "alt.csv"))
+            self.assertEqual((Path(ort, "alt.speicher.csv").read_text(), Path(ort, "alt.csv").exists()),
+                             ("bleibt\n", False))
+            # Ohne Speicherzeilen entsteht keine Speicherdatei.
+            koerper.aufnehmen(self.port(start + k, []), "erbe", self.G, 1000, 5, Path(ort, "ohne.csv"))
+            self.assertFalse(Path(ort, "ohne.speicher.csv").exists())
+            # Eine kaputte Speicherzeile bricht ab wie jede unerwartete Zeile.
+            for falsch in (b"SPEICHER,3,BODEN,2,1,1,1,1,1,1", b"SPEICHER,3,LEER,1,1,1,1,1,1,1",
+                           b"SPEICHER,3,BODEN,1,1,1,1,1,1", b"SPEICHER,3,BODEN,1,1,1,-1,1,1,1"):
+                with self.subTest(falsch=falsch):
+                    name = f"kaputt{len(list(Path(ort).iterdir()))}.csv"
+                    with self.assertRaises(ValueError) as fehler:
+                        koerper.aufnehmen(self.port(start + k[:3] + [falsch] + k[3:], []), "erbe", self.G,
+                                          1000, 5, Path(ort, name))
+                    self.assertIn("nach 3 Takten", str(fehler.exception))
+                    self.assertFalse(Path(ort, name).with_name(Path(name).stem + ".speicher.csv").exists())
+
     def test_neustart_mitten_in_der_aufnahme_bleibt_erhalten(self):
         # Statt der dritten Körperzeile kommen das Startbanner, der Grund aus dem ROM und der aus der Firmware.
         start = [b"ESP-ROM:esp32s3-20210327", b"rst:0x1 (POWERON),boot:0x8 (SPI_FAST_FLASH_BOOT)",
@@ -778,6 +819,9 @@ int main() {
     Leck z;
     std::printf("\n%d%d%d\n", z.starte(4096, 8192, 1, 1, 8191, 1), z.starte(4096, 8192, 1, 1, 8192, 1),
                 z.starte(4096, 8192, 1, 1, 0, 0xFFFFFFFFu));
+    const uint32_t groessen[] = {4096, 2048, 2047, 1024, 65536, 3000};
+    for (uint32_t g : groessen) std::printf(" %u", static_cast<unsigned>(Leck::kleiner(g)));
+    std::printf("\n");
 }
 ''')
         exe = Path(self.tmp.name, "reize")
@@ -795,6 +839,8 @@ int main() {
         self.assertEqual(zeilen[4], "1 1:8 2:8 1:16 2:16 1:8 2:8 1:8 2:8 1:8")
         # Ein flacher Boden unter dem tiefen ist ungültig, flach 0 heißt immer tief.
         self.assertEqual(zeilen[5], "011")
+        # Passt ein Block in kein Stück mehr, die Hälfte, aber nie unter minBlock.
+        self.assertEqual(zeilen[6], " 2048 1024 0 0 32768 1500")
 
     def test_sketch_behaelt_zustand_bei_fehlerhaften_zeilen(self):
         folge = b"1,OK\r\n1,SCHWACH\n4294967296,OK\n2,OK\x00x\n" + b"X"*80 + b"\n5,AUSFALL\n"

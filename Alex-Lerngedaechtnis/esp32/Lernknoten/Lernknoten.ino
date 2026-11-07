@@ -118,20 +118,77 @@ void leckFrei() {
     while (belegt) heap_caps_free(bloecke[--belegt]);
 }
 
+// Speicherlage am Boden des Lecks, direkt nach der Freigabe und wenn ein ganzer Block in kein
+// freies Stück mehr passt (KLEIN). Sie zeigt, wie zerstückelt der Speicher ist: Hält die eigene
+// Bedingung das Leck an (versucht 0), oder fand heap_caps_malloc trotz genug freiem Speicher
+// kein Stück, das groß genug ist (versucht 1)?
+// Die Zeile folgt der Körperzeile desselben Takts, damit diese zuerst kommt.
+struct Speicherlage {
+    const char *ereignis = nullptr;  // BODEN, FREI oder KLEIN, nullptr: nichts zu melden
+    bool versucht = false;
+    uint32_t frei = 0;               // ESP.getFreeHeap(), dieselbe Zahl wie in der Bedingung
+    multi_heap_info_t info = {};     // für MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT wie das Leck
+    unsigned leckbloecke = 0;
+} speicherlage;
+
+void merkeSpeicher(const char *ereignis, bool versucht, uint32_t frei) {
+    speicherlage.ereignis = ereignis;
+    speicherlage.versucht = versucht;
+    speicherlage.frei = frei;
+    heap_caps_get_info(&speicherlage.info, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    speicherlage.leckbloecke = belegt;
+}
+
+// SPEICHER,takt,ereignis,versucht,frei,frei8,groesster,freie_bloecke,belegte_bloecke,leckbloecke
+void meldeSpeicher(uint32_t takt) {
+    if (!speicherlage.ereignis) return;
+    const multi_heap_info_t &i = speicherlage.info;
+    Serial.print("SPEICHER,");
+    Serial.print(takt);
+    Serial.print(',');
+    Serial.print(speicherlage.ereignis);
+    Serial.print(speicherlage.versucht ? ",1," : ",0,");
+    Serial.print(speicherlage.frei);
+    Serial.print(',');
+    Serial.print(static_cast<unsigned long>(i.total_free_bytes));
+    Serial.print(',');
+    Serial.print(static_cast<unsigned long>(i.largest_free_block));
+    Serial.print(',');
+    Serial.print(static_cast<unsigned long>(i.free_blocks));
+    Serial.print(',');
+    Serial.print(static_cast<unsigned long>(i.allocated_blocks));
+    Serial.print(',');
+    Serial.print(speicherlage.leckbloecke);
+    Serial.println("");
+    speicherlage.ereignis = nullptr;
+}
+
 // Vor der Messung: einen Block belegen oder alles freigeben, wie es der Ablauf will.
 void leckTakt() {
     switch (leck.takt()) {
     case Leck::BELEGEN: {
         const uint32_t frei = ESP.getFreeHeap();
-        void *block = belegt < sizeof(bloecke) / sizeof(bloecke[0]) && frei > leck.boden
-                      && frei - leck.boden >= leck.block
-                    ? heap_caps_malloc(leck.block, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT) : nullptr;
-        if (block) bloecke[belegt++] = block;
-        else leck.voll();
+        const bool versucht = belegt < sizeof(bloecke) / sizeof(bloecke[0]) && frei > leck.boden
+                              && frei - leck.boden >= leck.block;
+        void *block = nullptr;
+        if (versucht) {
+            block = heap_caps_malloc(leck.block, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+            // Genug frei, aber kein Stück groß genug: Lage merken, dann kleinere Blöcke.
+            if (!block) merkeSpeicher("KLEIN", true, frei);
+            for (uint32_t g = Leck::kleiner(leck.block); !block && g; g = Leck::kleiner(g))
+                block = heap_caps_malloc(g, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+        }
+        if (block) {
+            bloecke[belegt++] = block;
+        } else {
+            leck.voll();
+            merkeSpeicher("BODEN", versucht, frei);
+        }
         break;
     }
     case Leck::FREIGEBEN:
         leckFrei();
+        merkeSpeicher("FREI", false, ESP.getFreeHeap());
         break;
     default:
         break;
@@ -178,6 +235,7 @@ void ruhe() {
     lastAnMs = 0;
     leck = Leck();
     leckFrei();
+    speicherlage.ereignis = nullptr;
     bremse = Bremse();
     stauMs = 0;
     gebremst = false;
@@ -252,6 +310,8 @@ void koerperSchleife() {
     if (!koerperTakt(gueltig, temp, ESP.getFreeHeap(), luecke)) {
         ruhe();
         Serial.println("FEHLER");
+    } else {
+        meldeSpeicher(knoten.takt());
     }
     gebremst = false;
     stauMs = bremse.takt();
