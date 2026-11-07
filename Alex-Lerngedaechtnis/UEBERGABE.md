@@ -143,6 +143,8 @@ python3 koerper.py aufnahme messungen/b.csv --port /dev/PORT --regel startwert -
 python3 koerper.py pruefen messungen/b.csv
 ```
 
+**Warnung nach außen (seit 7. November).** `--mqtt HOST` meldet Zustand, Sofortmeldung und Vorwarnung an einen MQTT-Broker, Thema `oscan/warnung`. Gesendet wird bei jedem Wechsel und sonst alle 30 Sekunden, jede Nachricht bleibt beim Broker liegen (retained). Am Ende kommt `{"aktiv":false}`. Den Takt stört das nicht: Jede Nachricht geht über einen eigenen Kindprozess, auf den die Aufnahme nicht wartet, und Fehler beim Senden werden geschluckt. Der Kindprozess ist `/usr/bin/python3` mit `melder.py`, das MQTT 3.1.1 selbst spricht. macOS lässt die PlatformIO-Python und `mosquitto_pub` aus Homebrew nicht ins lokale Netz. Bei Alex zeigt das Matrix-Panel die Meldung als Kachel „OSC“: Vorwarnung gelb, Ausfall rot, beide verdrängen die anderen Kacheln. Am Gerät geprüft mit 15 Minuten Reizen am 7. November: 900 Takte wie Python, Wechsel, Herzschlag und Ende kamen am Broker an.
+
 ## Körpersignale
 
 Seit 0.4 misst sich der Knoten auf Wunsch selbst. Im Körpermodus liest er in eigenem Takt die Chiptemperatur, den freien internen Speicher und die größte Lücke zwischen zwei Durchläufen von `loop()` seit dem letzten Takt. Durchläufe mit eigener Arbeit, also Messung, Ausgabe und LED, zählen dabei nicht mit, gemessen wird nur fremde Wartezeit. Daraus stuft er den Takt als OK, SCHWACH oder AUSFALL ein, der schlechteste der drei Werte zählt. Mit dieser Einstufung lernt er wie im Replay. Eine nicht lesbare Temperatur steht als „-“ in der Ausgabe und zählt nicht mit.

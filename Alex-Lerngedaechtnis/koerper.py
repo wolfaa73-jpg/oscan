@@ -94,7 +94,7 @@ def nachlese(port, leer=4, hoechstens=8.0):
 
 
 def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=1, leck=None, bremse=None,
-              fortsetzen=None, sichern_alle=0):
+              fortsetzen=None, sichern_alle=0, melder=None):
     """Körpermodus starten und jede Zeile mitschreiben. Gibt die Zahl der Takte zurück.
 
     last=(an_s, aus_s) lässt Kern 0 in diesem Rhythmus arbeiten. leck=(byte, boden, halten,
@@ -106,6 +106,8 @@ def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=
     dann seinen gesicherten Stand, statt bei null zu beginnen, und lässt einen Takt Lücke.
     sichern_alle lässt es jeden n-ten Takt selbst sichern und am Ende noch einmal. Takte, die nach
     STOP noch kommen, werden dafür mitgeschrieben, sonst passte der Endstand nicht zur Datei.
+
+    melder (aus melder.py) bekommt jede Körperzeile und meldet Warnungen weiter, etwa per MQTT.
 
     Kommt statt einer Körperzeile etwas anderes, etwa das Startbanner nach einem Neustart,
     hebt <name>.abbruch.txt diese Zeile und alles danach auf, mit dem Grund des Neustarts."""
@@ -183,6 +185,8 @@ def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=
                 schreiber.writerow([k[feld] for feld in KOPF])
                 datei.flush()
                 anzahl += 1
+                if melder is not None:
+                    melder.takt(k)
 
             try:
                 while takte is None or anzahl < takte:
@@ -211,6 +215,8 @@ def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=
     finally:
         if not gestoppt:
             port.write(b"STOP\n")
+        if melder is not None:
+            melder.ende()
     return anzahl
 
 
@@ -363,6 +369,8 @@ def main():
                    help="Mit dem gesicherten Stand weiterlernen, den die vorige Aufnahme im selben Ordner hinterließ")
     a.add_argument("--sichern-alle", type=int, default=0, metavar="N",
                    help="Das Gerät sichert jeden N-ten Takt und am Ende, damit eine spätere Aufnahme fortsetzen kann")
+    a.add_argument("--mqtt", metavar="HOST",
+                   help="Zustand und Vorwarnung per MQTT an diesen Broker melden, Thema oscan/warnung")
     k = sub.add_parser("pruefen", help="Einstufungen und Entscheidungen nachrechnen")
     k.add_argument("datei", type=Path)
     s = sub.add_parser("spur", help="takt,zustand für versuch.py, wahlweise neu eingestuft")
@@ -377,12 +385,16 @@ def main():
                 p.exit(2, "Für eine Aufnahme wird pyserial benötigt (in PlatformIO enthalten).\n")
             signal.signal(signal.SIGTERM, abbrechen)
             grenzen = Grenzen(*arg.grenzen) if arg.grenzen else ERKUNDUNG
+            melder = None
+            if arg.mqtt:
+                from melder import Melder, sender
+                melder = Melder(sender(arg.mqtt))
             with serial.Serial(arg.port, 115200, timeout=0.6, write_timeout=2) as port:
                 exklusiv(port)
                 anzahl = aufnehmen(port, arg.regel, grenzen, arg.intervall_ms, arg.takte, arg.datei,
                                    tuple(arg.last) if arg.last else None, arg.blick,
                                    tuple(arg.leck) if arg.leck else None, tuple(arg.bremse) if arg.bremse else None,
-                                   arg.fortsetzen, arg.sichern_alle)
+                                   arg.fortsetzen, arg.sichern_alle, melder)
             print(f"{anzahl} Takte aufgezeichnet in {arg.datei}.")
         elif arg.aktion == "pruefen":
             meta, werte = pruefen(arg.datei)
