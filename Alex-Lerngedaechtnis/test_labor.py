@@ -1314,3 +1314,48 @@ int main() {
         self.assertEqual(gesendet[-1], b"PINS\n")
         with self.assertRaises(ValueError):
             koerper.pins_lesen(KoerperTests.port([b"BEREIT,STARTWERT", b"FEHLER"], []), "startwert")
+
+
+class KunstkoerperTests(unittest.TestCase):
+    def test_lastreihe_folgt_dem_lastplan(self):
+        import itertools
+        import kunstkoerper
+        reihe = kunstkoerper.lastreihe(5000, 240, 240, 20261110)
+        laengen = [len(list(g)) for _, g in itertools.groupby(reihe)]
+        self.assertEqual(len(reihe), 5000)
+        self.assertEqual(reihe[0], 1)
+        self.assertEqual(laengen[:-1], koerper.lastdauern(20261110, 240, 240, len(laengen) - 1))
+        self.assertEqual(kunstkoerper.lastreihe(500, 120, 120, 0), ([1] * 120 + [0] * 120) * 2 + [1] * 20)
+
+    def test_gemessene_umgebung_trifft_ihre_kennzahlen(self):
+        import kunstkoerper
+        last = kunstkoerper.lastreihe(14400, 240, 240, 20261110)
+        temp = kunstkoerper.temperaturen(last, saat=7)
+        self.assertEqual(temp, kunstkoerper.temperaturen(last, saat=7))
+        self.assertTrue(all(t == int(t) for t in temp))
+        wechsel = sum(a != b for a, b in zip(temp, temp[1:])) / (len(temp) - 1)
+        an = [t for t, bit in zip(temp, last) if bit]
+        aus = [t for t, bit in zip(temp, last) if not bit]
+        # Echte erste Hälfte am 10.11.: 178 Wechsel je 1.000 Takte, unter Last 1,34 °C wärmer als in Ruhe.
+        self.assertTrue(0.13 < wechsel < 0.23, wechsel)
+        self.assertTrue(1.0 < sum(an) / len(an) - sum(aus) / len(aus) < 1.7)
+
+    def test_alte_annahme_und_ungerundet(self):
+        import kunstkoerper
+        last = kunstkoerper.lastreihe(2000, 240, 240, 20261110)
+        alt = kunstkoerper.temperaturen(last, 15, 1.7, drift=1.0, saat=3)
+        roh = kunstkoerper.temperaturen(last, stufe=0, saat=3)
+        self.assertNotEqual(alt, kunstkoerper.temperaturen(last, 15, 1.7, saat=3))
+        self.assertTrue(any(t != int(t) for t in roh))
+
+    def test_schreibt_eine_lesbare_aufnahme(self):
+        import kunstkoerper
+        with tempfile.TemporaryDirectory() as ordner:
+            ziel = Path(ordner) / "kunst.csv"
+            self.assertEqual(kunstkoerper.main([str(ziel), "--takte", "300", "--saat", "5"]), 0)
+            meta, werte = koerper.lies_aufnahme(ziel)
+            self.assertTrue(meta["kuenstlich"])
+            self.assertEqual(len(werte), 300)
+            self.assertEqual([w["reiz"] for w in werte], kunstkoerper.lastreihe(300, 240, 240, 20261110))
+            with self.assertRaises(FileExistsError):
+                kunstkoerper.main([str(ziel), "--takte", "300"])
