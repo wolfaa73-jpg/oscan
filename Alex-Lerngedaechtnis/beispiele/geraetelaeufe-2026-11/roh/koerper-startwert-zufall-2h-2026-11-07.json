@@ -1,0 +1,35 @@
+{
+ "regel": "startwert",
+ "intervall_ms": 1000,
+ "grenzen": {
+  "temp_schwach": 500,
+  "temp_ausfall": 600,
+  "heap_schwach": 65536,
+  "heap_ausfall": 16384,
+  "luecke_schwach": 20000,
+  "luecke_ausfall": 200000
+ },
+ "blick": 60,
+ "last": [
+  120,
+  120
+ ],
+ "leck": [
+  4096,
+  12288,
+  5,
+  120,
+  32768,
+  2347385558
+ ],
+ "bremse": [
+  10,
+  10,
+  300,
+  5,
+  120
+ ],
+ "beginn": "2026-11-07 13:28",
+ "fortsetzung": null,
+ "sichern_alle": 0
+}

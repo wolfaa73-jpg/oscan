@@ -1,0 +1,22 @@
+{
+ "regel": "erbe",
+ "intervall_ms": 1000,
+ "grenzen": {
+  "temp_schwach": 380,
+  "temp_ausfall": 390,
+  "heap_schwach": 65536,
+  "heap_ausfall": 16384,
+  "luecke_schwach": 20000,
+  "luecke_ausfall": 200000
+ },
+ "blick": 60,
+ "last": null,
+ "leck": [
+  4096,
+  12288,
+  5,
+  30
+ ],
+ "bremse": null,
+ "beginn": "2026-11-05 19:45"
+}
