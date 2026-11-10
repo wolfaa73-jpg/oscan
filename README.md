@@ -15,6 +15,8 @@ Gebraucht werden Python 3.9 oder neuer, für die Sketch-Tests ein C++11-Compiler
 
 **Stand 0.5 vom 5. November 2026.** Die Firmware entscheidet auf einem ESP32-S3 in allen drei Lernregeln genauso wie Python und behält ihren Lernstand über eine Stromtrennung. Im Körpermodus misst sie ihre eigene Chiptemperatur, ihren freien Speicher und ihre Schleifenzeit. Seit 0.5 kann sie ihre Vorwarnung bis zu 600 Takte vorausdenken und sich selbst Speicher und Hauptschleife knapp machen, beides auf dem S3 geprüft. Eine vierte Regel lässt das Erbe als Startwert verblassen. Sie rechnet im Hosttest bitgleich mit Python, entschied auf dem S3 in 30 Minuten Körpermodus genauso und behielt dort ihr verblasstes Erbe über eine Stromtrennung. Alle Aussagen zur Güte der Regeln stammen aus synthetischen Spuren, nicht aus Messungen im Alltag.
 
+**Nachtrag 10. November 2026.** Seither liefen zwei 24-h-Läufe am Gerät und mehrere Nachrechnungen. Das Gerät warnt dort mit einer Präzision unter der Grundrate, und eine von Hand gesetzte feste Schwelle schlägt jeden Lerner. Die Zusammenfassung steht in [STAND-2026-11-10.md](Alex-Lerngedaechtnis/STAND-2026-11-10.md) und geht diesem Abschnitt vor.
+
 Lizenz: MIT, siehe [LICENSE](LICENSE).
 
 ## Systementscheidungen und Verbund prüfen

@@ -14,6 +14,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import koerper
+import selbsterkundung
 import vokabular
 import wiederanlauf
 from boardprobe import antwort, vergleiche_board
@@ -842,6 +843,49 @@ int main() {
         # Passt ein Block in kein Stück mehr, die Hälfte, aber nie unter minBlock.
         self.assertEqual(zeilen[6], " 2048 1024 0 0 32768 1500")
 
+    def test_lastplan_wie_python(self):
+        quelle = Path(self.tmp.name, "lastplan.cpp")
+        quelle.write_text(r'''#include "Reize.h"
+#include <cstdio>
+#include <cstdlib>
+int main(int, char **argv) {
+    Lastplan p;
+    p.zufall = static_cast<uint32_t>(std::strtoul(argv[1], nullptr, 10));
+    const uint32_t an = static_cast<uint32_t>(std::strtoul(argv[2], nullptr, 10));
+    const uint32_t aus = static_cast<uint32_t>(std::strtoul(argv[3], nullptr, 10));
+    for (int i = 0; i < 400; ++i) std::printf("%u\n", static_cast<unsigned>(p.dauer(i % 2 ? aus : an)));
+}
+''')
+        exe = Path(self.tmp.name, "lastplan")
+        subprocess.run(["c++", "-std=c++11", "-Wall", "-Wextra", "-Werror", "-pedantic",
+                        "-I", str(ROOT / "esp32/Lernknoten"), str(quelle), "-o", str(exe)], check=True)
+        for saat, an, aus in ((0, 120, 120), (1, 240, 240), (4294967295, 3600, 1), (20261110, 3, 7), (7, 0, 5)):
+            with self.subTest(saat=saat, an=an, aus=aus):
+                r = subprocess.run([str(exe), str(saat), str(an), str(aus)], capture_output=True, text=True,
+                                   timeout=5, check=True)
+                dauern = koerper.lastdauern(saat, an, aus, 400)
+                self.assertEqual([int(z) for z in r.stdout.split()], dauern)
+                if saat and an and aus:
+                    # Ein Viertel bis zum vollen Wert, und nicht immer dasselbe.
+                    self.assertTrue(all((h // 4 or 1) <= d <= h for d, h in zip(dauern, [an, aus] * 200)))
+                    self.assertGreater(len(set(dauern[::2])), 1 if an < 4 else 2)
+        self.assertEqual(koerper.lastdauern(0, 120, 60, 4), [120, 60, 120, 60])
+
+    def test_last_mit_saat_im_befehl(self):
+        antworten = [b"BEREIT,ERBE", b"GRENZEN,ok", b"BLICK,ok", b"LAST,ok", b"KOERPER,an",
+                     *(z.encode() for z in KoerperTests.geraetezeilen(KoerperTests.ROH, KoerperTests.G, "erbe"))]
+        gesendet = []
+        with tempfile.TemporaryDirectory() as ort:
+            ziel = Path(ort, "koerper.csv")
+            koerper.aufnehmen(KoerperTests.port(antworten, gesendet), "erbe", KoerperTests.G, 1000,
+                              len(KoerperTests.ROH), ziel, (240, 240, 77))
+            self.assertIn(b"LAST 240 240 77\n", gesendet)
+            self.assertEqual(json.loads(ziel.with_suffix(".json").read_text())["last"], [240, 240, 77])
+            for falsch in ((240,), (240, 240, 1, 2), (3601, 1), (1, 1, 2**32)):
+                with self.assertRaises(ValueError):
+                    koerper.aufnehmen(KoerperTests.port(antworten, []), "erbe", KoerperTests.G, 1000,
+                                      6, Path(ort, "x.csv"), falsch)
+
     def test_sketch_behaelt_zustand_bei_fehlerhaften_zeilen(self):
         folge = b"1,OK\r\n1,SCHWACH\n4294967296,OK\n2,OK\x00x\n" + b"X"*80 + b"\n5,AUSFALL\n"
         for exe in self.binaries.values():
@@ -989,3 +1033,284 @@ int main() {
                 r = subprocess.run([str(exe)], input="\n".join(weit) + "\n", text=True,
                                    capture_output=True, timeout=5, check=True)
                 self.assertEqual(r.stdout.splitlines()[1:], erwartet)
+
+
+class Anlage:
+    """Chip unter Dauerlast, ein Lüfter an einem Pin. Die Temperatur in Hundertstelgrad nähert sich ihrem Ziel
+    um 1/anteil je Takt, der Sensor rauscht und rundet auf ganze Grad wie der des S3. Ganzzahlig wie ANLAGE_CPP."""
+
+    def __init__(self, luefter, saat, anteil=10):
+        self.wahr, self.luefter, self.zufall, self.anteil = 3900, luefter, saat, anteil
+
+    def _zufallszahl(self):
+        x = self.zufall
+        x ^= (x << 13) & 0xFFFFFFFF
+        x ^= x >> 17
+        x ^= (x << 5) & 0xFFFFFFFF
+        self.zufall = x
+        return x
+
+    def messe(self):
+        return (self.wahr + self._zufallszahl() % 61 - 30 + 50) // 100 * 10
+
+    def schritt(self, luefter_an):
+        d = (3600 if luefter_an else 3950) - self.wahr
+        self.wahr += d // self.anteil if d >= 0 else -((-d) // self.anteil)
+
+
+ANLAGE_CPP = r'''
+struct Anlage {
+    int32_t wahr = 3900, anteil = 10;
+    uint8_t luefter = 0;
+    uint32_t zufall = 1;
+    uint32_t zufallszahl() {
+        zufall ^= zufall << 13;
+        zufall ^= zufall >> 17;
+        zufall ^= zufall << 5;
+        return zufall;
+    }
+    int32_t messe() { return (wahr + static_cast<int32_t>(zufallszahl() % 61) - 30 + 50) / 100 * 10; }
+    void schritt(bool an) { wahr += ((an ? 3600 : 3950) - wahr) / anteil; }
+};
+'''
+
+
+def erkunde(pins, einstellungen, luefter, takte, umzug=None, fehlend=lambda t: False, anteil=10, saat=777):
+    """Geschlossener Kreis aus Anlage und Erkundung: Zeilen je Takt, gemessene Temperaturen, Erkundung."""
+    e = selbsterkundung.Erkundung(pins, *einstellungen)
+    a = Anlage(luefter, saat, anteil)
+    zeilen, temps = {}, []
+    for t in range(1, takte + 1):
+        if umzug and t == umzug[0]:
+            a.luefter = umzug[1]
+        temp = a.messe()
+        temps.append(None if fehlend(t) else temp)
+        zeilen[t] = e.takt(t, temps[-1])
+        a.schritt(e.ein[pins.index(a.luefter)])
+    return zeilen, temps, e
+
+
+class ErkundungTests(unittest.TestCase):
+    PINS = [4, 5, 7, 12, 21]
+    EINST = (40, 40, 15, 5, 4, 300, 12345, 380)  # ruhe an mittel schwelle fenster pruefe saat warm
+
+    def test_findet_den_luefter_regelt_und_merkt_den_umzug(self):
+        zeilen, temps, e = erkunde(self.PINS, self.EINST, 12, 12000, umzug=(6000, 5))
+        alle = [z for t in sorted(zeilen) for z in zeilen[t]]
+        kuehlt = [z.split(",") for z in alle if z.startswith("VERSUCH,") and z.endswith(",KUEHLT")]
+        # Nur die Pins mit dem Lüfter kühlen: erst 12, nach dem Umstecken 5.
+        self.assertEqual({v[2] for v in kuehlt}, {"12", "5"})
+        erster = min(int(v[1]) for v in kuehlt if v[2] == "12")
+        neu = min(int(v[1]) for v in kuehlt if v[2] == "5")
+        self.assertLess(erster, 1000)  # in der ersten Runde gefunden und zweimal nachgeprüft
+        self.assertTrue(6000 < neu < 10000)
+        # Dazwischen gibt Pin 12 seinen Status auf, ab dann wird wieder erkundet.
+        letzte12 = [v for v in kuehlt if v[2] == "12"][-1]
+        self.assertLess(int(letzte12[1]), neu)
+        # Die Regelung kühlt spürbar: vor dem Umstecken und nach dem Wiederfinden wärmer als ohne Lüfter nicht.
+        mittel = lambda von, bis: sum(temps[von:bis]) / (bis - von)
+        self.assertLess(mittel(1000, 6000), mittel(6000, neu - 500) - 8)
+        self.assertLess(mittel(neu + 500, 12000), mittel(6000, neu - 500) - 8)
+        # Eingeschaltet zum Kühlen wird nur der jeweilige Kühler.
+        einsatz = {z.split(",")[2] for z in alle if z.startswith("PIN,") and z.endswith(",EINSATZ")}
+        self.assertEqual(einsatz, {"12", "5"})
+        self.assertEqual(e.modus, "EINSATZ")
+        self.assertEqual(e.nummer[e.kuehler], 5)
+
+    def test_ohne_luefter_kuehlt_nichts_und_jeder_pin_kommt_dran(self):
+        e = selbsterkundung.Erkundung(self.PINS, *self.EINST)
+        a = Anlage(0, 31)
+        versucht = []
+        for t in range(1, 4001):
+            for z in e.takt(t, a.messe()):
+                if z.startswith("VERSUCH,"):
+                    versucht.append(z.split(","))
+            a.schritt(False)
+        self.assertNotIn("KUEHLT", {v[10] for v in versucht})
+        self.assertEqual(e.modus, "ERKUNDEN")
+        # 4000 Takte sind 50 Versuche, also zehn Runden über fünf Pins: jeder genau zehnmal.
+        self.assertEqual(sorted(v[2] for v in versucht), sorted([str(p) for p in self.PINS] * 10))
+
+    def test_fehlender_messwert_macht_den_versuch_ungueltig(self):
+        zeilen, _, e = erkunde(self.PINS, self.EINST, 12, 400, fehlend=lambda t: t == 75)
+        # Takt 75 liegt im Mittelfenster des ersten Versuchs (Takt 41 bis 80, gemittelt 66 bis 80).
+        versuch = [z for z in zeilen[80] if z.startswith("VERSUCH,")][0].split(",")
+        self.assertEqual(versuch[4:7], ["-", "-", "-"])
+        self.assertEqual(versuch[9:], ["0", "OFFEN"])
+        # Auch zu heiße oder negative Werte zählen nicht.
+        f = selbsterkundung.Erkundung([1], 2, 2, 1, 5, 3, 0, 1, 380)
+        self.assertEqual([f.takt(t, w) for t, w in enumerate((380, 2001, 380, 390), 1)][3][-1],
+                         "VERSUCH,4,1,AN,-,-,-,0,0,0,OFFEN")
+
+    def test_ungueltige_einstellungen(self):
+        gut = (2, 2, 1, 5, 3, 0, 1, 380)
+        for falsch in ((0, 2, 1, 5, 3, 0, 1, 380), (2, 2, 0, 5, 3, 0, 1, 380), (2, 1, 2, 5, 3, 0, 1, 380),
+                       (3601, 2, 1, 5, 3, 0, 1, 380), (2, 2, 1, 0, 3, 0, 1, 380), (2, 2, 1, 1001, 3, 0, 1, 380),
+                       (2, 2, 1, 5, 2, 0, 1, 380), (2, 2, 1, 5, 9, 0, 1, 380), (2, 2, 1, 5, 3, 86401, 1, 380),
+                       (2, 2, 1, 5, 3, 0, 0, 380)):
+            with self.subTest(falsch=falsch), self.assertRaises(ValueError):
+                selbsterkundung.Erkundung([1], *falsch)
+        for pins in ([], [2, 1], [3, 3], list(range(1, 26))):
+            with self.subTest(pins=pins), self.assertRaises(ValueError):
+                selbsterkundung.Erkundung(pins, *gut)
+        selbsterkundung.Erkundung(list(range(1, 25)), 3600, 3600, 3600, 1000, 8, 86400, 2**32 - 1, 380)
+
+    def test_rund_und_kandidaten(self):
+        self.assertEqual([selbsterkundung.rund(a, 4) for a in (-6, -5, -2, -1, 0, 1, 2, 5, 6)],
+                         [-2, -1, -1, 0, 0, 0, 1, 1, 2])
+        self.assertEqual(selbsterkundung.kandidaten({21: "F", 4: "M", 5: "P", 1: "U", 2: "F"}), [2, 4, 21])
+
+    def test_am_rechner_wie_python(self):
+        ungueltig = [((0, 2, 1, 5, 3, 0, 1), 1), ((2, 2, 0, 5, 3, 0, 1), 1), ((2, 1, 2, 5, 3, 0, 1), 1),
+                     ((3601, 3601, 1, 5, 3, 0, 1), 1), ((2, 2, 1, 0, 3, 0, 1), 1), ((2, 2, 1, 1001, 3, 0, 1), 1),
+                     ((2, 2, 1, 5, 2, 0, 1), 1), ((2, 2, 1, 5, 9, 0, 1), 1), ((2, 2, 1, 5, 3, 86401, 1), 1),
+                     ((2, 2, 1, 5, 3, 0, 0), 1), ((2, 2, 1, 5, 3, 0, 1), 0), ((2, 2, 1, 5, 3, 0, 1), 25),
+                     ((3600, 3600, 3600, 1000, 8, 86400, 4294967295), 24), ((1, 1, 1, 1, 3, 0, 1), 1)]
+        faelle = "\n".join(f"    std::printf(\"%d\", x.starte(viele, {n}, {', '.join(map(str, w))}u, 380));"
+                           for w, n in ungueltig)
+        quelle = r'''#include "Erkundung.h"
+#include <cstdio>
+''' + ANLAGE_CPP + r'''
+int main() {
+    const uint8_t pins[] = {4, 5, 7, 12, 21};
+    Erkundung e;
+    if (!e.starte(pins, 5, 40, 40, 15, 5, 4, 300, 12345, 380)) return 1;
+    Anlage a;
+    a.luefter = 12;
+    a.zufall = 777;
+    for (uint32_t t = 1; t <= 12000; ++t) {
+        if (t == 6000) a.luefter = 5;
+        const int32_t temp = a.messe();
+        const bool gueltig = t % 997 != 0;
+        e.takt(t, gueltig, gueltig ? temp : 0);
+        for (unsigned i = 0; i < e.zeilen(); ++i) std::printf("%s\n", e.zeile(i));
+        unsigned luefter = 0;
+        for (unsigned i = 0; i < e.anzahl(); ++i)
+            if (e.pin(i) == a.luefter) luefter = i;
+        a.schritt(e.an(luefter));
+    }
+    uint8_t viele[25];
+    for (unsigned i = 0; i < 25; ++i) viele[i] = static_cast<uint8_t>(i + 1);
+    Erkundung x;
+''' + faelle + r'''
+    std::printf("\n");
+    const uint8_t verkehrt[] = {5, 4};
+    std::printf("%d%d\n", x.starte(verkehrt, 2, 2, 2, 1, 5, 3, 0, 1, 380), x.starte(pins, 5, 2, 2, 1, 5, 3, 0, 1, 380));
+}
+'''
+        with tempfile.TemporaryDirectory() as ort:
+            datei, exe = Path(ort, "erkundung.cpp"), Path(ort, "erkundung")
+            datei.write_text(quelle)
+            subprocess.run(["c++", "-std=c++11", "-Wall", "-Wextra", "-Werror", "-pedantic", "-I",
+                            str(ROOT / "esp32/Lernknoten"), str(datei), "-o", str(exe)], check=True)
+            aus = subprocess.run([str(exe)], capture_output=True, text=True, timeout=30, check=True).stdout.splitlines()
+        zeilen, _, _ = erkunde(self.PINS, self.EINST, 12, 12000, umzug=(6000, 5), fehlend=lambda t: t % 997 == 0)
+        erwartet = [z for t in sorted(zeilen) for z in zeilen[t]]
+        self.assertGreater(len(erwartet), 500)
+        self.assertTrue(any(",-,-,-," in z for z in erwartet))  # die fehlenden Messwerte kamen in Versuchen vor
+        self.assertEqual(aus[:-2], erwartet)
+        geht = []
+        for w, n in ungueltig:
+            try:
+                selbsterkundung.Erkundung(list(range(1, n + 1)), *w, 380)
+                geht.append("1")
+            except ValueError:
+                geht.append("0")
+        self.assertEqual(aus[-2], "".join(geht))
+        self.assertEqual(aus[-2], "0" * 12 + "11")
+        self.assertEqual(aus[-1], "01")
+
+    def test_aufnahme_mit_erkundung(self):
+        g = koerper.Grenzen(380, 390, 65536, 16384, 20000, 200000)
+        einst = (3, 3, 2, 5, 4, 10, 99)
+        klassen = {p: "P" for p in selbsterkundung.ERLAUBTE_PINS}
+        klassen.update({4: "M", 5: "F"})
+        antwort_erk = b"ERKUNDUNG,ok," + ",".join(f"{p}{k}" for p, k in klassen.items()).encode()
+        zeilen, temps, e = erkunde([4, 5], einst + (380,), 4, 120, anteil=2)
+        # Eine Aufnahme, die genau mit einem Takt endet, in dem die Erkundung noch etwas meldet.
+        ende = max(t for t, z in zeilen.items() if z and t <= 100)
+        roh = [(t, 300000, 60) for t in temps[:ende]]
+        k = [z.encode() for z in KoerperTests.geraetezeilen(roh, g, "erbe")]
+        geraet = []
+        for t, kz in enumerate(k, 1):
+            geraet += [kz] + [z.encode() for z in zeilen[t]]
+        start = [b"BEREIT,ERBE", b"GRENZEN,ok", b"BLICK,ok", antwort_erk, b"KOERPER,an"]
+        self.assertIn(b"KUEHLT", b"".join(geraet))
+        self.assertIn(b"EINSATZ", b"".join(geraet))
+        with tempfile.TemporaryDirectory() as ort:
+            ziel, gesendet = Path(ort, "erk.csv"), []
+            self.assertEqual(koerper.aufnehmen(KoerperTests.port(start + geraet, gesendet), "erbe", g, 1000, ende,
+                                               ziel, erkundung=einst), ende)
+            self.assertLess(gesendet.index(b"ERKUNDUNG 3 3 2 5 4 10 99\n"), gesendet.index(b"KOERPER 1000\n"))
+            meta, _ = koerper.pruefen(ziel)
+            self.assertEqual(meta["erkundung"], dict(ruhe=3, an=3, mittel=2, schwelle=5, fenster=4, pruefe=10,
+                                                     saat=99, pins={str(p): c for p, c in klassen.items()}))
+            # Die Zeilen des letzten Takts kamen nach dessen Körperzeile und fehlen, das ist erlaubt.
+            pins = koerper.nebendatei(ziel, ".pin.csv", koerper.PIN_KOPF)
+            versuche = koerper.nebendatei(ziel, ".versuch.csv", koerper.VERSUCH_KOPF)
+            self.assertEqual(pins + versuche, sorted((z for t in range(1, ende) for z in zeilen[t]),
+                                                     key=lambda z: not z.startswith("PIN,")))
+            soll = koerper.erkundung_pruefen(ziel, meta, koerper.lies_aufnahme(ziel)[1])
+            self.assertIn("Pin 4 kühlt ab Takt", koerper.erkundung_bericht(meta, soll))
+            # Eine veränderte Versuchszeile fällt auf, eine fehlende Pinzeile mitten drin auch.
+            vdatei, pdatei = Path(ort, "erk.versuch.csv"), Path(ort, "erk.pin.csv")
+            original = vdatei.read_text()
+            vdatei.write_text(original.replace(",KUEHLT", ",KEINE", 1))
+            with self.assertRaisesRegex(ValueError, "weicht von selbsterkundung.py ab"):
+                koerper.pruefen(ziel)
+            vdatei.write_text(original)
+            zeilen_p = pdatei.read_text().splitlines()
+            pdatei.write_text("\n".join(zeilen_p[:2] + zeilen_p[3:]) + "\n")
+            with self.assertRaisesRegex(ValueError, "erk.pin.csv, Zeile 3"):
+                koerper.pruefen(ziel)
+            # Pinzeilen ohne Erkundung in der JSON passen nicht zusammen.
+            json_pfad = ziel.with_suffix(".json")
+            m = json.loads(json_pfad.read_text())
+            del m["erkundung"]
+            json_pfad.write_text(json.dumps(m))
+            with self.assertRaisesRegex(ValueError, "keine Erkundung"):
+                koerper.pruefen(ziel)
+            # Ohne Erkundung bleibt die JSON wie bisher, ganz ohne das Feld.
+            koerper.aufnehmen(KoerperTests.port([b"BEREIT,ERBE", b"GRENZEN,ok", b"BLICK,ok", b"KOERPER,an"] + k,
+                                                []), "erbe", g, 1000, 3, Path(ort, "ohne.csv"))
+            self.assertNotIn("erkundung", json.loads(Path(ort, "ohne.json").read_text()))
+            # Antwortet das Gerät nicht mit der Pinübersicht, beginnt keine Aufnahme.
+            for falsch in (b"FEHLER", b"ERKUNDUNG,ok", antwort_erk.replace(b",4M,", b",4X,"),
+                           antwort_erk.replace(b",5F,", b",6F,")):
+                with self.subTest(falsch=falsch), self.assertRaisesRegex(ValueError, "Erkundung nicht gestartet"):
+                    koerper.aufnehmen(KoerperTests.port(start[:3] + [falsch], []), "erbe", g, 1000, 3,
+                                      Path(ort, f"f{len(list(Path(ort).iterdir()))}.csv"), erkundung=einst)
+            # Ungültige Einstellungen weist schon Python ab, bevor etwas gesendet wird.
+            gesendet = []
+            with self.assertRaises(ValueError):
+                koerper.aufnehmen(KoerperTests.port(start, gesendet), "erbe", g, 1000, 3, Path(ort, "x.csv"),
+                                  erkundung=(3, 3, 0, 5, 4, 10, 99))
+            self.assertEqual(gesendet, [])
+
+    def test_kaputte_pin_und_versuchszeilen_brechen_ab(self):
+        g = koerper.Grenzen(380, 390, 65536, 16384, 20000, 200000)
+        k = [z.encode() for z in KoerperTests.geraetezeilen([(390, 300000, 60)] * 5, g, "erbe")]
+        start = [b"BEREIT,ERBE", b"GRENZEN,ok", b"BLICK,ok", b"KOERPER,an"]
+        self.assertEqual(koerper.lies_pinzeile(b"PIN,7,12,1,EINSATZ"), dict(takt=7, pin=12, an=1, grund="EINSATZ"))
+        self.assertEqual(koerper.lies_versuchszeile(b"VERSUCH,80,12,AUS,-,-,-,-313,17,3,KUEHLT")["mittel_hg"], -313)
+        for falsch in (b"PIN,3,12,2,PROBE", b"PIN,3,12,1,LAUNE", b"PIN,3,-1,1,PROBE", b"PIN,3,12,1",
+                       b"VERSUCH,3,12,AN,1,2,3,4,5,6,KUEHL", b"VERSUCH,3,12,EIN,1,2,3,4,5,6,KUEHLT",
+                       b"VERSUCH,3,12,AN,-,2,3,4,5,6,KUEHLT", b"VERSUCH,3,12,AN,1,2,3,4,-5,6,KUEHLT",
+                       b"VERSUCH,3,12,AN,1,2,3,4,5,6"):
+            with self.subTest(falsch=falsch), tempfile.TemporaryDirectory() as ort:
+                with self.assertRaises(ValueError) as fehler:
+                    koerper.aufnehmen(KoerperTests.port(start + k[:3] + [falsch] + k[3:], []), "erbe", g, 1000, 5,
+                                      Path(ort, "a.csv"))
+                self.assertIn("nach 3 Takten", str(fehler.exception))
+                self.assertFalse(Path(ort, "a.pin.csv").exists() or Path(ort, "a.versuch.csv").exists())
+
+    def test_pins_lesen(self):
+        klassen = {p: "F" for p in selbsterkundung.ERLAUBTE_PINS}
+        klassen[12] = "M"
+        zeile = b"PINS," + ",".join(f"{p}{k}" for p, k in klassen.items()).encode()
+        gesendet = []
+        self.assertEqual(koerper.pins_lesen(KoerperTests.port([b"BEREIT,STARTWERT", zeile], gesendet), "startwert"),
+                         klassen)
+        self.assertEqual(gesendet[-1], b"PINS\n")
+        with self.assertRaises(ValueError):
+            koerper.pins_lesen(KoerperTests.port([b"BEREIT,STARTWERT", b"FEHLER"], []), "startwert")

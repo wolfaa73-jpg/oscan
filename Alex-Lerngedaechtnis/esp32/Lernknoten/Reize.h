@@ -6,6 +6,22 @@
 // Halten und Pause zählen Takte, mindestens einen und höchstens 3600.
 inline bool reizTakte(uint32_t n) { return n >= 1 && n <= 3600; }
 
+// Last: wie viele Sekunden die nächste Arbeits- oder Ruhephase dauert. Ohne Saat immer genau
+// hoechstens. Mit Saat eine zufällige ganze Zahl von einem Viertel davon (mindestens 1) bis
+// hoechstens, gleichverteilt aus xorshift32. So folgt die Wärme keinem festen Plan, und wer sie
+// vorhersagen will, muss wissen, wie der Chip auf Last antwortet.
+struct Lastplan {
+    uint32_t zufall = 0;
+    uint32_t dauer(uint32_t hoechstens) {
+        if (!zufall || !hoechstens) return hoechstens;
+        zufall ^= zufall << 13;
+        zufall ^= zufall >> 17;
+        zufall ^= zufall << 5;
+        const uint32_t unten = hoechstens / 4 ? hoechstens / 4 : 1;
+        return unten + zufall % (hoechstens - unten + 1);
+    }
+};
+
 // Leck: belegt je Takt einen Block, bis der Sketch meldet, dass kein Block mehr über den
 // Boden passt. Dieser Takt ist der erste von halten Takten am Boden. Im Takt danach gibt
 // es alles frei, das ist der erste von pause Takten ohne Leck. Dann wächst es wieder.

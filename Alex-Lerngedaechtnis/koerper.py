@@ -10,6 +10,7 @@ from contextlib import ExitStack
 from dataclasses import asdict, astuple, dataclass
 from pathlib import Path
 
+import selbsterkundung
 from boardprobe import antwort, bereit
 from kern import Knoten, MAX_BLICK, REGELN, ZUSTAENDE
 
@@ -87,6 +88,70 @@ def lies_speicherzeile(zeile):
     return {f: w if f == "ereignis" else int(w) for f, w in zip(SPEICHER_KOPF, teile[1:])}
 
 
+# Selbsterkundung wie Erkundung.h: Schalten eines Pins und Ergebnis eines Versuchs. Temperaturen in
+# Hundertstelgrad, "-" bei einem Versuch, in dem ein Messwert fehlte.
+PIN_KOPF = ("takt", "pin", "an", "grund")
+VERSUCH_KOPF = ("takt", "pin", "art", "vor_hg", "nach_hg", "wirkung_hg", "mittel_hg", "streuung_hg", "anzahl",
+                "urteil")
+ERKUNDUNG_FELDER = ("ruhe", "an", "mittel", "schwelle", "fenster", "pruefe", "saat")
+
+
+def _ganzzahl(text, vorzeichen=False):
+    ziffern = text[1:] if vorzeichen and text.startswith("-") else text
+    if not ziffern.isascii() or not ziffern.isdigit():
+        raise ValueError
+    return int(text)
+
+
+def lies_pinzeile(zeile):
+    """PIN,takt,pin,an,grund"""
+    teile = zeile.decode("ascii", "replace").split(",")
+    try:
+        if len(teile) != 5 or teile[0] != "PIN" or teile[3] not in ("0", "1") \
+                or teile[4] not in selbsterkundung.GRUENDE:
+            raise ValueError
+        return dict(takt=_ganzzahl(teile[1]), pin=_ganzzahl(teile[2]), an=int(teile[3]), grund=teile[4])
+    except ValueError:
+        raise ValueError(f"Unerwartete Pinzeile {zeile!r}.") from None
+
+
+def lies_versuchszeile(zeile):
+    """VERSUCH,takt,pin,art,vor_hg,nach_hg,wirkung_hg,mittel_hg,streuung_hg,anzahl,urteil"""
+    teile = zeile.decode("ascii", "replace").split(",")
+    try:
+        if len(teile) != 11 or teile[0] != "VERSUCH" or teile[3] not in ("AN", "AUS") \
+                or teile[10] not in selbsterkundung.URTEILE:
+            raise ValueError
+        ohne = teile[4:7] == ["-", "-", "-"]
+        return dict(takt=_ganzzahl(teile[1]), pin=_ganzzahl(teile[2]), art=teile[3],
+                    vor_hg=None if ohne else _ganzzahl(teile[4]), nach_hg=None if ohne else _ganzzahl(teile[5]),
+                    wirkung_hg=None if ohne else _ganzzahl(teile[6], True), mittel_hg=_ganzzahl(teile[7], True),
+                    streuung_hg=_ganzzahl(teile[8]), anzahl=_ganzzahl(teile[9]), urteil=teile[10])
+    except ValueError:
+        raise ValueError(f"Unerwartete Versuchszeile {zeile!r}.") from None
+
+
+def lies_pinklassen(zeile, kopf):
+    """kopf,1F,2F,4M,… wie meldePins() im Sketch: jeder erlaubte Pin in seiner Reihenfolge mit seiner Klasse.
+    Gibt {pin: klasse} zurück, None, wenn die Zeile nicht so aussieht."""
+    teile, n = zeile.split(b","), kopf.count(b",") + 1
+    if b",".join(teile[:n]) != kopf or len(teile) != n + len(selbsterkundung.ERLAUBTE_PINS):
+        return None
+    klassen = {}
+    for pin, eintrag in zip(selbsterkundung.ERLAUBTE_PINS, teile[n:]):
+        text = eintrag.decode("ascii", "replace")
+        if text[:-1] != str(pin) or len(text[-1:]) != 1 or text[-1] not in selbsterkundung.KLASSEN:
+            return None
+        klassen[pin] = text[-1]
+    return klassen
+
+
+# Zeilen, die der Körperzeile eines Takts folgen können, und die Datei neben der Aufnahme, in die sie gehen.
+NEBENZEILEN = ((b"SPEICHER,", ".speicher.csv", SPEICHER_KOPF, lies_speicherzeile),
+               (b"PIN,", ".pin.csv", PIN_KOPF, lies_pinzeile),
+               (b"VERSUCH,", ".versuch.csv", VERSUCH_KOPF, lies_versuchszeile))
+
+
 def exklusiv(port):
     """Belegt den seriellen Port für diesen Prozess allein, bis er geschlossen wird. Jedes weitere
     Öffnen scheitert dann mit EBUSY, auch das eines fremden Programms, das sonst über DTR/RTS das
@@ -110,11 +175,28 @@ def nachlese(port, leer=4, hoechstens=8.0):
     return zeilen
 
 
+def lastdauern(saat, an_s, aus_s, anzahl):
+    """Die ersten anzahl Phasendauern in Sekunden, abwechselnd Arbeit und Ruhe, wie Lastplan in Reize.h."""
+    zufall, dauern = saat, []
+    for i in range(anzahl):
+        hoechstens = aus_s if i % 2 else an_s
+        if not zufall or not hoechstens:
+            dauern.append(hoechstens)
+            continue
+        zufall ^= (zufall << 13) & 0xFFFFFFFF
+        zufall ^= zufall >> 17
+        zufall ^= (zufall << 5) & 0xFFFFFFFF
+        unten = hoechstens // 4 or 1
+        dauern.append(unten + zufall % (hoechstens - unten + 1))
+    return dauern
+
+
 def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=1, leck=None, bremse=None,
-              fortsetzen=None, sichern_alle=0, melder=None):
+              fortsetzen=None, sichern_alle=0, melder=None, erkundung=None):
     """Körpermodus starten und jede Zeile mitschreiben. Gibt die Zahl der Takte zurück.
 
-    last=(an_s, aus_s) lässt Kern 0 in diesem Rhythmus arbeiten. leck=(byte, boden, halten,
+    last=(an_s, aus_s) lässt Kern 0 in diesem Rhythmus arbeiten. Mit einer Saat als drittem Wert
+    dauert jede Phase zufällig lang, von einem Viertel bis zum vollen Wert (lastdauern). leck=(byte, boden, halten,
     pause), wahlweise mit flachem Boden und Muster, belegt Speicher, bremse=(start, schritt, bis,
     halten, pause) hält die Hauptschleife an, beide wie LECK und BREMSE im Sketch. Der Knoten spürt alle Reize nur über seine
     Messwerte. blick sind die Takte, die seine Vorwarnung vorausdenkt.
@@ -129,12 +211,17 @@ def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=
     Meldet die Firmware die Speicherlage des Lecks (SPEICHER,…), landen diese Zeilen in
     <name>.speicher.csv. Ohne solche Zeilen entsteht die Datei nicht.
 
+    erkundung=(ruhe, an, mittel, schwelle, fenster, pruefe, saat) startet die Selbsterkundung wie
+    ERKUNDUNG im Sketch. Die Klassen der passiven Pinprobe stehen danach in der JSON, die Zeilen PIN,…
+    und VERSUCH,… in <name>.pin.csv und <name>.versuch.csv.
+
     Kommt statt einer Körperzeile etwas anderes, etwa das Startbanner nach einem Neustart,
     hebt <name>.abbruch.txt diese Zeile und alles danach auf, mit dem Grund des Neustarts."""
     if not 100 <= intervall_ms < 2**32:
         raise ValueError("Das Intervall muss mindestens 100 ms betragen.")
-    if last is not None and not all(type(s) is int and 0 <= s <= 3600 for s in last):
-        raise ValueError("Last und Pause in ganzen Sekunden bis 3600.")
+    if last is not None and not (len(last) in (2, 3) and all(type(s) is int and 0 <= s <= 3600 for s in last[:2])
+                                 and all(type(s) is int and 0 <= s < 2**32 for s in last[2:])):
+        raise ValueError("Last und Pause in ganzen Sekunden bis 3600, wahlweise eine Saat ab null.")
     if type(blick) is not int or not 1 <= blick <= MAX_BLICK:
         raise ValueError(f"Der Blick muss 1 bis {MAX_BLICK} Takte betragen.")
     # Die Bereiche von Leck und Bremse prüft das Gerät, hier nur die Form.
@@ -143,6 +230,11 @@ def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=
             raise ValueError(f"{name} braucht {' oder '.join(map(str, anzahl))} ganze Zahlen ab null.")
     if type(sichern_alle) is not int or not 0 <= sichern_alle < 2**32:
         raise ValueError("Sichern alle n Takte braucht eine ganze Zahl ab null.")
+    if erkundung is not None:
+        # Dieselben Regeln wie im Gerät, geprüft an einem Platzhalter-Pin.
+        if len(erkundung) != len(ERKUNDUNG_FELDER):
+            raise ValueError(f"Die Erkundung braucht {len(ERKUNDUNG_FELDER)} ganze Zahlen.")
+        selbsterkundung.Erkundung([1], *erkundung, warm=grenzen.temp_schwach)
     if fortsetzen is not None:
         # pruefen findet die vorige Aufnahme über ihren Namen neben dieser.
         if fortsetzen.parent.resolve() != ziel.parent.resolve():
@@ -150,9 +242,11 @@ def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=
         if lies_aufnahme(fortsetzen)[0]["regel"] != regel:
             raise ValueError("Fortgesetzt wird nur mit derselben Lernregel.")
     abbruch = ziel.with_name(ziel.stem + ".abbruch.txt")
-    speicherziel = ziel.with_name(ziel.stem + ".speicher.csv")
-    if ziel.exists() or ziel.with_suffix(".json").exists() or abbruch.exists() or speicherziel.exists():
-        raise ValueError(f"{ziel} oder eine zugehörige .json, .speicher.csv oder .abbruch.txt gibt es schon.")
+    nebenziele = {praefix: ziel.with_name(ziel.stem + endung) for praefix, endung, _, _ in NEBENZEILEN}
+    if ziel.exists() or ziel.with_suffix(".json").exists() or abbruch.exists() \
+            or any(p.exists() for p in nebenziele.values()):
+        raise ValueError(f"{ziel} oder eine zugehörige .json, .abbruch.txt oder Nebendatei "
+                         f"({', '.join(e for _, e, _, _ in NEBENZEILEN)}) gibt es schon.")
     bereit(port, regel)
     anzahl = 0
     stille = 3 * intervall_ms / 1000 + 1
@@ -166,45 +260,58 @@ def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=
         if sichern_alle:
             befehle.append((f"SICHERN_ALLE {sichern_alle}", b"SICHERN_ALLE,ok", "Sichern nicht eingestellt"))
         if last is not None:
-            befehle.append((f"LAST {last[0]} {last[1]}", b"LAST,ok", "Last nicht gestartet"))
+            befehle.append(("LAST " + " ".join(map(str, last)), b"LAST,ok", "Last nicht gestartet"))
         if leck is not None:
             befehle.append(("LECK " + " ".join(map(str, leck)), b"LECK,ok", "Leck nicht gestartet"))
         if bremse is not None:
             befehle.append(("BREMSE " + " ".join(map(str, bremse)), b"BREMSE,ok", "Bremse nicht gestartet"))
+        if erkundung is not None:
+            # Die Bestätigung trägt das Ergebnis der Pinprobe, deshalb keine feste Antwort.
+            befehle.append(("ERKUNDUNG " + " ".join(map(str, erkundung)), None, "Erkundung nicht gestartet"))
         if fortsetzen is not None:
             befehle.append(("LADEN", b"GELADEN", "Kein gesicherter Stand geladen"))
         befehle.append((f"KOERPER {intervall_ms}", b"KOERPER,an", "Körpermodus nicht gestartet"))
+        klassen = None
         for befehl, bestaetigung, fehler in befehle:
             port.write(befehl.encode("ascii") + b"\n")
-            if (erhalten := antwort(port, frist=3.0)) != bestaetigung:
+            erhalten = antwort(port, frist=3.0)
+            if bestaetigung is None:
+                klassen = lies_pinklassen(erhalten, b"ERKUNDUNG,ok")
+                if klassen is None:
+                    raise ValueError(f"{fehler}, erhalten {erhalten!r}.")
+            elif erhalten != bestaetigung:
                 raise ValueError(f"{fehler}, erhalten {erhalten!r}.")
         meta = dict(regel=regel, intervall_ms=intervall_ms, grenzen=asdict(grenzen), blick=blick,
                     last=None if last is None else list(last), leck=None if leck is None else list(leck),
                     bremse=None if bremse is None else list(bremse), beginn=time.strftime("%Y-%m-%d %H:%M"),
                     fortsetzung=None if fortsetzen is None else fortsetzen.name, sichern_alle=sichern_alle)
+        # Nur mit Erkundung, damit die JSON älterer Versuchsaufbauten Feld für Feld gleich bleibt.
+        if erkundung is not None:
+            meta["erkundung"] = dict(zip(ERKUNDUNG_FELDER, erkundung), pins={str(p): k for p, k in klassen.items()})
         with ziel.with_suffix(".json").open("x", encoding="utf-8") as datei:
             json.dump(meta, datei, ensure_ascii=False, indent=1)
         with ziel.open("x", encoding="utf-8", newline="") as datei, ExitStack() as nebendateien:
             schreiber = csv.writer(datei)
             schreiber.writerow(KOPF)
             beginn = letzte = time.monotonic()
-            speicherlage = []  # Datei und Schreiber, sobald die erste Speicherzeile kommt
+            neben = {}  # Datei und Schreiber je Art, sobald die erste Zeile dieser Art kommt
 
             def schreibe(zeile):
                 nonlocal anzahl, letzte
-                if zeile.startswith(b"SPEICHER,"):
+                for praefix, _, kopf, lies in NEBENZEILEN:
+                    if not zeile.startswith(praefix):
+                        continue
                     try:
-                        s = lies_speicherzeile(zeile)
+                        werte = lies(zeile)
                     except ValueError:
-                        pass  # bricht unten ab wie jede andere unerwartete Zeile
-                    else:
-                        if not speicherlage:
-                            aus = nebendateien.enter_context(speicherziel.open("x", encoding="utf-8", newline=""))
-                            speicherlage.extend((aus, csv.writer(aus)))
-                            speicherlage[1].writerow(SPEICHER_KOPF)
-                        speicherlage[1].writerow([s[feld] for feld in SPEICHER_KOPF])
-                        speicherlage[0].flush()
-                        return
+                        break  # bricht unten ab wie jede andere unerwartete Zeile
+                    if praefix not in neben:
+                        aus = nebendateien.enter_context(nebenziele[praefix].open("x", encoding="utf-8", newline=""))
+                        neben[praefix] = (aus, csv.writer(aus))
+                        neben[praefix][1].writerow(kopf)
+                    neben[praefix][1].writerow(["-" if werte[feld] is None else werte[feld] for feld in kopf])
+                    neben[praefix][0].flush()
+                    return
                 try:
                     k = lies_koerperzeile(zeile)
                 except ValueError:
@@ -253,6 +360,16 @@ def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=
         if melder is not None:
             melder.ende()
     return anzahl
+
+
+def pins_lesen(port, regel):
+    """Was an den erlaubten Pins hängt, als {pin: klasse}, über PINS. Das Gerät treibt dabei keinen Pin."""
+    bereit(port, regel)
+    port.write(b"PINS\n")
+    erhalten = antwort(port, nach_handschlag=True, frist=3.0)
+    if (klassen := lies_pinklassen(erhalten, b"PINS")) is None:
+        raise ValueError(f"Keine Pinübersicht erhalten, sondern {erhalten!r}.")
+    return klassen
 
 
 def lies_aufnahme(pfad):
@@ -326,7 +443,74 @@ def pruefen(pfad):
         s = knoten.schritt(w["takt"], w["zustand"])
         if (int(s.sofort), int(s.vorwarnung)) != (w["sofort"], w["vorwarnung"]):
             raise ValueError(f"Zeile {nummer}: Entscheidung weicht von Python ab.")
+    erkundung_pruefen(pfad, meta, werte)
     return meta, werte
+
+
+def nebendatei(pfad, endung, kopf):
+    """Die Zeilen einer Nebendatei so, wie das Gerät sie gesendet hat, ohne Kopf. Fehlt sie, keine."""
+    datei = pfad.with_name(pfad.stem + endung)
+    if not datei.exists():
+        return []
+    praefix = next(p for p, e, _, _ in NEBENZEILEN if e == endung).decode("ascii")
+    with datei.open(encoding="utf-8", newline="") as d:
+        zeilen = csv.reader(d, strict=True)
+        if next(zeilen, None) != list(kopf):
+            raise ValueError(f"Kopf von {datei.name} ist ungültig.")
+        return [praefix + ",".join(z) for z in zeilen]
+
+
+def erkundung_pruefen(pfad, meta, werte):
+    """Jede Pin- und Versuchszeile des Geräts mit selbsterkundung.py nachrechnen, aus den Temperaturen der
+    Körperzeilen. Die Zeilen des letzten Takts darf die Aufnahme verpasst haben: Sie endet mit seiner
+    Körperzeile. Gibt die nachgerechneten Zeilen je Art zurück, ohne Erkundung None."""
+    geraet = {e: nebendatei(pfad, e, k) for e, k in ((".pin.csv", PIN_KOPF), (".versuch.csv", VERSUCH_KOPF))}
+    e = meta.get("erkundung")
+    if e is None:
+        if any(geraet.values()):
+            raise ValueError("Pin- oder Versuchszeilen, aber keine Erkundung in der JSON.")
+        return None
+    klassen = {int(p): k for p, k in e["pins"].items()}
+    knoten = selbsterkundung.Erkundung(selbsterkundung.kandidaten(klassen), *(e[f] for f in ERKUNDUNG_FELDER),
+                                       warm=meta["grenzen"]["temp_schwach"])
+    soll = {".pin.csv": [], ".versuch.csv": []}
+    for w in werte:
+        for z in knoten.takt(w["takt"], w["temp_dc"]):
+            soll[".pin.csv" if z.startswith("PIN,") else ".versuch.csv"].append(z)
+    letzter = werte[-1]["takt"] if werte else 0
+    for endung, zeilen in soll.items():
+        da = geraet[endung]
+        if da != zeilen[:len(da)] or any(int(z.split(",")[1]) != letzter for z in zeilen[len(da):]):
+            erste = next((i for i, (a, b) in enumerate(zip(da, zeilen)) if a != b), min(len(da), len(zeilen)))
+            raise ValueError(f"{pfad.stem}{endung}, Zeile {erste + 2}: weicht von selbsterkundung.py ab "
+                             f"(Gerät {da[erste] if erste < len(da) else 'nichts'!r}, "
+                             f"Python {zeilen[erste] if erste < len(zeilen) else 'nichts'!r}).")
+    return soll
+
+
+def erkundung_bericht(meta, soll):
+    """Kurz, was die Erkundung gefunden hat, aus den geprüften Zeilen."""
+    if soll is None:
+        return ""
+    versuche = [z.split(",") for z in soll[".versuch.csv"]]
+    schalten = [z.split(",") for z in soll[".pin.csv"]]
+    klassen = meta["erkundung"]["pins"]
+    teile = [f"Erkundung: {len(selbsterkundung.kandidaten({int(p): k for p, k in klassen.items()}))} Kandidaten "
+             f"({', '.join(f'{p}{k}' for p, k in klassen.items() if k in selbsterkundung.KANDIDATEN)}), "
+             f"{len(versuche)} Versuche."]
+    erste = {}
+    for v in versuche:
+        if v[10] == "KUEHLT":
+            erste.setdefault(v[2], v[1])
+    for pin, takt in erste.items():
+        letzte = [v for v in versuche if v[2] == pin][-1]
+        teile.append(f"Pin {pin} kühlt ab Takt {takt}, zuletzt {letzte[10]}, Wirkung im Mittel "
+                     f"{int(letzte[7]) / 100:+.2f} °C über {letzte[9]} Versuche.")
+    if not erste:
+        teile.append("Kein Pin kühlt.")
+    einsaetze = sum(1 for z in schalten if z[4] == "EINSATZ" and z[3] == "1")
+    teile.append(f"Eingeschaltet zum Kühlen: {einsaetze} Mal.")
+    return "\n".join(teile)
 
 
 def tausender(zahl):
@@ -391,7 +575,9 @@ def main():
     a.add_argument("--takte", type=int, help="Ohne Angabe bis zum Abbruch")
     a.add_argument("--grenzen", type=int, nargs=6, metavar="N", help="Temperatur schwach ausfall (Zehntelgrad), "
                    "Speicher schwach ausfall (Byte), Lücke schwach ausfall (µs)")
-    a.add_argument("--last", type=int, nargs=2, metavar=("AN", "AUS"), help="Kern 0 arbeitet AN s, ruht AUS s")
+    a.add_argument("--last", type=int, nargs="+", metavar="N",
+                   help="Last AN AUS [SAAT]: Kern 0 arbeitet AN s, ruht AUS s. Mit SAAT dauert jede Phase "
+                        "zufällig lang, von einem Viertel bis zum vollen Wert")
     a.add_argument("--blick", type=int, default=1, help=f"Takte, die die Vorwarnung vorausdenkt, 1 bis {MAX_BLICK}")
     a.add_argument("--leck", type=int, nargs="+", metavar="N",
                    help="Speicherleck BYTE BODEN HALTEN PAUSE [FLACH MUSTER]: BYTE je Takt, bis nur noch BODEN Byte "
@@ -406,8 +592,19 @@ def main():
                    help="Das Gerät sichert jeden N-ten Takt und am Ende, damit eine spätere Aufnahme fortsetzen kann")
     a.add_argument("--mqtt", metavar="HOST",
                    help="Zustand und Vorwarnung per MQTT an diesen Broker melden, Thema oscan/warnung")
+    a.add_argument("--erkundung", type=int, nargs=7,
+                   metavar=("RUHE", "AN", "MITTEL", "SCHWELLE", "FENSTER", "PRUEFE", "SAAT"),
+                   help="Selbsterkundung: freie Pins passiv prüfen, dann je Versuch RUHE Takte unverändert und AN "
+                        "Takte mit einem umgeschalteten Pin, verglichen über je die letzten MITTEL Takte. Ein Pin "
+                        "kühlt, wenn er über seine letzten FENSTER Versuche sicher um mehr als SCHWELLE Zehntelgrad "
+                        "kühlt. Mit Kühler regelt der Knoten selbst und prüft nach je PRUEFE Takten nach. SAAT "
+                        "bestimmt die zufällige Reihenfolge")
     k = sub.add_parser("pruefen", help="Einstufungen und Entscheidungen nachrechnen")
     k.add_argument("datei", type=Path)
+    q = sub.add_parser("pins", help="Nachsehen, was an den erlaubten Pins hängt, ohne einen zu treiben")
+    q.add_argument("--port", required=True)
+    q.add_argument("--regel", choices=list(REGELN), default="startwert",
+                   help="Lernregel der Firmware, nur für den Handschlag")
     s = sub.add_parser("spur", help="takt,zustand für versuch.py, wahlweise neu eingestuft")
     s.add_argument("datei", type=Path)
     s.add_argument("--grenzen", type=int, nargs=6, metavar="N")
@@ -429,12 +626,28 @@ def main():
                 anzahl = aufnehmen(port, arg.regel, grenzen, arg.intervall_ms, arg.takte, arg.datei,
                                    tuple(arg.last) if arg.last else None, arg.blick,
                                    tuple(arg.leck) if arg.leck else None, tuple(arg.bremse) if arg.bremse else None,
-                                   arg.fortsetzen, arg.sichern_alle, melder)
+                                   arg.fortsetzen, arg.sichern_alle, melder,
+                                   tuple(arg.erkundung) if arg.erkundung else None)
             print(f"{anzahl} Takte aufgezeichnet in {arg.datei}.")
         elif arg.aktion == "pruefen":
             meta, werte = pruefen(arg.datei)
             print(bericht(meta, werte))
             print(f"Alle {len(werte)} Einstufungen und Entscheidungen des Geräts stimmen mit Python überein.")
+            soll = erkundung_pruefen(arg.datei, meta, werte)
+            if soll is not None:
+                print(erkundung_bericht(meta, soll))
+                print("Alle Pin- und Versuchszeilen stimmen mit selbsterkundung.py überein.")
+        elif arg.aktion == "pins":
+            try:
+                import serial
+            except ImportError:
+                p.exit(2, "Dafür wird pyserial benötigt (in PlatformIO enthalten).\n")
+            with serial.Serial(arg.port, 115200, timeout=0.6, write_timeout=2) as port:
+                exklusiv(port)
+                klassen = pins_lesen(port, arg.regel)
+            namen = {"F": "frei", "M": "gegen Masse", "P": "gegen Plus", "U": "verkehrt"}
+            for klasse, name in namen.items():
+                print(f"{name}: {' '.join(str(p) for p, k in klassen.items() if k == klasse) or '-'}")
         else:
             meta, werte = lies_aufnahme(arg.datei)
             g = Grenzen(*arg.grenzen) if arg.grenzen else Grenzen(**meta["grenzen"])

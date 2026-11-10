@@ -2,6 +2,8 @@
 
 **Stand 0.5 · 5. November 2026 · Arbeitsprojekt für Alex und Claude**
 
+> **Nachtrag 10. November 2026:** Die Geräteläufe seit dem 6. November und die Gesamtdurchsicht stehen in [STAND-2026-11-10.md](STAND-2026-11-10.md). Wo diese Seite widerspricht, gilt der Stand. Inzwischen sind es 313 Tests.
+
 Wann sollte ein kleiner Knoten eine Erfahrung vergessen? Dieses Labor setzt drei Gedanken aus Alex’ Entwurf zusammen. Ein fester Reflex meldet einen beobachteten Ausfall. Neun veränderliche Gewichte lernen, welcher Zustand auf welchen folgt. Ein zweiter Knoten kann über kurze Zustandsmeldungen erfahren, was der erste beobachtet hat. Seit Version 0.3 bringt ein siebtes Verfahren ein kleines festes Erbe mit, das eigene Erfahrung überstimmen kann.
 
 Das Konzept steht in Alex’ Ideensammlung eine Ordnerebene höher (`../Ideensammlung Lernendes Betriebssystem mit verblassendem Gedächtnis.md`). Sie ist die maßgebliche Fassung. Ihr Abschnitt „Versuchsstand“ hält fest, was dieses Labor gezeigt hat.

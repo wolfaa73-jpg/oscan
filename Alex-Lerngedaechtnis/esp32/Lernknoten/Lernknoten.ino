@@ -1,5 +1,6 @@
 // Serieller Replay-Prüfstand. Eine vollständige Zeile löst genau eine Beobachtung aus.
 // Im Körpermodus misst sich der Knoten in eigenem Takt selbst.
+#include "Erkundung.h"
 #include "Knoten.h"
 #include "Koerper.h"
 #include "Reize.h"
@@ -8,6 +9,10 @@
 #include <Preferences.h>
 #include <esp_heap_caps.h>
 #include <esp_system.h>
+#endif
+// Die Selbsterkundung schaltet Pins und kennt dafür nur die freien des ESP32-S3.
+#if defined(ARDUINO_ARCH_ESP32) && defined(CONFIG_IDF_TARGET_ESP32S3)
+#define ALEX_ERKUNDUNG
 #endif
 
 #if defined(ALEX_KONTEXT) + defined(ALEX_ERBE) + defined(ALEX_STARTWERT) > 1
@@ -82,6 +87,7 @@ volatile uint32_t lastAnMs = 0;
 volatile uint32_t lastAusMs = 0;
 TaskHandle_t lastTask = nullptr;
 volatile uint32_t lastSenke = 0;
+Lastplan lastplan;  // nur die Lastaufgabe zieht daraus, der Befehl setzt die Saat
 
 void lastSchleife(void *) {
     uint32_t x = 1;
@@ -92,7 +98,7 @@ void lastSchleife(void *) {
             continue;
         }
         lastAktiv = true;
-        const uint32_t ende = millis() + lastAnMs;
+        const uint32_t ende = millis() + lastplan.dauer(lastAnMs / 1000) * 1000;
         while (lastAnMs && static_cast<int32_t>(millis() - ende) < 0) {
             const uint32_t stueck = millis() + 10;
             while (static_cast<int32_t>(millis() - stueck) < 0) x = x * 1664525u + 1013904223u;
@@ -100,7 +106,7 @@ void lastSchleife(void *) {
             vTaskDelay(1);  // Leerlauf von Kern 0 hält den Task-Wachhund ruhig
         }
         lastAktiv = false;
-        const uint32_t pause = millis() + lastAusMs;
+        const uint32_t pause = millis() + lastplan.dauer(lastAusMs / 1000) * 1000;
         while (lastAnMs && static_cast<int32_t>(millis() - pause) < 0) vTaskDelay(pdMS_TO_TICKS(100));
     }
 }
@@ -219,6 +225,59 @@ void blitze(Zustand z) {
 #endif
 #endif
 
+#ifdef ALEX_ERKUNDUNG
+// Pins, die die Erkundung überhaupt prüft, am ESP32-S3 N16R8. Nie: 0, 3, 45, 46 (Strapping), 19 und 20
+// (USB), 26 bis 37 (Flash und PSRAM), 43 und 44 (UART0 für Serial), 48 (RGB-LED). Wie ERLAUBTE_PINS in
+// selbsterkundung.py.
+const uint8_t erlaubtePins[] = {1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 21, 38, 39, 40, 41, 42, 47};
+const unsigned erlaubteAnzahl = sizeof(erlaubtePins) / sizeof(erlaubtePins[0]);
+Erkundung erkundung;
+bool pinGeschrieben[Erkundung::maxPins];
+
+// Hängt etwas am Pin? Ohne ihn zu treiben: einmal mit Pull-up lesen, einmal mit Pull-down.
+// F folgt beiden (frei), M bleibt tief (Last gegen Masse, etwa eine Transistorbasis), P bleibt hoch,
+// U verhält sich verkehrt herum. Danach bleibt der Pin ein Eingang mit Pull-down.
+char pinKlasse(uint8_t pin) {
+    pinMode(pin, INPUT_PULLUP);
+    delayMicroseconds(200);
+    const bool hoch = digitalRead(pin) == HIGH;
+    pinMode(pin, INPUT_PULLDOWN);
+    delayMicroseconds(200);
+    const bool tief = digitalRead(pin) == LOW;
+    return hoch && tief ? 'F' : tief ? 'M' : hoch ? 'P' : 'U';
+}
+
+void meldePins(const char *kopf, const char *klassen) {
+    Serial.print(kopf);
+    for (unsigned i = 0; i < erlaubteAnzahl; ++i) {
+        Serial.print(',');
+        Serial.print(static_cast<unsigned>(erlaubtePins[i]));
+        Serial.print(klassen[i]);
+    }
+    Serial.println("");
+}
+
+// Erkundung beenden: jeder Kandidat aus und wieder Eingang mit Pull-down, damit nichts weiterläuft.
+void pinsAus() {
+    for (unsigned i = 0; i < erkundung.anzahl(); ++i) {
+        digitalWrite(erkundung.pin(i), LOW);
+        pinMode(erkundung.pin(i), INPUT_PULLDOWN);
+    }
+    erkundung.beende();
+}
+
+// Nach dem Körpertakt: Zeilen der Erkundung ausgeben, dann die Pins so setzen, wie sie entschieden hat.
+void erkundungTakt(uint32_t takt, bool gueltig, int32_t temp) {
+    erkundung.takt(takt, gueltig, temp);
+    for (unsigned i = 0; i < erkundung.zeilen(); ++i) Serial.println(erkundung.zeile(i));
+    for (unsigned i = 0; i < erkundung.anzahl(); ++i) {
+        if (erkundung.an(i) == pinGeschrieben[i]) continue;
+        digitalWrite(erkundung.pin(i), erkundung.an(i) ? HIGH : LOW);
+        pinGeschrieben[i] = erkundung.an(i);
+    }
+}
+#endif
+
 // Welche Reize gerade wirken, als Bits für die Auswertung: 1 Last, 2 Leck, 4 Bremse.
 unsigned reize() {
 #ifdef ARDUINO_ARCH_ESP32
@@ -239,6 +298,9 @@ void ruhe() {
     bremse = Bremse();
     stauMs = 0;
     gebremst = false;
+#ifdef ALEX_ERKUNDUNG
+    pinsAus();
+#endif
 #ifdef ALEX_RGB_PIN
     blitzAn = false;
     zeigeZustand(UNBEKANNT);
@@ -312,6 +374,9 @@ void koerperSchleife() {
         Serial.println("FEHLER");
     } else {
         meldeSpeicher(knoten.takt());
+#ifdef ALEX_ERKUNDUNG
+        erkundungTakt(knoten.takt(), gueltig, temp);
+#endif
     }
     gebremst = false;
     stauMs = bremse.takt();
@@ -428,9 +493,16 @@ bool verarbeiteZeile() {
         return true;
     }
     if (befehl("LAST", rest)) {
-        // Arbeitsphase und Pause in Sekunden, LAST 0 0 beendet die Last.
-        uint32_t w[2];
-        if (!felder(rest, w, 2) || w[0] > 3600 || w[1] > 3600) return false;
+        // Arbeitsphase und Pause in Sekunden, LAST 0 0 beendet die Last. Mit einer Saat als drittem
+        // Wert dauert jede Phase zufällig lang, von einem Viertel bis zum vollen Wert (Lastplan).
+        uint32_t w[3] = {};
+        if (!felder(rest, w, 3)) {
+            w[2] = 0;
+            if (!felder(rest, w, 2)) return false;
+        }
+        if (w[0] > 3600 || w[1] > 3600) return false;
+        lastAnMs = 0;  // die laufende Phase endet, bevor die Saat wechselt
+        lastplan.zufall = w[2];
         lastAusMs = w[1] * 1000;
         lastAnMs = w[0] * 1000;
         if (w[0] && !lastTask
@@ -462,6 +534,45 @@ bool verarbeiteZeile() {
         bremse = neu;
         stauMs = 0;
         Serial.println("BREMSE,ok");
+        return true;
+    }
+#endif
+#ifdef ALEX_ERKUNDUNG
+    if (strcmp(zeile, "PINS") == 0) {
+        // Nur nachsehen, was an den erlaubten Pins hängt. Nichts wird getrieben.
+        if (koerperAn || erkundung.aktiv()) return false;
+        char klassen[erlaubteAnzahl];
+        for (unsigned i = 0; i < erlaubteAnzahl; ++i) klassen[i] = pinKlasse(erlaubtePins[i]);
+        meldePins("PINS", klassen);
+        return true;
+    }
+    if (befehl("ERKUNDUNG", rest)) {
+        // Takte Ruhe, Takte an, Takte im Mittel, Schwelle in Zehntelgrad, Versuche je Pin, Takte Regelung
+        // zwischen zwei Prüfungen (0 nie), Saat der Zufallszahlen. ERKUNDUNG 0 0 0 0 0 0 0 beendet.
+        // Vorher wird jeder erlaubte Pin passiv geprüft, geschaltet werden nur F und M.
+        uint32_t w[7];
+        if (koerperAn || !grenzenGesetzt || !felder(rest, w, 7)) return false;
+        pinsAus();
+        if (!(w[0] | w[1] | w[2] | w[3] | w[4] | w[5] | w[6])) {
+            Serial.println("ERKUNDUNG,ok");
+            return true;
+        }
+        char klassen[erlaubteAnzahl];
+        uint8_t kandidaten[Erkundung::maxPins];
+        unsigned anzahl = 0;
+        for (unsigned i = 0; i < erlaubteAnzahl; ++i) {
+            klassen[i] = pinKlasse(erlaubtePins[i]);
+            if (klassen[i] == 'F' || klassen[i] == 'M') kandidaten[anzahl++] = erlaubtePins[i];
+        }
+        if (!erkundung.starte(kandidaten, anzahl, w[0], w[1], w[2], w[3], w[4], w[5], w[6], grenzen.tempSchwach))
+            return false;
+        for (unsigned i = 0; i < anzahl; ++i) {
+            digitalWrite(kandidaten[i], LOW);
+            pinMode(kandidaten[i], OUTPUT);
+            digitalWrite(kandidaten[i], LOW);
+            pinGeschrieben[i] = false;
+        }
+        meldePins("ERKUNDUNG,ok", klassen);
         return true;
     }
 #endif

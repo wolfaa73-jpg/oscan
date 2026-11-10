@@ -165,6 +165,54 @@ Zu jedem solchen Ereignis folgt der Körperzeile eine Zeile `SPEICHER,takt,ereig
 
 `koerper.py aufnahme` schreibt diese Zeilen nach `<name>.speicher.csv`. Ohne solche Zeilen entsteht die Datei nicht. Die Körperzeile bleibt unverändert, ebenso alle Auswertungen. Die Messung kostet 56 B statischen RAM, der Speicher in Ruhe liegt deshalb etwas anders als vorher.
 
+**Selbsterkundung (seit 8. November).** Das ist Alex' Idee: Der Knoten bekommt einen Lüfter an einem Pin, den ihm niemand nennt. Er soll selbst herausfinden, welcher Pin etwas bewirkt und dass dieser ihn kühlt, und ihn danach bei Wärme einsetzen. Die Entscheidungen stehen in `Erkundung.h`, ihr Python-Zwilling ist `selbsterkundung.py`. Beide rechnen ganzzahlig und Takt für Takt gleich. Der Hosttest vergleicht sie in einem geschlossenen Kreis mit einem simulierten Lüfter über 12.000 Takte. Der Lüfter wird dabei nach 6.000 Takten umgesteckt, und ab und zu fehlt ein Messwert.
+
+- **Welche Pins.**
+  - Die Erkundung gibt es nur am S3, und sie prüft nur 24 Pins: 1, 2, 4 bis 18, 21, 38 bis 42 und 47.
+  - Nie dabei sind 0, 3, 45 und 46 (Strapping), 19 und 20 (USB), 26 bis 37 (Flash und PSRAM), 43 und 44 (UART0 für Serial) sowie 48 (RGB-LED).
+  - Vor dem Start liest der Sketch jeden dieser Pins passiv, einmal mit Pull-up und einmal mit Pull-down:
+
+    | Klasse | Verhalten | Bedeutung |
+    | --- | --- | --- |
+    | `F` | folgt beiden | frei |
+    | `M` | bleibt tief | Last gegen Masse, etwa eine Transistorbasis |
+    | `P` | bleibt hoch | zieht oder treibt nach Plus |
+    | `U` | verhält sich verkehrt herum | unklar |
+
+  - Geschaltet werden nur `F` und `M`, die übrigen bleiben Eingänge.
+  - `PINS` zeigt die Klassen, ohne einen Pin zu treiben, auf dem Rechner mit `koerper.py pins --port …`.
+- **Ein Versuch.**
+  - `ruhe` Takte bleibt alles, wie es ist. Dann wird ein Pin umgeschaltet, und es folgen `an` Takte.
+  - Verglichen werden die Mittel der letzten `mittel` Takte beider Phasen.
+  - Die Wirkung eines Pins ist die Temperatur mit ihm minus die ohne ihn.
+  - Fehlt im Mittelfenster ein Messwert, zählt der Versuch nicht.
+- **Urteil je Pin**, aus seinen letzten `fenster` Versuchen:
+  - `KUEHLT`: Es sind mindestens drei, und das Mittel kühlt auch nach Abzug von zwei Standardfehlern um mehr als `schwelle` Zehntelgrad. Geprüft wird das als ganzzahlige Ungleichung, ohne Wurzel.
+  - `VERDACHT`: Das Mittel kühlt um mehr als die Schwelle, das trägt aber noch nicht.
+  - `KEINE`: ab drei Versuchen alles andere.
+  - `OFFEN`: davor.
+- **Erkunden.**
+  - Solange kein Kühler bekannt ist, prüft der Knoten die Kandidaten in zufälliger Reihenfolge, jeden einmal je Runde.
+  - Ein verdächtiger Pin wird sofort nachgeprüft.
+  - Der Zufall (xorshift32 mit `saat`) trennt die Wirkung eines Pins von dem, was sonst gerade geschieht, etwa von der Raumtemperatur.
+- **Einsetzen.**
+  - Mit Kühler regelt der Knoten selbst: an ab der Grenze SCHWACH der Temperatur aus `GRENZEN`, aus ab 1 °C darunter, frühestens `mittel` Takte nach dem letzten Schalten.
+  - Nach je `pruefe` Takten Regelung macht er wieder einen Versuch, abwechselnd mit dem Kühler selbst und mit einem anderen Pin. Den Kühler schaltet er dafür um, meist aus.
+  - Kühlt der Kühler danach nicht mehr, etwa weil der Lüfter umgesteckt wurde, erkundet er wieder.
+  - Ein Gedächtnis über Aufnahmen hinweg gibt es nicht. Jede Erkundung beginnt neu.
+- **Ausgabe.**
+  - Nach der Körperzeile folgen zwei Arten von Zeilen:
+    - `PIN,takt,pin,an,grund` mit dem Grund `PROBE`, `PRUEFUNG`, `EINSATZ` oder `WECHSEL`
+    - `VERSUCH,takt,pin,art,vor_hg,nach_hg,wirkung_hg,mittel_hg,streuung_hg,anzahl,urteil`, mit Temperaturen in Hundertstelgrad
+  - `koerper.py aufnahme --erkundung RUHE AN MITTEL SCHWELLE FENSTER PRUEFE SAAT` schreibt sie nach `<name>.pin.csv` und `<name>.versuch.csv`.
+  - Die Klassen der Probe und die Einstellungen stehen in der JSON unter `erkundung`. Ohne Erkundung fehlt das Feld.
+  - `pruefen` rechnet alle Zeilen mit dem Zwilling nach. Die Körperzeile bleibt unverändert.
+- **Elektrisch bei Alex:**
+  - Ein Lüfter 5 V / 0,2 A hängt an 5 V. Als Schalter gegen Masse dienen zwei BC547 parallel, jede Basis über einen eigenen Widerstand von 470 Ω am selben Pin, zusammen etwa 11 mA. Eine Freilaufdiode gibt es nicht.
+  - In der Probe sollte der Pin als `M` erscheinen.
+- **Speicher:** Die Erkundung belegt 1.476 B statischen RAM, davon 1.452 B für das Objekt und 24 B für die Schaltzustände. Der freie Speicher in Ruhe liegt deshalb tiefer als in den Aufnahmen bis zum 8. November, und die Böden des Lecks verschieben sich.
+- **Stand:** Geprüft ist das bisher nur am Rechner, am Gerät noch nicht.
+
 **Neustarts sichtbar machen.** Beim Start meldet die Firmware `NEUSTART,<nummer>,<grund>`, mit dem Grund aus `esp_reset_reason()`, etwa `PANIK`, `TASK_WACHHUND` oder `UNTERSPANNUNG`. Ein Puls auf der EN-Leitung, wie ihn die USB-Brücke gibt, sieht für den Chip aus wie echtes Einschalten: Das ROM schreibt `rst:0x1 (POWERON)`, die Firmware `NEUSTART,1,EINSCHALTEN`. Kommt während einer Aufnahme statt einer Körperzeile etwas anderes, hebt `aufnahme` diese Zeile und alles danach in `<name>.abbruch.txt` auf. Die Fehlermeldung nennt die Zeilen `rst:` und `NEUSTART,`. Geprüft ist das am S3 mit einem EN-Puls aus einem zweiten Prozess mitten in einer Aufnahme. Ein fremder Prozess am Port kann das Board also während einer Aufnahme zurücksetzen. Deshalb belegt `aufnahme` den Port seitdem exklusiv (TIOCEXCL). Am S3 scheitert ein zweites Öffnen dann mit EBUSY.
 
 **Eine Veränderung mitgeben.** `LAST <an_s> <aus_s>` lässt Kern 0 im vorgegebenen Rhythmus arbeiten und ruhen, die Hauptschleife läuft auf Kern 1. Die Arbeit gibt alle 10 ms kurz ab, damit der Task-Wachhund nicht anschlägt und keine Meldung ins Protokoll schreibt. `LAST 0 0`, `STOP` und `NEUER_LAUF` beenden die Last. Die Einstufung kennt die Phase nicht, der Knoten spürt die Last allein über seine Messwerte.
