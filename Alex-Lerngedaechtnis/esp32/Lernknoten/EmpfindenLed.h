@@ -16,7 +16,7 @@ inline Muster muster(int gerade, int woanders, bool anlauf, bool voll) {
     if (anlauf) return {{2,2,2}, {2,2,2}, false};
     const unsigned stufe = betrag(gerade), ort = betrag(woanders);
     const unsigned hell[] = {2,3,4,6,8,12,16};
-    const Farbe a = gerade ? richtung(gerade, hell[stufe > 6 ? 6 : stufe]) : Farbe{0,2,0};
+    const Farbe a = gerade ? richtung(gerade, hell[stufe > 6 ? 6 : stufe]) : Farbe{0,static_cast<uint8_t>(hell[0]),0};
     const Farbe b = woanders ? richtung(woanders, ort >= 4 ? 4 : ort+1) : a;
     return {a,b,woanders != 0};
 }
