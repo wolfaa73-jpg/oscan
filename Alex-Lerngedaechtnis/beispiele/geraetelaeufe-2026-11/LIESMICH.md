@@ -17,3 +17,7 @@ Zum Kälteversuch von Hand am 10. November abends liegen hier die Probe am Rechn
 (`probe-kaelte-2026-11-10.md`), die Festlegung (`vorab-kaelte-2026-11-10.md`) und die Auswertung
 (`auswertung-kaelte-2026-11-10.md`), nachzurechnen mit
 `kaelteversuch.py roh/koerper-zufallslast-8h-2026-11-10.csv roh/koerper-kaelte-2026-11-10.csv`.
+
+Zum 11. November: `selbstvorhersage-2026-11-11.md` (Lernverfahren, Referenz, Firmware) und `fahrt-2026-11-11.md`
+(der Knoten einen Tag unterwegs). Das Protokoll der Fahrt liegt als `roh/fahrt-2026-11-11.bin`, die Kontrolle
+vor der Abfahrt als `roh/kontrolle-vorhersage-2026-11-11.*`.

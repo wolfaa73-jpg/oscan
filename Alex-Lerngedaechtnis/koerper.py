@@ -147,7 +147,39 @@ def lies_pinklassen(zeile, kopf):
 
 
 # Zeilen, die der Körperzeile eines Takts folgen können, und die Datei neben der Aufnahme, in die sie gehen.
+# Selbstvorhersage wie Vorhersage.h: Vorhersagen für in 10 und 60 Takten, Fehler der vor 10 Takten abgegebenen,
+# sein Mittel, die Grenze und ob der Knoten überrascht ist. Temperaturen in Tausendstelgrad (mg).
+VORHERSAGE_KOPF = ("takt", "v10_mg", "v60_mg", "fehler_mg", "mittel_mg", "grenze_mg", "ueberrascht")
+VORHERSAGE_FELDER = ("kurz", "lang", "vergessen_e4", "deckel", "mittel", "norm_halbwert", "norm_ab", "anlauf",
+                     "faktor_e1")
+VORHERSAGE_TOLERANZ_MG = 2
+
+
+def lies_vorhersagezeile(zeile):
+    """VORHERSAGE,takt,v10_mg,v60_mg,fehler_mg,mittel_mg,grenze_mg,ueberrascht"""
+    try:
+        teile = zeile.decode("ascii").split(",")
+        if len(teile) != 8 or teile[0] != "VORHERSAGE" or teile[7] not in ("0", "1") \
+                or (teile[4] == "-") != (teile[5] == "-") or (teile[4] == "-") != (teile[6] == "-"):
+            raise ValueError
+        werte = [_ganzzahl(teile[1]), _ganzzahl(teile[2], True), _ganzzahl(teile[3], True)]
+        werte += [None if t == "-" else _ganzzahl(t, True) for t in teile[4:7]]
+    except (ValueError, UnicodeDecodeError):
+        raise ValueError(f"Unerwartete Vorhersagezeile {zeile!r}.") from None
+    return dict(zip(VORHERSAGE_KOPF, werte + [int(teile[7])]))
+
+
+def lies_vorhersagestart(zeile):
+    """VORHERSAGE,ok und die neun Konstanten des Geräts als dict, sonst None."""
+    teile = (zeile or b"").split(b",")
+    if teile[:2] != [b"VORHERSAGE", b"ok"] or len(teile) != 2 + len(VORHERSAGE_FELDER) \
+            or not all(t.isdigit() for t in teile[2:]):
+        return None
+    return dict(zip(VORHERSAGE_FELDER, map(int, teile[2:])))
+
+
 NEBENZEILEN = ((b"SPEICHER,", ".speicher.csv", SPEICHER_KOPF, lies_speicherzeile),
+               (b"VORHERSAGE,", ".vorhersage.csv", VORHERSAGE_KOPF, lies_vorhersagezeile),
                (b"PIN,", ".pin.csv", PIN_KOPF, lies_pinzeile),
                (b"VERSUCH,", ".versuch.csv", VERSUCH_KOPF, lies_versuchszeile))
 
@@ -192,7 +224,7 @@ def lastdauern(saat, an_s, aus_s, anzahl):
 
 
 def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=1, leck=None, bremse=None,
-              fortsetzen=None, sichern_alle=0, melder=None, erkundung=None):
+              fortsetzen=None, sichern_alle=0, melder=None, erkundung=None, vorhersage=False):
     """Körpermodus starten und jede Zeile mitschreiben. Gibt die Zahl der Takte zurück.
 
     last=(an_s, aus_s) lässt Kern 0 in diesem Rhythmus arbeiten. Mit einer Saat als drittem Wert
@@ -214,6 +246,9 @@ def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=
     erkundung=(ruhe, an, mittel, schwelle, fenster, pruefe, saat) startet die Selbsterkundung wie
     ERKUNDUNG im Sketch. Die Klassen der passiven Pinprobe stehen danach in der JSON, die Zeilen PIN,…
     und VERSUCH,… in <name>.pin.csv und <name>.versuch.csv.
+
+    vorhersage=True startet die Selbstvorhersage wie VORHERSAGE 1 im Sketch, bei null. Die Konstanten, die
+    das Gerät dazu meldet, stehen danach in der JSON, die Zeilen VORHERSAGE,… in <name>.vorhersage.csv.
 
     Kommt statt einer Körperzeile etwas anderes, etwa das Startbanner nach einem Neustart,
     hebt <name>.abbruch.txt diese Zeile und alles danach auf, mit dem Grund des Neustarts."""
@@ -268,16 +303,22 @@ def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=
         if erkundung is not None:
             # Die Bestätigung trägt das Ergebnis der Pinprobe, deshalb keine feste Antwort.
             befehle.append(("ERKUNDUNG " + " ".join(map(str, erkundung)), None, "Erkundung nicht gestartet"))
+        if vorhersage:
+            befehle.append(("VORHERSAGE 1", lies_vorhersagestart, "Vorhersage nicht gestartet"))
         if fortsetzen is not None:
             befehle.append(("LADEN", b"GELADEN", "Kein gesicherter Stand geladen"))
         befehle.append((f"KOERPER {intervall_ms}", b"KOERPER,an", "Körpermodus nicht gestartet"))
-        klassen = None
+        klassen = konstanten = None
         for befehl, bestaetigung, fehler in befehle:
             port.write(befehl.encode("ascii") + b"\n")
             erhalten = antwort(port, frist=3.0)
             if bestaetigung is None:
                 klassen = lies_pinklassen(erhalten, b"ERKUNDUNG,ok")
                 if klassen is None:
+                    raise ValueError(f"{fehler}, erhalten {erhalten!r}.")
+            elif callable(bestaetigung):
+                konstanten = bestaetigung(erhalten)
+                if konstanten is None:
                     raise ValueError(f"{fehler}, erhalten {erhalten!r}.")
             elif erhalten != bestaetigung:
                 raise ValueError(f"{fehler}, erhalten {erhalten!r}.")
@@ -288,6 +329,8 @@ def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=
         # Nur mit Erkundung, damit die JSON älterer Versuchsaufbauten Feld für Feld gleich bleibt.
         if erkundung is not None:
             meta["erkundung"] = dict(zip(ERKUNDUNG_FELDER, erkundung), pins={str(p): k for p, k in klassen.items()})
+        if vorhersage:
+            meta["vorhersage"] = konstanten
         with ziel.with_suffix(".json").open("x", encoding="utf-8") as datei:
             json.dump(meta, datei, ensure_ascii=False, indent=1)
         with ziel.open("x", encoding="utf-8", newline="") as datei, ExitStack() as nebendateien:
@@ -444,7 +487,48 @@ def pruefen(pfad):
         if (int(s.sofort), int(s.vorwarnung)) != (w["sofort"], w["vorwarnung"]):
             raise ValueError(f"Zeile {nummer}: Entscheidung weicht von Python ab.")
     erkundung_pruefen(pfad, meta, werte)
+    vorhersage_pruefen(pfad, meta, werte)
     return meta, werte
+
+
+def vorhersage_pruefen(pfad, meta, werte):
+    """Jede Vorhersagezeile des Geräts mit selbstvorhersage.py nachrechnen, aus Temperatur und Last der
+    Körperzeilen. Liefert None ohne Vorhersage, sonst (Zeilen, davon gleich, größte Abweichung in mg,
+    Strecken mit Überraschung). Zahlen dürfen um VORHERSAGE_TOLERANZ_MG abweichen, weil Gerät und Rechner
+    nicht jede Rundung gleich machen müssen; ob er überrascht ist, muss stimmen."""
+    geraet = nebendatei(pfad, ".vorhersage.csv", VORHERSAGE_KOPF)
+    konstanten = meta.get("vorhersage")
+    if konstanten is None:
+        if geraet:
+            raise ValueError(f"{pfad.stem}.vorhersage.csv gibt es, aber die JSON nennt keine Vorhersage.")
+        return None
+    import selbstvorhersage  # braucht numpy, das der Aufnahme mit dem Python von PlatformIO fehlt
+    if tuple(konstanten.get(f) for f in VORHERSAGE_FELDER) != selbstvorhersage.KONSTANTEN:
+        raise ValueError(f"Die Konstanten des Geräts {konstanten} passen nicht zu selbstvorhersage.py "
+                         f"{selbstvorhersage.KONSTANTEN}.")
+    modell, soll = selbstvorhersage.Selbstvorhersage(), []
+    for w in werte:
+        z = selbstvorhersage.zeile(w["takt"], modell.takt(w["temp_dc"], w["reiz"] & 1))
+        if z is not None:
+            soll.append(z)
+    if len(soll) != len(geraet):
+        raise ValueError(f"{pfad.stem}.vorhersage.csv hat {len(geraet)} Zeilen, erwartet sind {len(soll)}.")
+    gleich = groesste = 0
+    for nummer, (a, b) in enumerate(zip(geraet, soll), start=2):
+        if a == b:
+            gleich += 1
+            continue
+        fa, fb = a.split(","), b.split(",")
+        if fa[1] != fb[1] or fa[7] != fb[7] or any((x == "-") != (y == "-") for x, y in zip(fa[2:7], fb[2:7])):
+            raise ValueError(f"{pfad.stem}.vorhersage.csv, Zeile {nummer}: weicht von selbstvorhersage.py ab "
+                             f"({a} statt {b}).")
+        abstand = max(abs(int(x) - int(y)) for x, y in zip(fa[2:7], fb[2:7]) if x != "-")
+        if abstand > VORHERSAGE_TOLERANZ_MG:
+            raise ValueError(f"{pfad.stem}.vorhersage.csv, Zeile {nummer}: weicht um {abstand} mg von "
+                             f"selbstvorhersage.py ab ({a} statt {b}).")
+        groesste = max(groesste, abstand)
+    strecken = selbstvorhersage.ereignisse([z.endswith(",1") for z in soll])
+    return len(soll), gleich, groesste, strecken
 
 
 def nebendatei(pfad, endung, kopf):
@@ -599,6 +683,9 @@ def main():
                         "kühlt, wenn er über seine letzten FENSTER Versuche sicher um mehr als SCHWELLE Zehntelgrad "
                         "kühlt. Mit Kühler regelt der Knoten selbst und prüft nach je PRUEFE Takten nach. SAAT "
                         "bestimmt die zufällige Reihenfolge")
+    a.add_argument("--vorhersage", action="store_true",
+                   help="Selbstvorhersage: Der Knoten sagt seine Temperatur 10 und 60 Takte voraus, lernt dabei und "
+                        "meldet, wenn er sich verschätzt. Beginnt bei null")
     k = sub.add_parser("pruefen", help="Einstufungen und Entscheidungen nachrechnen")
     k.add_argument("datei", type=Path)
     q = sub.add_parser("pins", help="Nachsehen, was an den erlaubten Pins hängt, ohne einen zu treiben")
@@ -627,7 +714,7 @@ def main():
                                    tuple(arg.last) if arg.last else None, arg.blick,
                                    tuple(arg.leck) if arg.leck else None, tuple(arg.bremse) if arg.bremse else None,
                                    arg.fortsetzen, arg.sichern_alle, melder,
-                                   tuple(arg.erkundung) if arg.erkundung else None)
+                                   tuple(arg.erkundung) if arg.erkundung else None, arg.vorhersage)
             print(f"{anzahl} Takte aufgezeichnet in {arg.datei}.")
         elif arg.aktion == "pruefen":
             meta, werte = pruefen(arg.datei)
@@ -637,6 +724,12 @@ def main():
             if soll is not None:
                 print(erkundung_bericht(meta, soll))
                 print("Alle Pin- und Versuchszeilen stimmen mit selbsterkundung.py überein.")
+            v = vorhersage_pruefen(arg.datei, meta, werte)
+            if v is not None:
+                zeilen, gleich, groesste, strecken = v
+                print(f"Vorhersage: {zeilen} Zeilen, {gleich} gleich wie selbstvorhersage.py, größte Abweichung "
+                      f"{groesste} mg (erlaubt {VORHERSAGE_TOLERANZ_MG}). Überrascht in {len(strecken)} Strecken"
+                      + (": " + ", ".join(f"Takt {b} ({l})" for b, l in strecken[:20]) if strecken else "") + ".")
         elif arg.aktion == "pins":
             try:
                 import serial

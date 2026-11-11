@@ -4,6 +4,7 @@
 #include "Knoten.h"
 #include "Koerper.h"
 #include "Reize.h"
+#include "Vorhersage.h"
 #include <string.h>
 #ifdef ARDUINO_ARCH_ESP32
 #include <Preferences.h>
@@ -47,6 +48,16 @@ const uint32_t maxTemp = 100000;  // Zehntelgrad, nur Plausibilitätsgrenze der 
 Grenzen grenzen = {};
 bool grenzenGesetzt = false;
 bool koerperAn = false;
+// Selbstvorhersage der Temperatur, an mit VORHERSAGE 1. Ihr Stand überlebt STOP, nicht NEUER_LAUF.
+Selbstvorhersage vorhersage;
+#ifdef ARDUINO_ARCH_ESP32
+// Fahrtmodus: Der Knoten startet nach dem Einschalten selbst, schreibt jeden Takt in seinen Flash und
+// behält die Vorhersage über einen Stromausfall. An mit FAHRT 1, die Beschreibung steht weiter unten.
+#include "Fahrt.h"
+#include <LittleFS.h>
+bool fahrtAn = false;
+void fahrtTakt(bool gueltig, int32_t temp, unsigned reiz, Zustand zustand, const Entscheidung &entscheidung);
+#endif
 
 // Liest eine Dezimalzahl ohne Vorzeichen und rückt den Zeiger vor.
 bool zahl(const char *&text, uint32_t &wert) {
@@ -291,6 +302,7 @@ unsigned reize() {
 void ruhe() {
     koerperAn = false;
 #ifdef ARDUINO_ARCH_ESP32
+    fahrtAn = false;
     lastAnMs = 0;
     leck = Leck();
     leckFrei();
@@ -315,6 +327,11 @@ bool koerperTakt(bool tempGueltig, int32_t temp, uint32_t heap, uint32_t luecke)
     Entscheidung entscheidung;
     if (!knoten.schritt(takt, zustand, entscheidung)) return false;
     frischGeladen = false;
+    const unsigned reiz = reize();  // einmal lesen: Die Last schaltet auf dem anderen Kern
+    // Die Vorhersagezeile kommt vor der Körperzeile, damit eine Aufnahme, die nach n Körperzeilen endet,
+    // auch die Vorhersage des letzten Takts hat.
+    vorhersage.takt(takt, tempGueltig, temp, reiz & 1u);
+    if (*vorhersage.zeile()) Serial.println(vorhersage.zeile());
     Serial.print("K,");
     Serial.print(takt);
     Serial.print(',');
@@ -327,10 +344,13 @@ bool koerperTakt(bool tempGueltig, int32_t temp, uint32_t heap, uint32_t luecke)
     Serial.print(',');
     Serial.print(luecke);
     Serial.print(',');
-    Serial.print(reize());
+    Serial.print(reiz);
     Serial.println("");
 #if defined(ARDUINO_ARCH_ESP32) && defined(ALEX_RGB_PIN)
     if (entscheidung.warnung) blitze(zustand); else zeigeZustand(zustand);
+#endif
+#ifdef ARDUINO_ARCH_ESP32
+    if (fahrtAn) fahrtTakt(tempGueltig, temp, reiz, zustand, entscheidung);
 #endif
     // Still sichern. Schlägt es fehl, folgt FEHLER, und die Aufnahme bricht sichtbar ab.
     return !sichernAlle || takt % sichernAlle || lernstand(true, false);
@@ -426,12 +446,156 @@ bool lernstand(bool speichern, bool melden) {
     return ok;
 }
 
+#ifdef ARDUINO_ARCH_ESP32
+// Fahrtmodus. Sätze und Stand liegen im LittleFS der Partition "spiffs". Alle Fahrtsatz::block Takte
+// kommen erst die Sätze ans Ende von /fahrt.log, dann der Stand der Vorhersage nach /stand.bin (über
+// /stand.neu, damit ein Stromausfall mitten im Schreiben den alten Stand lässt). Die Warntabelle des
+// Knotens wird unterwegs nicht gesichert, sie beginnt nach jedem Einschalten neu.
+bool verarbeiteZeile();
+const char *const fahrtLog = "/fahrt.log";
+const char *const fahrtStand = "/stand.bin";
+const char *const fahrtNeu = "/stand.neu";
+const uint32_t fahrtMagie = 0x52484146;  // "FAHR"
+const uint32_t fahrtReserve = 65536;     // so viel bleibt im Dateisystem frei, dann endet das Protokoll
+struct FahrtKopf {
+    uint32_t magie, version, groesse, takt, summe;
+};
+uint8_t fahrtPuffer[Fahrtsatz::block * Fahrtsatz::bytes];
+uint8_t fahrtStandPuffer[sizeof(Selbstvorhersage)];
+unsigned fahrtGepuffert = 0;
+uint32_t fahrtTaktNr = 0;
+bool fahrtErster = false, fahrtBeiNull = false, fahrtVoll = false, fahrtBereit = false;
+
+uint32_t fahrtSumme(const uint8_t *p, size_t n, uint32_t s = 0) {
+    while (n--) s = s * 31u + *p++;
+    return s;
+}
+
+bool fahrtDateisystem() {
+    if (!fahrtBereit) fahrtBereit = LittleFS.begin(true);
+    return fahrtBereit;
+}
+
+size_t fahrtLogBytes() {
+    if (!LittleFS.exists(fahrtLog)) return 0;
+    File f = LittleFS.open(fahrtLog, FILE_READ);
+    const size_t n = f ? f.size() : 0;
+    f.close();
+    return n;
+}
+
+void fahrtSichere() {
+    if (!fahrtVoll) {
+        bool ok = LittleFS.totalBytes() - LittleFS.usedBytes() > fahrtReserve;
+        if (ok) {
+            File f = LittleFS.open(fahrtLog, FILE_APPEND);
+            ok = f && f.write(fahrtPuffer, sizeof(fahrtPuffer)) == sizeof(fahrtPuffer);
+            f.close();
+        }
+        fahrtVoll = !ok;
+    }
+    vorhersage.exportiere(fahrtStandPuffer);
+    const FahrtKopf kopf = {fahrtMagie, Selbstvorhersage::standVersion, static_cast<uint32_t>(sizeof(fahrtStandPuffer)),
+                            fahrtTaktNr, fahrtSumme(fahrtStandPuffer, sizeof(fahrtStandPuffer))};
+    File f = LittleFS.open(fahrtNeu, FILE_WRITE);
+    const bool ok = f && f.write(reinterpret_cast<const uint8_t *>(&kopf), sizeof(kopf)) == sizeof(kopf)
+                    && f.write(fahrtStandPuffer, sizeof(fahrtStandPuffer)) == sizeof(fahrtStandPuffer);
+    f.close();
+    if (ok) LittleFS.rename(fahrtNeu, fahrtStand);
+}
+
+bool fahrtLade() {
+    if (!LittleFS.exists(fahrtStand)) return false;
+    File f = LittleFS.open(fahrtStand, FILE_READ);
+    FahrtKopf kopf = {};
+    const bool gelesen = f && f.size() == sizeof(kopf) + sizeof(fahrtStandPuffer)
+                         && f.read(reinterpret_cast<uint8_t *>(&kopf), sizeof(kopf)) == sizeof(kopf)
+                         && f.read(fahrtStandPuffer, sizeof(fahrtStandPuffer)) == sizeof(fahrtStandPuffer);
+    f.close();
+    if (!gelesen || kopf.magie != fahrtMagie || kopf.version != Selbstvorhersage::standVersion
+        || kopf.groesse != sizeof(fahrtStandPuffer)
+        || kopf.summe != fahrtSumme(fahrtStandPuffer, sizeof(fahrtStandPuffer))) return false;
+    if (!vorhersage.importiere(fahrtStandPuffer)) return false;
+    fahrtTaktNr = kopf.takt;
+    return true;
+}
+
+void fahrtTakt(bool gueltig, int32_t temp, unsigned reiz, Zustand zustand, const Entscheidung &entscheidung) {
+    ++fahrtTaktNr;
+    Fahrtsatz::packe(fahrtPuffer + fahrtGepuffert * Fahrtsatz::bytes, fahrtTaktNr, gueltig, temp, reiz & 1u,
+                     vorhersage.ueberrascht(), entscheidung.warnung, entscheidung.sofort, zustand, fahrtErster,
+                     static_cast<unsigned>(esp_reset_reason()), fahrtBeiNull, vorhersage.vKurz(), vorhersage.vLang(),
+                     vorhersage.hatFehler(), vorhersage.mittel(), vorhersage.grenze());
+    fahrtErster = false;
+    if (++fahrtGepuffert == Fahrtsatz::block) {
+        fahrtSichere();
+        fahrtGepuffert = 0;
+    }
+#ifdef ALEX_RGB_PIN
+    // Das Gesicht unterwegs: blau, wenn es kälter ist als erwartet, orange, wenn wärmer. Sonst schwach
+    // grün, im Anlauf schwach weiß, mit vollem Protokoll schwach violett.
+    blitzAn = false;
+    if (vorhersage.ueberrascht()) {
+        const bool waermer = vorhersage.mittel() > 0.0f;
+        neopixelWrite(ALEX_RGB_PIN, waermer ? 40 : 0, waermer ? 10 : 0, waermer ? 0 : 40);
+    } else if (!vorhersage.reif()) {
+        neopixelWrite(ALEX_RGB_PIN, 3, 3, 3);
+    } else {
+        neopixelWrite(ALEX_RGB_PIN, fahrtVoll ? 4 : 0, fahrtVoll ? 0 : 4, fahrtVoll ? 4 : 0);
+    }
+    eigeneArbeit = true;
+#endif
+}
+
+bool fahrtGewollt(bool setzen = false, bool wert = false) {
+    Preferences nvs;
+    if (!nvs.begin("alex-lernlabor", false)) return false;
+    bool an = nvs.isKey("fahrt") && nvs.getUChar("fahrt", 0) == 1;
+    if (setzen) an = nvs.putUChar("fahrt", wert ? 1 : 0) == 1 && wert;
+    nvs.end();
+    return an;
+}
+
+bool fuehre(const char *text) {
+    strncpy(zeile, text, sizeof(zeile) - 1);
+    zeile[sizeof(zeile) - 1] = '\0';
+    return verarbeiteZeile();
+}
+
+// Nach dem Einschalten: Ist der Fahrtmodus gewollt, beginnt der Knoten selbst, mit festen Einstellungen.
+void fahrtStart() {
+    if (!fahrtGewollt()) return;
+    if (!fahrtDateisystem()) {
+        Serial.println("FAHRT,fehler");
+        return;
+    }
+    fahrtBeiNull = !fahrtLade();
+    if (fahrtBeiNull) {
+        vorhersage.starte();
+        fahrtTaktNr = fahrtLogBytes() / Fahrtsatz::bytes;
+    }
+    fahrtErster = true;
+    fahrtGepuffert = 0;
+    fahrtVoll = false;
+    if (!(fuehre("GRENZEN 380 390 65536 16384 20000 200000") && fuehre("BLICK 60") && fuehre("LAST 240 240 20261110")
+          && fuehre("KOERPER 1000"))) {
+        Serial.println("FAHRT,fehler");
+        return;
+    }
+    fahrtAn = true;
+    Serial.print("FAHRT,laeuft,");
+    Serial.print(fahrtTaktNr);
+    Serial.println(fahrtBeiNull ? ",null" : ",geladen");
+}
+#endif
+
 bool verarbeiteZeile() {
     const char *rest = nullptr;
     if (strcmp(zeile, "SICHERN") == 0) return lernstand(true);
     if (strcmp(zeile, "LADEN") == 0) return lernstand(false);
     if (strcmp(zeile, "NEUER_LAUF") == 0) {
         knoten.neuerLauf();
+        vorhersage.beende();
         sichernAlle = 0;
         frischGeladen = false;
         ruhe();
@@ -459,6 +623,88 @@ bool verarbeiteZeile() {
         uint32_t takte;
         if (koerperAn || !felder(rest, &takte, 1) || !knoten.setzeBlick(takte)) return false;
         Serial.println("BLICK,ok");
+        return true;
+    }
+#ifdef ARDUINO_ARCH_ESP32
+    if (befehl("FAHRT", rest)) {
+        // 1 merkt den Fahrtmodus und startet neu, damit er wie nach dem Einschalten beginnt. 0 beendet ihn.
+        uint32_t an;
+        if (!felder(rest, &an, 1) || an > 1) return false;
+        if (fahrtGewollt(true, an == 1) != (an == 1)) return false;
+        if (!an) {
+            ruhe();
+            Serial.println("FAHRT,aus");
+            return true;
+        }
+        Serial.println("FAHRT,an");
+        Serial.flush();
+        delay(100);
+        ESP.restart();
+        return true;
+    }
+    if (strcmp(zeile, "FAHRTSTAND") == 0) {
+        // gewollt, Bytes im Protokoll, freie Bytes, Takt der Fahrt, Protokoll voll
+        if (!fahrtDateisystem()) return false;
+        char text[96];
+        snprintf(text, sizeof(text), "FAHRT,%d,%lu,%lu,%lu,%d", fahrtGewollt() ? 1 : 0,
+                 static_cast<unsigned long>(fahrtLogBytes()),
+                 static_cast<unsigned long>(LittleFS.totalBytes() - LittleFS.usedBytes()),
+                 static_cast<unsigned long>(fahrtTaktNr), fahrtVoll ? 1 : 0);
+        Serial.println(text);
+        return true;
+    }
+    if (strcmp(zeile, "FAHRTLOG") == 0) {
+        // Das ganze Protokoll als Hexzeilen zu je 32 Byte, davor die Länge, danach die Prüfsumme.
+        if (koerperAn || !fahrtDateisystem()) return false;
+        const size_t n = fahrtLogBytes();
+        Serial.print("FAHRTLOG,");
+        Serial.println(static_cast<unsigned long>(n));
+        uint32_t summe = 0;
+        if (n) {
+            File f = LittleFS.open(fahrtLog, FILE_READ);
+            uint8_t stueck[32];
+            char text[65];
+            for (size_t gelesen = 0; f && gelesen < n;) {
+                const size_t m = f.read(stueck, n - gelesen < sizeof(stueck) ? n - gelesen : sizeof(stueck));
+                if (!m) break;
+                summe = fahrtSumme(stueck, m, summe);
+                for (size_t i = 0; i < m; ++i) snprintf(text + 2 * i, 3, "%02x", stueck[i]);
+                Serial.println(text);
+                gelesen += m;
+            }
+            f.close();
+        }
+        Serial.print("FAHRTLOG,ende,");
+        Serial.println(static_cast<unsigned long>(summe));
+        return true;
+    }
+    if (strcmp(zeile, "FAHRTLEER") == 0) {
+        // Protokoll und Stand löschen. Nur in Ruhe, und erst nach dem Abholen.
+        if (koerperAn || !fahrtDateisystem()) return false;
+        for (const char *pfad : {fahrtLog, fahrtStand, fahrtNeu})
+            if (LittleFS.exists(pfad)) LittleFS.remove(pfad);
+        fahrtTaktNr = 0;
+        Serial.println("FAHRT,leer");
+        return true;
+    }
+#endif
+    if (befehl("VORHERSAGE", rest)) {
+        // 1 beginnt die Selbstvorhersage bei null und meldet ihre Konstanten, 0 beendet sie.
+        uint32_t an;
+        if (koerperAn || !felder(rest, &an, 1) || an > 1) return false;
+        if (!an) {
+            vorhersage.beende();
+            Serial.println("VORHERSAGE,aus");
+            return true;
+        }
+        using namespace vorhersageKonstanten;
+        vorhersage.starte();
+        char text[96];
+        snprintf(text, sizeof(text), "VORHERSAGE,ok,%u,%u,%lu,%lu,%u,%lu,%lu,%lu,%lu", kurz, lang,
+                 static_cast<unsigned long>(vergessenZehntausendstel), static_cast<unsigned long>(deckelSpur),
+                 mittelTakte, static_cast<unsigned long>(normHalbwert), static_cast<unsigned long>(normAb),
+                 static_cast<unsigned long>(anlauf), static_cast<unsigned long>(faktorZehntel));
+        Serial.println(text);
         return true;
     }
     if (befehl("SICHERN_ALLE", rest)) {
@@ -603,6 +849,7 @@ void setup() {
     Serial.println("takt,zustand,sofort,vorwarnung");
 #ifdef ARDUINO_ARCH_ESP32
     meldeNeustart();
+    fahrtStart();
 #endif
 }
 

@@ -1359,3 +1359,297 @@ class KunstkoerperTests(unittest.TestCase):
             self.assertEqual([w["reiz"] for w in werte], kunstkoerper.lastreihe(300, 240, 240, 20261110))
             with self.assertRaises(FileExistsError):
                 kunstkoerper.main([str(ziel), "--takte", "300"])
+
+
+class SelbstvorhersageTests(unittest.TestCase):
+    @staticmethod
+    def koerper_dc(takte, saat, einbruch=None):
+        import kunstkoerper
+        last = kunstkoerper.lastreihe(takte, 240, 240, 20261110)
+        roh = kunstkoerper.temperaturen(last, stufe=0, saat=saat)
+        if einbruch:
+            beginn, tiefe = einbruch
+            x = 0.0
+            for i in range(300):   # 10 s kühlen mit Zeitkonstante 5 s, dann Erholung mit 30 s
+                x += ((-tiefe * 1.157 if i < 10 else 0.0) - x) / (5.0 if i < 10 else 30.0)
+                roh[beginn + i] += x
+        return [round(t) * 10 for t in roh], last
+
+    def test_eingaenge_gleichen_der_auswertung(self):
+        import numpy as np
+        import selbstvorhersage
+        import vorhersage
+        temp, last = self.koerper_dc(600, 5)
+        soll = vorhersage.eingaenge(np.array(temp, float), np.array(last, float))[0]
+        soll[:, 1] /= 10
+        soll[:, 2] /= 10
+        modell = selbstvorhersage.Selbstvorhersage(np.float64)
+        ist = np.array([modell.eingang(t, l) for t, l in zip(temp, last)], float)
+        self.assertLess(np.abs(ist - soll).max(), 1e-9)
+
+    def test_lerner_gleicht_der_matrixform(self):
+        import numpy as np
+        import selbstvorhersage as sv
+        temp, last = self.koerper_dc(2000, 6)
+        modell = sv.Selbstvorhersage(np.float64)
+        xs = [modell.eingang(t, l) for t, l in zip(temp, last)]
+        y = [(t - sv.BEZUG_DC) / 10 for t in temp]
+        for h in sv.HORIZONTE:
+            lerner = sv.Lerner(h, np.float64)
+            w, p = np.zeros(sv.N), np.eye(sv.N) * sv.P_START
+            for t in range(len(xs)):
+                if t >= h:
+                    a = np.array(xs[t - h])
+                    pa = p @ a
+                    k = pa / (sv.VERGESSEN + a @ pa)
+                    w = w + k * (y[t] - a @ w)
+                    p = p - np.outer(k, pa)
+                    p = (p + p.T) / 2 / (sv.VERGESSEN if np.trace(p) / sv.VERGESSEN < sv.DECKEL else 1.0)
+                v, _ = lerner.takt(xs[t], y[t])
+                self.assertAlmostEqual(float(v), float(np.array(xs[t]) @ w), places=7)
+
+    def test_einfache_genauigkeit_reicht(self):
+        import numpy as np
+        import selbstvorhersage as sv
+        temp, last = self.koerper_dc(3000, 7)
+        _, einfach = sv.rechne(temp, last, sv.Selbstvorhersage(np.float32))
+        _, doppelt = sv.rechne(temp, last, sv.Selbstvorhersage(np.float64))
+        for h in sv.HORIZONTE:
+            self.assertLess(max(abs(a[f"v{h}"] - b[f"v{h}"]) for a, b in zip(einfach, doppelt)), 0.01)
+
+    def test_lernt_den_koerper_und_bemerkt_den_einbruch(self):
+        import numpy as np
+        import selbstvorhersage as sv
+        beginn = 9000
+        temp, last = self.koerper_dc(14400, 8, einbruch=(beginn, 3.0))
+        _, zeilen = sv.rechne(temp, last)
+        grad = np.array(temp, float) / 10
+        i = np.arange(sv.ANLAUF, beginn - 60)
+        selbst = np.abs(np.array([z["v60"] for z in zeilen])[i] - grad[i + 60]).mean()
+        self.assertLess(selbst, 0.9 * np.abs(grad[i] - grad[i + 60]).mean())
+        flags = [z["ueberrascht"] for z in zeilen]
+        self.assertFalse(any(flags[:sv.ANLAUF]))
+        self.assertLessEqual(len(sv.ereignisse(flags[:beginn])), 2)
+        self.assertFalse(any(flags[beginn - 600:beginn]))
+        self.assertTrue(any(flags[beginn:beginn + 30]))
+        self.assertFalse(any(flags[beginn + 300:beginn + 900]))
+        # Das Normalmaß lernt nicht, solange er überrascht ist.
+        vor = zeilen[beginn - 1]["grenze"]
+        erster = beginn + flags[beginn:].index(True)
+        self.assertAlmostEqual(zeilen[erster + 1]["grenze"], zeilen[erster]["grenze"], places=6)
+        self.assertLess(abs(zeilen[beginn + 300]["grenze"] - vor), 0.1)
+
+    def test_deckel_haelt_in_langer_ruhe(self):
+        import numpy as np
+        import selbstvorhersage as sv
+        modell = sv.Selbstvorhersage()
+        zufall = np.random.default_rng(3)
+        for _ in range(30000):
+            modell.takt(370 + 10 * int(zufall.integers(0, 2)), 0)
+        for lerner in modell.lerner:
+            self.assertLessEqual(lerner.spur(), sv.DECKEL * 1.001)
+            self.assertTrue(all(np.isfinite(float(g)) for g in lerner.w))
+
+    def test_in_zwei_teilen_wie_am_stueck(self):
+        import selbstvorhersage as sv
+        temp, last = self.koerper_dc(1500, 9)
+        _, ganz = sv.rechne(temp, last)
+        modell, erster = sv.rechne(temp[:700], last[:700])
+        _, zweiter = sv.rechne(temp[700:], last[700:], modell)
+        self.assertEqual(ganz, erster + zweiter)
+
+    HARNISCH = r"""
+#include <cstdio>
+#include "Vorhersage.h"
+int main() {
+    static Selbstvorhersage v;
+    v.takt(1, true, 370, false);
+    if (*v.zeile() || v.aktiv()) return 1;   // ohne Start keine Zeile
+    v.starte();
+    long t = 0;
+    int temp, last;
+    while (std::scanf("%d %d", &temp, &last) == 2) {
+        v.takt(++t, temp >= 0, temp, last);
+        if (*v.zeile()) std::printf("%s\n", v.zeile());
+    }
+}
+"""
+
+    @unittest.skipUnless(shutil.which("c++"), "Hostvergleich benötigt einen C++11-Compiler")
+    def test_firmware_rechnet_wie_die_referenz(self):
+        import random
+        import selbstvorhersage as sv
+        temp, last = self.koerper_dc(12000, 11, einbruch=(9000, 3.0))
+        zufall = random.Random(1)
+        temp = [None if t < 3 or zufall.random() < 0.002 else g for t, g in enumerate(temp)]
+        modell, soll = sv.Selbstvorhersage(), []
+        for takt, (g, l) in enumerate(zip(temp, last), 1):
+            z = sv.zeile(takt, modell.takt(g, l))
+            if z is not None:
+                soll.append(z)
+        with tempfile.TemporaryDirectory() as ort:
+            datei, exe = Path(ort, "vorhersage.cpp"), Path(ort, "vorhersage")
+            datei.write_text(self.HARNISCH)
+            subprocess.run(["c++", "-std=c++11", "-Wall", "-Wextra", "-Werror", "-pedantic", "-I",
+                            str(ROOT / "esp32/Lernknoten"), str(datei), "-o", str(exe)], check=True)
+            eingabe = "".join(f"{-1 if g is None else g} {l}\n" for g, l in zip(temp, last))
+            ist = subprocess.run([str(exe)], input=eingabe, capture_output=True, text=True, timeout=60,
+                                 check=True).stdout.splitlines()
+        self.assertEqual(len(soll), 12000 - 3)
+        self.assertEqual(soll[0], "VORHERSAGE,4,37000,37000,-,-,-,0")
+        self.assertTrue(any(z.endswith(",1") for z in soll[8990:9040]))
+        self.assertEqual(ist, soll)
+
+    @unittest.skipUnless(shutil.which("c++"), "Hostvergleich benötigt einen C++11-Compiler")
+    def test_sketch_startet_meldet_und_beendet_die_vorhersage(self):
+        import selbstvorhersage as sv
+        temp, _ = self.koerper_dc(400, 12)
+        modell = sv.Selbstvorhersage()
+        soll = [sv.zeile(t, modell.takt(g, 0)) for t, g in enumerate(temp, 1)]
+        befehle = ["NEUER_LAUF", "GRENZEN 380 390 65536 16384 20000 200000", "VORHERSAGE 2", "VORHERSAGE 1"]
+        befehle += [f"MESSWERT {g} 300000 20" for g in temp]
+        befehle += ["NEUER_LAUF", "GRENZEN 380 390 65536 16384 20000 200000", "MESSWERT 370 300000 20",
+                    "VORHERSAGE 0"]
+        with tempfile.TemporaryDirectory() as ort:
+            exe = Path(ort, "sketch")
+            subprocess.run(["c++", "-std=c++11", "-Wall", "-Wextra", "-Werror", "-pedantic", "-DALEX_STARTWERT",
+                            str(ROOT / "esp32/host.cpp"), "-o", str(exe)], check=True)
+            aus = subprocess.run([str(exe)], input="\n".join(befehle) + "\n", capture_output=True, text=True,
+                                 timeout=60, check=True).stdout.splitlines()
+        self.assertEqual(aus[1:5], ["BEREIT,STARTWERT", "GRENZEN,ok", "FEHLER",
+                                    "VORHERSAGE,ok," + ",".join(map(str, sv.KONSTANTEN))])
+        lauf = aus[5:5 + 2 * len(temp)]
+        self.assertEqual(lauf[0::2], soll)                     # die Vorhersagezeile kommt vor der Körperzeile
+        self.assertTrue(all(z.startswith("K,") for z in lauf[1::2]))
+        ende = aus[5 + 2 * len(temp):]
+        self.assertEqual(ende[:2], ["BEREIT,STARTWERT", "GRENZEN,ok"])
+        self.assertTrue(ende[2].startswith("K,1,") and ende[3] == "VORHERSAGE,aus" and len(ende) == 4, ende)
+
+    def test_aufnahme_mit_vorhersage_und_pruefung(self):
+        import selbstvorhersage as sv
+        self.assertEqual(koerper.VORHERSAGE_KOPF, sv.KOPF)
+        self.assertEqual(len(koerper.VORHERSAGE_FELDER), len(sv.KONSTANTEN))
+        g = koerper.Grenzen(380, 390, 65536, 16384, 20000, 200000)
+        temp, last = self.koerper_dc(300, 13)
+        temp[0] = temp[40] = None
+        roh = [(t, 300000, 20) for t in temp]
+        modell, antworten = sv.Selbstvorhersage(), []
+        for k, t, l in zip(KoerperTests.geraetezeilen(roh, g, "startwert", last), temp, last):
+            v = sv.zeile(int(k.split(",")[1]), modell.takt(t, l))
+            antworten += ([v.encode()] if v else []) + [k.encode()]
+        start = b"VORHERSAGE,ok," + ",".join(map(str, sv.KONSTANTEN)).encode()
+        kopf = [b"BEREIT,STARTWERT", b"GRENZEN,ok", b"BLICK,ok", b"LAST,ok"]
+        with tempfile.TemporaryDirectory() as ort:
+            ziel, gesendet = Path(ort, "v.csv"), []
+            port = KoerperTests.port(kopf + [start, b"KOERPER,an"] + antworten, gesendet)
+            self.assertEqual(koerper.aufnehmen(port, "startwert", g, 1000, 300, ziel, (240, 240, 20261110),
+                                               vorhersage=True), 300)
+            self.assertLess(gesendet.index(b"VORHERSAGE 1\n"), gesendet.index(b"KOERPER 1000\n"))
+            meta, werte = koerper.pruefen(ziel)
+            self.assertEqual(tuple(meta["vorhersage"].values()), sv.KONSTANTEN)
+            self.assertEqual(koerper.vorhersage_pruefen(ziel, meta, werte)[:3], (299, 299, 0))
+            neben = Path(ort, "v.vorhersage.csv")
+            original = neben.read_text()
+            zeilen = original.splitlines()
+            felder = zeilen[200].split(",")
+
+            def mit(feld, wert):
+                neu = felder[:feld] + [str(wert)] + felder[feld + 1:]
+                neben.write_text("\n".join(zeilen[:200] + [",".join(neu)] + zeilen[201:]) + "\n")
+
+            mit(1, int(felder[1]) + 2)
+            self.assertEqual(koerper.vorhersage_pruefen(ziel, meta, werte)[:3], (299, 298, 2))
+            for feld, wert in ((1, int(felder[1]) + 3), (6, 1 - int(felder[6])), (3, "-")):
+                mit(feld, wert)
+                with self.assertRaises(ValueError):
+                    koerper.vorhersage_pruefen(ziel, meta, werte)
+            neben.write_text("\n".join(zeilen[:-1]) + "\n")
+            with self.assertRaises(ValueError):
+                koerper.vorhersage_pruefen(ziel, meta, werte)
+            neben.write_text(original)
+            falsch = dict(meta, vorhersage=dict(meta["vorhersage"], faktor_e1=35))
+            with self.assertRaises(ValueError):
+                koerper.vorhersage_pruefen(ziel, falsch, werte)
+            with self.assertRaises(ValueError):
+                koerper.vorhersage_pruefen(ziel, {k: v for k, v in meta.items() if k != "vorhersage"}, werte)
+            # Ohne das Gerät, das die Vorhersage bestätigt, beginnt keine Aufnahme.
+            with self.assertRaises(ValueError):
+                koerper.aufnehmen(KoerperTests.port(kopf + [b"FEHLER"], []), "startwert", g, 1000, 1,
+                                  Path(ort, "w.csv"), (240, 240, 20261110), vorhersage=True)
+        self.assertIsNone(koerper.lies_vorhersagestart(b"VORHERSAGE,ok,10,60"))
+        with self.assertRaises(ValueError):
+            koerper.lies_vorhersagezeile(b"VORHERSAGE,5,37000,37000,-,12,-,0")
+
+
+class FahrtTests(unittest.TestCase):
+    QUELLE = r"""
+#include <cstdio>
+#include "Vorhersage.h"
+#include "Fahrt.h"
+int main() {
+    static Selbstvorhersage a, b;
+    static uint8_t stand[sizeof(Selbstvorhersage)];
+    a.starte();
+    uint8_t satz[Fahrtsatz::bytes];
+    long t = 0;
+    int temp, last;
+    while (std::scanf("%d %d", &temp, &last) == 2) {
+        ++t;
+        if (t == 500) {              // wie nach einem Stromausfall: Stand sichern, in ein anderes Objekt laden
+            a.exportiere(stand);
+            if (!b.importiere(stand)) return 1;
+        }
+        Selbstvorhersage &v = t < 500 ? a : b;
+        v.takt(t, temp >= 0, temp, last);
+        Fahrtsatz::packe(satz, t, temp >= 0, temp, last, v.ueberrascht(), t % 7 == 0, t % 11 == 0, t % 3, t == 500,
+                         t == 500 ? 1 : 9, t == 500, v.vKurz(), v.vLang(), v.hatFehler(), v.mittel(), v.grenze());
+        for (unsigned i = 0; i < Fahrtsatz::bytes; ++i) std::printf("%02x", satz[i]);
+        std::printf("\n");
+    }
+    stand[0] ^= 0xFF;                // ein kaputter Stand wird abgelehnt und beginnt bei null
+    static uint8_t leer[sizeof(Selbstvorhersage)];
+    std::printf("%d\n", b.importiere(leer) ? 1 : 0);
+}
+"""
+
+    @unittest.skipUnless(shutil.which("c++"), "Hostvergleich benötigt einen C++11-Compiler")
+    def test_fahrtsatz_und_stand_ueber_einen_stromausfall(self):
+        import numpy as np
+        import fahrt
+        import selbstvorhersage as sv
+        temp, last = SelbstvorhersageTests.koerper_dc(3000, 21, einbruch=(2400, 3.0))
+        temp[10] = None
+        with tempfile.TemporaryDirectory() as ort:
+            datei, exe = Path(ort, "fahrt.cpp"), Path(ort, "fahrt")
+            datei.write_text(self.QUELLE)
+            subprocess.run(["c++", "-std=c++11", "-Wall", "-Wextra", "-Werror", "-pedantic", "-I",
+                            str(ROOT / "esp32/Lernknoten"), str(datei), "-o", str(exe)], check=True)
+            eingabe = "".join(f"{-1 if g is None else g} {l}\n" for g, l in zip(temp, last))
+            aus = subprocess.run([str(exe)], input=eingabe, capture_output=True, text=True, timeout=60,
+                                 check=True).stdout.split()
+        self.assertEqual(aus[-1], "0")
+        daten = bytes.fromhex("".join(aus[:-1]))
+        liste = list(fahrt.saetze(daten))
+        self.assertEqual(len(liste), 3000)
+        modell = sv.Selbstvorhersage()
+        f = np.float32
+        for takt, (s, g, l) in enumerate(zip(liste, temp, last), 1):
+            z = modell.takt(g, l)
+            self.assertEqual((s["takt"], s["temp_dc"], s["last"]), (takt, g, l))
+            self.assertEqual((s["vorwarnung"], s["sofort"], s["zustand"]),
+                             (int(takt % 7 == 0), int(takt % 11 == 0), fahrt.ZUSTAENDE[takt % 3]))
+            self.assertEqual((s["neustart"], s["grund"], s["bei_null"]), (1, 1, 1) if takt == 500 else (0, 0, 0))
+            self.assertEqual(s["ueberrascht"], int(z["ueberrascht"]))
+            # Hundertstelgrad: die Referenz in Tausendsteln, auf eine Stelle weniger gerundet, darf um 1 abweichen.
+            self.assertLessEqual(abs(s["v10_cg"] - z["felder"][0] / 10), 1)
+            self.assertLessEqual(abs(s["v60_cg"] - z["felder"][1] / 10), 1)
+            if z["felder"][2] == "-":
+                self.assertIsNone(s["mittel_cg"])
+            else:
+                self.assertLessEqual(abs(s["mittel_cg"] - z["felder"][3] / 10), 1)
+                self.assertLessEqual(abs(s["grenze_cg"] - z["felder"][4] / 10), 1)
+        self.assertTrue(any(s["ueberrascht"] for s in liste[2400:2440]))
+        self.assertIn("Neustart vor Satz 500", fahrt.bericht(liste))
+        self.assertEqual(fahrt.summe(b"\x01\x02"), 33)
+        with self.assertRaises(ValueError):
+            list(fahrt.saetze(daten[:-1]))
