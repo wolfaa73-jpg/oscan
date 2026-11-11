@@ -12,3 +12,8 @@ Adresse im Heimnetz. Ein dort oder anderswo genannter Hash dieser Datei gilt fü
 Zum Lauf mit zufälligen Lastdauern vom 10. November liegen hier die Festlegung
 (`vorab-zufallslast-2026-11-10.md`), die Probe am künstlichen Körper und die Auswertung
 (`auswertung-zufallslast-2026-11-10.md`). Die Festlegung wurde vor dem Ende des Laufs veröffentlicht.
+
+Zum Kälteversuch von Hand am 10. November abends liegen hier die Probe am Rechner
+(`probe-kaelte-2026-11-10.md`), die Festlegung (`vorab-kaelte-2026-11-10.md`) und die Auswertung
+(`auswertung-kaelte-2026-11-10.md`), nachzurechnen mit
+`kaelteversuch.py roh/koerper-zufallslast-8h-2026-11-10.csv roh/koerper-kaelte-2026-11-10.csv`.
