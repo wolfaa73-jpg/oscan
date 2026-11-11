@@ -7,6 +7,7 @@
 #include "Vorhersage.h"
 #include "Empfinden.h"
 #include "EmpfindenLed.h"
+#include "EmpfindenFunk.h"
 #include <string.h>
 #ifdef ARDUINO_ARCH_ESP32
 #include <Preferences.h>
@@ -53,12 +54,14 @@ bool koerperAn = false;
 // Selbstvorhersage der Temperatur, an mit VORHERSAGE 1. Ihr Stand überlebt STOP, nicht NEUER_LAUF.
 Selbstvorhersage vorhersage;
 Empfinden empfinden;
+EmpfindenFunk funk;
 #ifdef ARDUINO_ARCH_ESP32
 // Fahrtmodus: Der Knoten startet nach dem Einschalten selbst, schreibt jeden Takt in seinen Flash und
 // behält die Vorhersage über einen Stromausfall. An mit FAHRT 1, die Beschreibung steht weiter unten.
 #include "Fahrt.h"
 #include <LittleFS.h>
 bool fahrtAn = false;
+bool fahrtProtokollVoll();
 void fahrtTakt(bool gueltig, int32_t temp, unsigned reiz, Zustand zustand, const Entscheidung &entscheidung);
 #endif
 
@@ -304,6 +307,8 @@ unsigned reize() {
 // Körpermodus und alle Reize aus, die LED zurück auf bereit.
 void ruhe() {
     koerperAn = false;
+    funk.plan = false;
+    funk.setze(0);
 #ifdef ARDUINO_ARCH_ESP32
     fahrtAn = false;
     lastAnMs = 0;
@@ -330,13 +335,28 @@ bool koerperTakt(bool tempGueltig, int32_t temp, uint32_t heap, uint32_t luecke)
     Entscheidung entscheidung;
     if (!knoten.schritt(takt, zustand, entscheidung)) return false;
     frischGeladen = false;
-    const unsigned reiz = reize();  // einmal lesen: Die Last schaltet auf dem anderen Kern
+    if (!funk.vorTakt(takt)) return false;
+    unsigned reiz = reize();  // einmal lesen: Die Last schaltet auf dem anderen Kern
     // Die Vorhersagezeile kommt vor der Körperzeile, damit eine Aufnahme, die nach n Körperzeilen endet,
     // auch die Vorhersage des letzten Takts hat.
     vorhersage.takt(takt, tempGueltig, temp, reiz & 1u);
     if (*vorhersage.zeile()) Serial.println(vorhersage.zeile());
     empfinden.takt(takt, tempGueltig, temp, vorhersage.hatFehler(), vorhersage.mittel());
     if (*empfinden.zeile()) Serial.println(empfinden.zeile());
+    if (funk.modus) {
+        EmpfindenPaket::Zustand paket;
+        paket.takt = takt;
+        paket.temp = tempGueltig && temp >= -1000 && temp <= 2000 ? static_cast<int16_t>(temp) : -32768;
+        paket.gerade = empfinden.gerade(); paket.woanders = empfinden.woanders();
+        const bool auffaellig = empfinden.gerade() <= -2 || empfinden.gerade() >= 2;
+        paket.bits = (!empfinden.aktiv() || empfinden.anlauf() ? EmpfindenPaket::ANLAUF : 0)
+                   | (auffaellig ? EmpfindenPaket::UEBERRASCHT : 0)
+                   | (zustand == SCHWACH ? EmpfindenPaket::SCHWACH : zustand == AUSFALL ? EmpfindenPaket::AUSFALL : 0);
+#ifdef ARDUINO_ARCH_ESP32
+        if (fahrtProtokollVoll()) paket.bits |= EmpfindenPaket::VOLL;
+#endif
+        reiz |= funk.senden(paket);
+    }
     Serial.print("K,");
     Serial.print(takt);
     Serial.print(',');
@@ -358,7 +378,7 @@ bool koerperTakt(bool tempGueltig, int32_t temp, uint32_t heap, uint32_t luecke)
     if (fahrtAn) fahrtTakt(tempGueltig, temp, reiz, zustand, entscheidung);
 #endif
     // Still sichern. Schlägt es fehl, folgt FEHLER, und die Aufnahme bricht sichtbar ab.
-    return !sichernAlle || takt % sichernAlle || lernstand(true, false);
+    return !(reiz & 32u) && (!sichernAlle || takt % sichernAlle || lernstand(true, false));
 }
 
 #ifdef ARDUINO_ARCH_ESP32
@@ -470,6 +490,7 @@ uint8_t fahrtStandPuffer[sizeof(Selbstvorhersage) + Empfinden::standBytes];
 unsigned fahrtGepuffert = 0;
 uint32_t fahrtTaktNr = 0;
 bool fahrtErster = false, fahrtBeiNull = false, fahrtVoll = false, fahrtBereit = false;
+bool fahrtProtokollVoll() { return fahrtAn && fahrtVoll; }
 
 uint32_t fahrtSumme(const uint8_t *p, size_t n, uint32_t s = 0) {
     while (n--) s = s * 31u + *p++;
@@ -581,6 +602,13 @@ bool fahrtEmpfinden(bool setzen = false, bool wert = false) {
     return ok;
 }
 
+bool fahrtFunk(bool setzen = false, bool wert = false) {
+    Preferences nvs;
+    if (!nvs.begin("alex-lernlabor", false)) return false;
+    const bool ok = setzen ? nvs.putUChar("funk", wert ? 1 : 0) == 1 : nvs.getUChar("funk", 0) == 1;
+    nvs.end(); return ok;
+}
+
 bool fuehre(const char *text) {
     strncpy(zeile, text, sizeof(zeile) - 1);
     zeile[sizeof(zeile) - 1] = '\0';
@@ -611,6 +639,7 @@ void fahrtStart() {
         Serial.println("FAHRT,fehler");
         return;
     }
+    if (fahrtFunk() && !funk.setze(2)) { Serial.println("FAHRT,funkfehler"); ruhe(); return; }
     fahrtAn = true;
     Serial.print("FAHRT,laeuft,");
     Serial.print(fahrtTaktNr);
@@ -666,7 +695,7 @@ bool verarbeiteZeile() {
             Serial.println("FAHRT,aus");
             return true;
         }
-        if (!fahrtEmpfinden(true, empfinden.aktiv())) return false;
+        if (!fahrtEmpfinden(true, empfinden.aktiv()) || !fahrtFunk(true, funk.modus == 2)) return false;
         Serial.println("FAHRT,an");
         Serial.flush();
         delay(100);
@@ -719,6 +748,20 @@ bool verarbeiteZeile() {
         return true;
     }
 #endif
+    if (befehl("FUNK", rest)) {
+        uint32_t modus;
+        if (koerperAn || !felder(rest, &modus, 1) || modus > 2 || (modus && !empfinden.aktiv())) return false;
+        if (!funk.setze(modus)) return false;
+        funk.plan = false;
+        Serial.println("FUNK,ok"); return true;
+    }
+    if (befehl("FUNKPLAN", rest)) {
+        uint32_t an;
+        if (koerperAn || knoten.takt() || !felder(rest, &an, 1) || an > 1 || !empfinden.aktiv()) return false;
+        if (!funk.setze(0)) return false;
+        funk.plan = an;
+        Serial.println("FUNKPLAN,ok"); return true;
+    }
     if (befehl("EMPFINDEN", rest)) {
         uint32_t an;
         if (koerperAn || !felder(rest, &an, 1) || an > 1) return false;

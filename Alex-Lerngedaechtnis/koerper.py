@@ -21,6 +21,7 @@ KOPF_LAST = KOPF[:-1] + ("last",)
 KOPF_ALT = KOPF[:-1]
 # Bits der Spalte reiz, wie reize() im Sketch.
 LAST, LECK, BREMSE = 1, 2, 4
+FUNK_SENDEN, FUNK_BEREIT, FUNK_FEHLER = 8, 16, 32
 MAX_TEMP = 100000  # Zehntelgrad, wie maxTemp im Sketch
 
 
@@ -249,7 +250,7 @@ def lastdauern(saat, an_s, aus_s, anzahl):
 
 
 def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=1, leck=None, bremse=None,
-              fortsetzen=None, sichern_alle=0, melder=None, erkundung=None, vorhersage=False, empfinden=False):
+              fortsetzen=None, sichern_alle=0, melder=None, erkundung=None, vorhersage=False, empfinden=False, funkversuch=False):
     """Körpermodus starten und jede Zeile mitschreiben. Gibt die Zahl der Takte zurück.
 
     last=(an_s, aus_s) lässt Kern 0 in diesem Rhythmus arbeiten. Mit einer Saat als drittem Wert
@@ -277,6 +278,10 @@ def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=
 
     Kommt statt einer Körperzeile etwas anderes, etwa das Startbanner nach einem Neustart,
     hebt <name>.abbruch.txt diese Zeile und alles danach auf, mit dem Grund des Neustarts."""
+    if funkversuch:
+        if takte != 10800 or any(x is not None for x in (last, leck, bremse, erkundung)) or sichern_alle:
+            raise ValueError("Funkversuch: 10800 Takte, keine weiteren Reize oder Zwischensicherungen")
+        empfinden = True
     if empfinden:
         if intervall_ms != 1000 or fortsetzen is not None:
             raise ValueError("Empfinden-Aufnahme braucht 1000 ms und einen frischen Lauf")
@@ -336,6 +341,8 @@ def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=
             befehle.append(("VORHERSAGE 1", lies_vorhersagestart, "Vorhersage nicht gestartet"))
         if empfinden:
             befehle.append(("EMPFINDEN 1", lies_empfindenstart, "Empfinden nicht gestartet"))
+        if funkversuch:
+            befehle.append(("FUNKPLAN 1", b"FUNKPLAN,ok", "Funkplan nicht gestartet"))
         if fortsetzen is not None:
             befehle.append(("LADEN", b"GELADEN", "Kein gesicherter Stand geladen"))
         befehle.append((f"KOERPER {intervall_ms}", b"KOERPER,an", "Körpermodus nicht gestartet"))
@@ -368,6 +375,8 @@ def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=
             meta["vorhersage"] = konstanten
         if empfinden:
             meta["empfinden"] = empfindenkonstanten
+        if funkversuch:
+            meta["funkversuch"] = {"version": 1, "kanal": 6, "takte": 10800}
         with ziel.with_suffix(".json").open("x", encoding="utf-8") as datei:
             json.dump(meta, datei, ensure_ascii=False, indent=1)
         with ziel.open("x", encoding="utf-8", newline="") as datei, ExitStack() as nebendateien:
@@ -747,6 +756,7 @@ def main():
                         "kühlt, wenn er über seine letzten FENSTER Versuche sicher um mehr als SCHWELLE Zehntelgrad "
                         "kühlt. Mit Kühler regelt der Knoten selbst und prüft nach je PRUEFE Takten nach. SAAT "
                         "bestimmt die zufällige Reihenfolge")
+    a.add_argument("--funkversuch", action="store_true", help="Feste Funk-Wärmeprobe: 10800 Takte ohne Last, Leck oder Bremse")
     a.add_argument("--empfinden", action="store_true", help="Beide Empfindungsschichten samt Selbstvorhersage aufzeichnen")
     a.add_argument("--vorhersage", action="store_true",
                    help="Selbstvorhersage: Der Knoten sagt seine Temperatur 10 und 60 Takte voraus, lernt dabei und "
@@ -779,7 +789,7 @@ def main():
                                    tuple(arg.last) if arg.last else None, arg.blick,
                                    tuple(arg.leck) if arg.leck else None, tuple(arg.bremse) if arg.bremse else None,
                                    arg.fortsetzen, arg.sichern_alle, melder,
-                                   tuple(arg.erkundung) if arg.erkundung else None, arg.vorhersage, arg.empfinden)
+                                   tuple(arg.erkundung) if arg.erkundung else None, arg.vorhersage, arg.empfinden, arg.funkversuch)
             print(f"{anzahl} Takte aufgezeichnet in {arg.datei}.")
         elif arg.aktion == "pruefen":
             meta, werte = pruefen(arg.datei)

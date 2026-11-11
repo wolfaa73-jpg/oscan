@@ -135,6 +135,7 @@ def main(argv=None):
         a = sub.add_parser(name)
         a.add_argument("--port", required=True)
         if name == "an":
+            a.add_argument("--funk", action="store_true", help="Empfinden per ESP-NOW senden")
             a.add_argument("--empfinden", action="store_true", help="Empfinden im Fahrtmodus mitführen")
         if name == "holen":
             a.add_argument("ziel", type=Path)
@@ -164,9 +165,12 @@ def main(argv=None):
             for z in ruhig(port):
                 print("Gerät:", z)
             if arg.aktion == "an":
-                if arg.empfinden:
+                if arg.empfinden or arg.funk:
                     port.write(b"EMPFINDEN 1\n")
                     warte(port, b"EMPFINDEN,ok,")
+                if arg.funk:
+                    port.write(b"FUNK 2\n")
+                    warte(port, b"FUNK,ok")
                 port.write(b"FAHRT 1\n")
                 warte(port, b"FAHRT,an")
                 print("Gerät:", warte(port, b"FAHRT,", frist=30.0).decode())

@@ -1,0 +1,152 @@
+{
+  "kuenstlich": true,
+  "zeitkonstante_s": 30,
+  "umgebung": "kunstkoerper.GEMESSEN",
+  "takte_je_lauf": 10800,
+  "laeufe": [
+    {
+      "bereitschaft_wahr_c": 0.0,
+      "senden_zusaetzlich_wahr_c": 0.0,
+      "saat": 1,
+      "bereit_minus_aus": 0.12333333333333485,
+      "senden_minus_bereit": 0.044388888888889255,
+      "aus_nachher_minus_vorher": -0.2603333333333353,
+      "ueberraschung_beim_einschalten": null
+    },
+    {
+      "bereitschaft_wahr_c": 0.0,
+      "senden_zusaetzlich_wahr_c": 0.0,
+      "saat": 2,
+      "bereit_minus_aus": 0.10255555555555418,
+      "senden_minus_bereit": 0.09966666666666413,
+      "aus_nachher_minus_vorher": -0.6033333333333317,
+      "ueberraschung_beim_einschalten": null
+    },
+    {
+      "bereitschaft_wahr_c": 0.0,
+      "senden_zusaetzlich_wahr_c": 0.0,
+      "saat": 3,
+      "bereit_minus_aus": -0.491388888888892,
+      "senden_minus_bereit": 0.1444444444444457,
+      "aus_nachher_minus_vorher": -0.6007777777777719,
+      "ueberraschung_beim_einschalten": null
+    },
+    {
+      "bereitschaft_wahr_c": 0.0,
+      "senden_zusaetzlich_wahr_c": 0.0,
+      "saat": 4,
+      "bereit_minus_aus": -0.2676666666666634,
+      "senden_minus_bereit": -0.08611111111110858,
+      "aus_nachher_minus_vorher": 0.2111111111111157,
+      "ueberraschung_beim_einschalten": null
+    },
+    {
+      "bereitschaft_wahr_c": 0.0,
+      "senden_zusaetzlich_wahr_c": 0.0,
+      "saat": 5,
+      "bereit_minus_aus": -0.11533333333333218,
+      "senden_minus_bereit": -0.168944444444449,
+      "aus_nachher_minus_vorher": 0.7127777777777737,
+      "ueberraschung_beim_einschalten": null
+    },
+    {
+      "bereitschaft_wahr_c": 0.0,
+      "senden_zusaetzlich_wahr_c": 0.0,
+      "saat": 6,
+      "bereit_minus_aus": -0.0812222222222232,
+      "senden_minus_bereit": -0.2999444444444421,
+      "aus_nachher_minus_vorher": 1.3941111111111084,
+      "ueberraschung_beim_einschalten": null
+    },
+    {
+      "bereitschaft_wahr_c": 0.0,
+      "senden_zusaetzlich_wahr_c": 0.0,
+      "saat": 7,
+      "bereit_minus_aus": 0.3079444444444448,
+      "senden_minus_bereit": 0.35894444444444673,
+      "aus_nachher_minus_vorher": -0.018444444444440933,
+      "ueberraschung_beim_einschalten": null
+    },
+    {
+      "bereitschaft_wahr_c": 0.0,
+      "senden_zusaetzlich_wahr_c": 0.0,
+      "saat": 8,
+      "bereit_minus_aus": 0.258555555555553,
+      "senden_minus_bereit": 0.3421111111111159,
+      "aus_nachher_minus_vorher": -0.028666666666666174,
+      "ueberraschung_beim_einschalten": null
+    },
+    {
+      "bereitschaft_wahr_c": 2.0,
+      "senden_zusaetzlich_wahr_c": 0.5,
+      "saat": 1,
+      "bereit_minus_aus": 2.123333333333335,
+      "senden_minus_bereit": 0.5443888888888893,
+      "aus_nachher_minus_vorher": -0.2603333333333353,
+      "ueberraschung_beim_einschalten": null
+    },
+    {
+      "bereitschaft_wahr_c": 2.0,
+      "senden_zusaetzlich_wahr_c": 0.5,
+      "saat": 2,
+      "bereit_minus_aus": 2.102555555555554,
+      "senden_minus_bereit": 0.5996666666666641,
+      "aus_nachher_minus_vorher": -0.6033333333333317,
+      "ueberraschung_beim_einschalten": null
+    },
+    {
+      "bereitschaft_wahr_c": 2.0,
+      "senden_zusaetzlich_wahr_c": 0.5,
+      "saat": 3,
+      "bereit_minus_aus": 1.508611111111108,
+      "senden_minus_bereit": 0.6444444444444457,
+      "aus_nachher_minus_vorher": -0.6007777777777719,
+      "ueberraschung_beim_einschalten": null
+    },
+    {
+      "bereitschaft_wahr_c": 2.0,
+      "senden_zusaetzlich_wahr_c": 0.5,
+      "saat": 4,
+      "bereit_minus_aus": 1.7323333333333366,
+      "senden_minus_bereit": 0.4138888888888914,
+      "aus_nachher_minus_vorher": 0.2111111111111157,
+      "ueberraschung_beim_einschalten": null
+    },
+    {
+      "bereitschaft_wahr_c": 2.0,
+      "senden_zusaetzlich_wahr_c": 0.5,
+      "saat": 5,
+      "bereit_minus_aus": 1.8846666666666678,
+      "senden_minus_bereit": 0.331055555555551,
+      "aus_nachher_minus_vorher": 0.7127777777777737,
+      "ueberraschung_beim_einschalten": null
+    },
+    {
+      "bereitschaft_wahr_c": 2.0,
+      "senden_zusaetzlich_wahr_c": 0.5,
+      "saat": 6,
+      "bereit_minus_aus": 1.9187777777777768,
+      "senden_minus_bereit": 0.20005555555555787,
+      "aus_nachher_minus_vorher": 1.3941111111111084,
+      "ueberraschung_beim_einschalten": null
+    },
+    {
+      "bereitschaft_wahr_c": 2.0,
+      "senden_zusaetzlich_wahr_c": 0.5,
+      "saat": 7,
+      "bereit_minus_aus": 2.307944444444445,
+      "senden_minus_bereit": 0.8589444444444467,
+      "aus_nachher_minus_vorher": -0.018444444444440933,
+      "ueberraschung_beim_einschalten": null
+    },
+    {
+      "bereitschaft_wahr_c": 2.0,
+      "senden_zusaetzlich_wahr_c": 0.5,
+      "saat": 8,
+      "bereit_minus_aus": 2.258555555555553,
+      "senden_minus_bereit": 0.8421111111111159,
+      "aus_nachher_minus_vorher": -0.028666666666666174,
+      "ueberraschung_beim_einschalten": null
+    }
+  ]
+}
