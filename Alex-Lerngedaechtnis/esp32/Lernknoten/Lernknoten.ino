@@ -570,7 +570,7 @@ bool fahrtGewollt(bool setzen = false, bool wert = false) {
 bool fahrtEmpfinden(bool setzen = false, bool wert = false) {
     Preferences nvs;
     if (!nvs.begin("alex-lernlabor", false)) return false;
-    const bool ok = setzen ? nvs.putUChar("empfinden", wert ? 1 : 0) == 1 : nvs.getUChar("empfinden", 0) == 1;
+    const bool ok = setzen ? nvs.putUChar("empfinden", wert ? 1 : 0) == 1 : (nvs.isKey("empfinden") && nvs.getUChar("empfinden", 0) == 1);
     nvs.end();
     return ok;
 }
@@ -719,7 +719,7 @@ bool verarbeiteZeile() {
         if (!an) { empfinden.beende(); Serial.println("EMPFINDEN,aus"); return true; }
         vorhersage.starte();
         empfinden.starte();
-        Serial.println("EMPFINDEN,ok,1,600,86400,3600,1800,600,600,200,500,1500");
+        Serial.println("EMPFINDEN,ok,2,600,3600,3600,1800,0,600,200,100,1500,7200,500");
         return true;
     }
     if (befehl("VORHERSAGE", rest)) {

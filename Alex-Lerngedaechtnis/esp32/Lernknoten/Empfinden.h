@@ -12,8 +12,9 @@ struct Empfinden {
     static const unsigned standBytes = 60;
     static const uint32_t magie = 0x31464d45;
     static float anteilM() { return 1.0f - static_cast<float>(0.9988454217380301); }
-    static float anteilL() { return 1.0f - static_cast<float>(0.9999919774953673); }
+    static float anteilL() { return 1.0f - static_cast<float>(0.9998074776513175); }
     static float anteilG() { return 1.0f - static_cast<float>(0.9998074776513175); }
+    static float anteilW() { return 1.0f - static_cast<float>(0.9999037341921059); }
     void starte() { *this = Empfinden(); aktiv_ = true; }
     void beende() { aktiv_ = false; text[0] = 0; }
     bool aktiv() const { return aktiv_; }
@@ -21,7 +22,7 @@ struct Empfinden {
     const char *zeile() const { return text; }
     int gerade() const { return g; }
     int woanders() const { return w; }
-    bool anlauf() const { return n <= 1800 || boot <= 600; }
+    bool anlauf() const { return n <= 1800; }
     static int stufe(float d, float mass, int vor = 0) {
         const float a = fabsf(d);
         float grenze = 2.0f * mass;
@@ -53,7 +54,7 @@ struct Empfinden {
         w = gueltig && !anlauf() ? stufe(d, mw, w) : 0;
         if (gueltig && boot > 600) {
             if (hatFehler) lerne(mittel, mg, anteilG(), .04f, ng, qg);
-            lerne(d, mw, anteilL(), .25f, nw, qw);
+            lerne(d, mw, anteilW(), .01f, nw, qw);
         }
         snprintf(text, sizeof(text), "EMPFINDEN,%lu,%d,%d,%d,%d,%ld,%ld,%ld,%ld",
                  static_cast<unsigned long>(t), g, w, anlauf() ? 1 : 0, gueltig ? 1 : 0,
@@ -68,7 +69,7 @@ struct Empfinden {
         uint32_t x = 0; for (unsigned i = 0; i < 4; ++i) x |= uint32_t(p[i]) << (8*i); return x;
     }
     void exportiere(uint8_t *p) const {
-        const uint32_t u[] = {magie, 1, n, ng, nw, boot, init ? 1u : 0u, aktiv_ ? 1u : 0u,
+        const uint32_t u[] = {magie, 2, n, ng, nw, boot, init ? 1u : 0u, aktiv_ ? 1u : 0u,
                                static_cast<uint32_t>(g), static_cast<uint32_t>(w)};
         for (unsigned i = 0; i < 10; ++i) put(p + 4*i, u[i]);
         const float f[] = {M, L, qg, qw};
@@ -76,7 +77,7 @@ struct Empfinden {
         put(p+56, summe(p, 56));
     }
     bool importiere(const uint8_t *p, unsigned size = standBytes) {
-        if (size != standBytes || get(p) != magie || get(p+4) != 1 || get(p+56) != summe(p,56)) return false;
+        if (size != standBytes || get(p) != magie || (get(p+4) != 1 && get(p+4) != 2) || get(p+56) != summe(p,56)) return false;
         Empfinden neu;
         neu.n=get(p+8); neu.ng=get(p+12); neu.nw=get(p+16); neu.boot=get(p+20);
         if (neu.n>16777215 || neu.ng>16777215 || neu.nw>16777215 || neu.boot>neu.n || get(p+24)>1 || get(p+28)>1) return false;
@@ -85,7 +86,7 @@ struct Empfinden {
         if (neu.g < -30 || neu.g>30 || neu.w < -30 || neu.w>30) return false;
         float *f[] = {&neu.M, &neu.L, &neu.qg, &neu.qw};
         for (unsigned i=0;i<4;++i) { uint32_t bits=get(p+40+4*i); memcpy(f[i], &bits,4); if (!isfinite(*f[i])) return false; }
-        if (neu.M < -100 || neu.M>200 || neu.L < -100 || neu.L>200 || neu.qg<.04f || neu.qw<.25f || neu.qg>1e8f || neu.qw>1e8f) return false;
+        if (neu.M < -100 || neu.M>200 || neu.L < -100 || neu.L>200 || neu.qg<.04f || neu.qw<.01f || neu.qg>1e8f || neu.qw>1e8f) return false;
         *this=neu; return true;
     }
 private:
