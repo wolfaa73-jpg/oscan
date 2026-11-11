@@ -21,6 +21,12 @@ struct Fahrtsatz {
     // Stromausfall kam, ist verloren, für das Protokoll und für sein Gedächtnis gleichermaßen.
     static const unsigned block = 30;
 
+    // Zwei signed Stufen in Byte 7, nur außerhalb Neustarts. 7 bedeutet mindestens 7.
+    static unsigned nibble(int s) { return static_cast<unsigned>((s < -7 ? -7 : s > 7 ? 7 : s) + 8); }
+    static void empfinden(uint8_t *p, int gerade, int woanders) {
+        if (!(p[6] & 64)) p[7] = static_cast<uint8_t>(nibble(gerade) | (nibble(woanders) << 4));
+    }
+
     static int16_t hundertstel(float grad) {
         const long wert = lround(static_cast<double>(grad) * 100.0);
         return static_cast<int16_t>(wert > 32767 ? 32767 : wert < -32767 ? -32767 : wert);

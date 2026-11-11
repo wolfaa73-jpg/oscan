@@ -37,10 +37,15 @@ def saetze(daten):
         raise ValueError(f"Das Protokoll hat {len(daten)} Byte, das ist kein Vielfaches von {SATZ.size}.")
     for takt, temp, bits, grund, v10, v60, mittel, grenze in SATZ.iter_unpack(daten):
         ohne = bool(bits & 128)
-        yield dict(takt=takt, temp_dc=None if temp == -32768 else temp, last=bits & 1, ueberrascht=bits >> 1 & 1,
+        aus = dict(takt=takt, temp_dc=None if temp == -32768 else temp, last=bits & 1, ueberrascht=bits >> 1 & 1,
                    vorwarnung=bits >> 2 & 1, sofort=bits >> 3 & 1, zustand=ZUSTAENDE[bits >> 4 & 3],
-                   neustart=bits >> 6 & 1, grund=grund & 127, bei_null=grund >> 7, v10_cg=v10, v60_cg=v60,
+                   neustart=bits >> 6 & 1, grund=(grund & 127) if bits & 64 else 0, bei_null=(grund >> 7) if bits & 64 else 0, v10_cg=v10, v60_cg=v60,
                    mittel_cg=None if ohne else mittel, grenze_cg=None if ohne else grenze)
+        if not bits & 64 and grund:
+            if not grund & 15 or not grund >> 4:
+                raise ValueError("Ungültige Empfinden-Nibbles im Fahrtsatz")
+            aus.update(gerade=(grund & 15)-8, woanders=(grund >> 4)-8)
+        yield aus
 
 
 def zeilen(port, sekunden):
@@ -129,6 +134,8 @@ def main(argv=None):
     for name in ("stand", "an", "aus", "holen", "leeren"):
         a = sub.add_parser(name)
         a.add_argument("--port", required=True)
+        if name == "an":
+            a.add_argument("--empfinden", action="store_true", help="Empfinden im Fahrtmodus mitführen")
         if name == "holen":
             a.add_argument("ziel", type=Path)
         if name == "leeren":
@@ -143,8 +150,9 @@ def main(argv=None):
             if arg.csv:
                 with arg.csv.open("x", encoding="utf-8", newline="") as datei:
                     aus = csv.writer(datei)
-                    aus.writerow(KOPF)
-                    aus.writerows(["-" if s[f] is None else s[f] for f in KOPF] for s in liste)
+                    kopf = KOPF + (("gerade", "woanders") if any("gerade" in s for s in liste) else ())
+                    aus.writerow(kopf)
+                    aus.writerows(["-" if s.get(f) is None else s[f] for f in kopf] for s in liste)
             print(bericht(liste))
             return 0
         if arg.aktion == "holen" and arg.ziel.exists():
@@ -156,6 +164,9 @@ def main(argv=None):
             for z in ruhig(port):
                 print("Gerät:", z)
             if arg.aktion == "an":
+                if arg.empfinden:
+                    port.write(b"EMPFINDEN 1\n")
+                    warte(port, b"EMPFINDEN,ok,")
                 port.write(b"FAHRT 1\n")
                 warte(port, b"FAHRT,an")
                 print("Gerät:", warte(port, b"FAHRT,", frist=30.0).decode())

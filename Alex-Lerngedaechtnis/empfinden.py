@@ -1,84 +1,117 @@
-"""Empfinden in drei Geschwindigkeiten, explorativ. schnell = Mittel über 5 Takte, mittel = verblassendes
-Mittel mit 10 min Halbwertszeit, langsam = 1 Tag. Empfunden wird schnell gegen mittel („passiert mir gerade“)
-und mittel gegen langsam („ich bin woanders“), jeweils in Vielfachen der eigenen üblichen Abweichung.
-Stufe 0 = normal (unter dem Doppelten), dann je Verdopplung eine Stufe. Das Maßband lernt langsam und nur
-aus Takten unter Stufe 2. Nicht Teil der Tests. Ergebnisse: beispiele/geraetelaeufe-2026-11/fahrt-2026-11-11.md
-und das Brainstorming vom 11.11.2026.
+"""Empfinden v1, float32-Referenz zu Empfinden.h. Entscheidungen: EMPFINDEN-PLAN.md.
 
-Aufruf im Laborordner: empfinden.py"""
-import sys, math, itertools
+Der schnelle Eingang ist das unveränderte 20-Takt-Fehlermittel der Selbstvorhersage.
+Fehlende Temperatur: kein Lernen, keine neuen Wörter. Kalte Starts: 1800 gültige
+Takte Anlauf; nach Laden 600. Ein Neustart setzt nur diesen Anlauf zurück.
+"""
+import math
+import struct
 import numpy as np
-import selbstvorhersage as sv, kunstkoerper as kk
 
-HM, HL = 600, 86400
+F = np.float32
+HM, HL, HG = 600, 86400, 3600
+ANLAUF, WIEDERANLAUF, NORM_AB = 1800, 600, 600
+KONSTANTEN = (1, HM, HL, HG, ANLAUF, WIEDERANLAUF, NORM_AB, 200, 500, 1500)
+KOPF = ("takt", "gerade", "woanders", "anlauf", "gueltig", "mass_gerade_mg", "mass_woanders_mg", "mittel_mg", "langsam_mg")
+MAGIE = 0x31464D45
+FORMAT = struct.Struct("<8I2i4fI")
+
+
+def anteil(h):
+    return F(1) - F(0.5 ** (1 / h))
+
+
+def milli(x):
+    v = float(x) * 1000
+    return (-1 if v < 0 else 1) * math.floor(abs(v) + .5)
+
+
+def stufe(d, mass, vorher=0):
+    """Vergleiche statt Logarithmus. Nur die Grenze 0/1 hat Hysterese 2/1,5."""
+    a, grenze, s = abs(F(d)), F(2) * F(mass), 0
+    while s < 30 and a >= grenze:
+        s += 1
+        grenze *= F(2)
+    vorzeichen = -1 if d < 0 else 1
+    if s == 0 and vorher * vorzeichen > 0 and a >= F(1.5) * F(mass):
+        s = 1
+    return vorzeichen * s
+
+
+def summe(daten):
+    s = 0
+    for b in daten:
+        s = (s * 31 + b) & 0xffffffff
+    return s
+
 
 class Empfinden:
     def __init__(self):
-        self.n = 0; self.ring = []; self.M = self.L = None; self.q1 = self.q2 = 0.0; self.n1 = self.n2 = 0
-    @staticmethod
-    def stufe(e):
-        return 0 if e < 2 else int(math.log2(e))
-    def takt(self, grad):
-        self.n += 1
-        self.ring = (self.ring + [grad])[-5:]
-        S = sum(self.ring) / len(self.ring)
-        if self.M is None: self.M = self.L = S
-        d1, d2 = S - self.M, self.M - self.L
-        u1, u2 = math.sqrt(self.q1), math.sqrt(self.q2)
-        e1 = abs(d1) / u1 if u1 > 0 and self.n > 1800 else 0.0
-        e2 = abs(d2) / u2 if u2 > 0 and self.n > 1800 else 0.0
-        s1, s2 = self.stufe(e1), self.stufe(e2)
-        if s1 < 2:
-            self.n1 += 1; self.q1 += max(1 - 0.5 ** (1 / HL), 1 / self.n1) * (d1 * d1 - self.q1)
-        if s2 < 2:
-            self.n2 += 1; self.q2 += max(1 - 0.5 ** (1 / HL), 1 / self.n2) * (d2 * d2 - self.q2)
-        self.M += (1 - 0.5 ** (1 / HM)) * (S - self.M)
-        self.L += max(1 - 0.5 ** (1 / HL), 1 / self.n) * (S - self.L)
-        return (s1 * (1 if d1 > 0 else -1), s2 * (1 if d2 > 0 else -1), S, self.M, self.L, u1, u2)
+        self.n = self.ng = self.nw = self.boot = 0
+        self.init = False
+        self.aktiv = True
+        self.g = self.w = 0
+        self.M = self.L = F(0)
+        self.qg, self.qw = F(.04), F(.25)
+
+    def neustart(self):
+        self.boot = 0
+        self.g = self.w = 0
+
+    def takt(self, temp_dc, mittel):
+        gueltig = temp_dc is not None
+        if gueltig:
+            x = F(temp_dc) / F(10)
+            if not np.isfinite(x) or not -100 <= float(x) <= 200:
+                raise ValueError("Temperatur außerhalb des Empfinden-Bereichs")
+            if mittel is not None and not np.isfinite(F(mittel)):
+                raise ValueError("Ungültiges Fehlermittel")
+            self.n = min(16777215, self.n + 1)
+            self.boot = min(16777215, self.boot + 1)
+            if not self.init:
+                self.M = self.L = x
+                self.init = True
+            self.M += anteil(HM) * (x - self.M)
+            self.L += anteil(HL) * (x - self.L)
+        anlauf = self.n <= ANLAUF or self.boot <= WIEDERANLAUF
+        mg, mw = np.sqrt(self.qg), np.sqrt(self.qw)
+        d = self.M - self.L
+        self.g = stufe(F(mittel), mg, self.g) if gueltig and not anlauf and mittel is not None else 0
+        self.w = stufe(d, mw, self.w) if gueltig and not anlauf else 0
+        if gueltig and self.boot > NORM_AB:
+            for kanal, wert, h, boden, mass in (("g", None if mittel is None else F(mittel), HG, F(.04), mg),
+                                             ("w", d, HL, F(.25), mw)):
+                if wert is None or abs(wert) >= F(4) * mass:
+                    continue
+                n = min(16777215, getattr(self, "n" + kanal) + 1)
+                setattr(self, "n" + kanal, n)
+                q = getattr(self, "q" + kanal)
+                q += anteil(h) * (wert * wert - q)
+                setattr(self, "q" + kanal, max(boden, q))
+        return [self.g, self.w, int(anlauf), int(gueltig), milli(mg), milli(mw), milli(self.M), milli(self.L)]
+
+    def exportiere(self):
+        b = FORMAT.pack(MAGIE, 1, self.n, self.ng, self.nw, self.boot, int(self.init), int(self.aktiv),
+                        self.g, self.w, self.M, self.L, self.qg, self.qw, 0)
+        return b[:-4] + struct.pack("<I", summe(b[:-4]))
+
+    def importiere(self, daten):
+        if len(daten) != FORMAT.size:
+            raise ValueError("Empfinden-Stand hat falsche Länge")
+        m, v, n, ng, nw, boot, init, aktiv, g, w, M, L, qg, qw, crc = FORMAT.unpack(daten)
+        if (m != MAGIE or v != 1 or crc != summe(daten[:-4]) or init not in (0, 1) or aktiv not in (0, 1)
+                or not all(0 <= x <= 16777215 for x in (n, ng, nw, boot)) or boot > n or abs(g) > 30 or abs(w) > 30
+                or not all(math.isfinite(x) for x in (M, L, qg, qw)) or not -100 <= M <= 200 or not -100 <= L <= 200
+                or not F(.04) <= qg <= 1e8 or not F(.25) <= qw <= 1e8):
+            raise ValueError("Ungültiger Empfinden-Stand")
+        self.n, self.ng, self.nw, self.boot, self.init, self.aktiv = n, ng, nw, boot, bool(init), bool(aktiv)
+        self.g, self.w = g, w
+        self.M, self.L, self.qg, self.qw = map(F, (M, L, qg, qw))
+
+
+def zeile(takt, aus):
+    return "EMPFINDEN," + ",".join(map(str, [takt] + aus))
+
 
 def name(s):
-    return "normal" if s == 0 else ("wärmer " if s > 0 else "kälter ") + str(abs(s))
-
-def folge(werte, ab=0):
-    out, pos = [], ab
-    for w, g in itertools.groupby(werte[ab:]):
-        d = len(list(g))
-        if w != 0: out.append(f"{name(w)} ({pos + 1}–{pos + d})")
-        pos += d
-    return out
-
-
-def main():
-    D = "beispiele/geraetelaeufe-2026-11/roh/"
-    t8, _ = sv.lies(D + "koerper-zufallslast-8h-2026-11-10.csv"); tk, _ = sv.lies(D + "koerper-kaelte-2026-11-10.csv")
-    e = Empfinden()
-    r8 = [e.takt(t / 10) for t in t8]
-    print(f"Nach 8 h: mittel {e.M:.2f} °C, langsam {e.L:.2f} °C; Maßband schnell-gegen-mittel {math.sqrt(e.q1):.2f} °C, mittel-gegen-langsam {math.sqrt(e.q2):.2f} °C")
-    for k, titel in ((0, "passiert mir gerade"), (1, "ich bin woanders")):
-        z = np.array([abs(r[k]) for r in r8[1800:]])
-        print(f"  Ruhiger Lauf, „{titel}“: " + ", ".join(f"Stufe {s}: {100 * np.mean(z == s):.2f} %" for s in range(0, 5)))
-    rk = [e.takt(t / 10) for t in tk]
-    print(f"\nKälteversuch (nach dem Versuch: mittel {e.M:.2f}, langsam {e.L:.2f}, Maßbänder {math.sqrt(e.q1):.2f} / {math.sqrt(e.q2):.2f} °C)")
-    print("Takt | Temp | schnell | mittel | passiert mir gerade | ich bin woanders")
-    for i in range(120, 900, 20):
-        seg = rk[i:i + 20]
-        a = min(seg, key=lambda r: -abs(r[0]))[0]; b = min(seg, key=lambda r: -abs(r[1]))[1]
-        print(f"{i + 1:4d} | {tk[i] // 10} | {seg[-1][2]:.1f} | {seg[-1][3]:.1f} | {name(a):9s} | {name(b)}")
-    print("\nWortfolge „passiert mir gerade“ ab Stufe 2:", "; ".join(x for x in folge([r[0] if abs(r[0]) >= 2 else 0 for r in rk])))
-    print("Wortfolge „ich bin woanders“ ab Stufe 2:", "; ".join(x for x in folge([r[1] if abs(r[1]) >= 2 else 0 for r in rk])))
-
-    # Umzug in den Keller: 8 h wie gewohnt, dann dauerhaft 8 °C kälter, 12 h
-    print("\n## Umzug in den Keller (Simulator): 8 h gewohnt, dann 12 h lang 8 °C kälter")
-    last = kk.lastreihe(72000, 240, 240, 20261110)
-    roh = kk.temperaturen(last, stufe=0, saat=77)
-    temp = [round(x - (8.0 * (1 - math.exp(-(i - 28800) / 300)) if i >= 28800 else 0.0)) for i, x in enumerate(roh)]
-    e = Empfinden(); r = [e.takt(t) for t in temp]
-    for std in (7.9, 8.02, 8.1, 8.25, 8.5, 9, 10, 12, 16, 19.9):
-        i = int(std * 3600); x = r[i]
-        print(f"  Stunde {std:5.2f}: {temp[i]} °C, mittel {x[3]:.1f}, langsam {x[4]:.1f} | gerade: {name(x[0]):9s} | woanders: {name(x[1])}")
-    z = [abs(x[0]) >= 2 for x in r[28800:]]
-    print(f"  „passiert mir gerade“ ab Stufe 2 dauert nach dem Umzug {sum(z)} Takte; „woanders“ ab Stufe 2 noch nach 12 h: {abs(r[-1][1]) >= 2}")
-
-
-if __name__ == "__main__":
-    main()
+    return "normal" if not s else ("wärmer " if s > 0 else "kälter ") + str(abs(s))
