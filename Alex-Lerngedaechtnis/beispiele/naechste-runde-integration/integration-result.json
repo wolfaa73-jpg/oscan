@@ -1,0 +1,26 @@
+{
+  "base": "3f227a98bb5d36aa5f2c85d09c45bbded34b7966",
+  "python": "3.9.6",
+  "tests": 363,
+  "elapsed_seconds": 39.971,
+  "failures": [],
+  "errors": [],
+  "skipped": [],
+  "expected_failures": 0,
+  "unexpected_successes": 0,
+  "sources_changed": [],
+  "overlay_conflicts": [],
+  "success": true,
+  "runner_sha256": "df9359b1dec89d85ac52a0cedcdb31ccdbd34f2cd26507f89502abd21d4c40bc",
+  "manifest_sha256": "944aaddd32f932b845bc69c64896f50035422fb165c3eb6d2fd5dc18d6ca8869",
+  "upstream_overlay_changes_after_run": [],
+  "bootstrap_review_updated_files": [
+    "Alex-Lerngedaechtnis/EINHEITEN-BOOTSTRAP-PLAN.md",
+    "Alex-Lerngedaechtnis/einheitenbootstrap.py",
+    "Alex-Lerngedaechtnis/test_einheitenbootstrap.py"
+  ],
+  "memory_audit_additions": [
+    "Alex-Lerngedaechtnis/ideenlabor_speicherpruefung.py",
+    "Alex-Lerngedaechtnis/test_ideenlabor_speicherpruefung.py"
+  ]
+}
