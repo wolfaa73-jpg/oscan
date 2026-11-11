@@ -1,5 +1,7 @@
 # Schritt 3: Funk als Wärmeversuch und ein Gesicht auf dem C3
 
+**Review-Nachtrag:** Empfinden verwendet jetzt v2. Die Korrektur für Sendefehler und das versionierte Fahrtformat sind in [FAHRT-FUNK-v2.md](FAHRT-FUNK-v2.md) beschrieben. Neue Prüfwerte folgen im Nachtrag am Ende; der ursprüngliche Prüflauf bleibt als historischer Nachweis erhalten.
+
 Baut auf Schritt 1 (PR #10) und Schritt 2 (PR #11) auf. Hauptzweig und Alex’ Geräte
 wurden nicht verändert. Bitte in dieser Reihenfolge prüfen und übernehmen. Bei noch
 offenen Vorgänger-PRs zeigt dieser PR nur den zusätzlichen dritten Schritt.
@@ -66,8 +68,7 @@ python3 fahrt.py an --port PORT --empfinden --funk
 Das merkt beide Zusatzfunktionen für den Fahrtmodus und startet den Knoten neu.
 `fahrt.py aus` stoppt ihn wie bisher; `STOP` beendet auch den Funk. Zum nächsten
 Fahrtstart ohne Funk: zuerst `STOP`, dann `FUNK 0` und danach `FAHRT 1`; ohne Empfinden zusätzlich
-`EMPFINDEN 0`. Bestehende Fahrtsatzgröße und deren Reiz-/Warnbits bleiben unverändert;
-**Funkreize werden in der Körper-CSV protokolliert, nicht im 16-Byte-Fahrtsatz.**
+`EMPFINDEN 0`. Der alte 16-Byte-Bestand bleibt erhalten. Neue Fahrtzeilen verwenden das gekennzeichnete 20-Byte-Format mit eigenem Reizfeld; Funkreize einschließlich Bit 32 werden jetzt auch im Fahrtprotokoll gespeichert. Siehe `FAHRT-FUNK-v2.md`; zum Abholen die aktualisierte `fahrt.py` verwenden.
 
 Displaykonfiguration entsprechend Auftrag: SPI2, SCLK 6, MOSI 7, DC 2, CS 10,
 MISO −1, Reset **−1**, Hintergrundlicht 3 aktiv hoch, `invert=true`, `rgb_order=false`.
@@ -162,3 +163,11 @@ Knoten ausschalten (nach fünf Sekunden KEIN SIGNAL), neu starten (Anlauf), Knop
 danach separat die dreistündige Funk-Wärmeprobe durchführen. Die offene Watchdog-Ursache
 und die bisherige nicht atomare Kombination aus Logdatei und Fahrtstand bleiben dokumentierte
 Grenzen aus Schritt 1; hier wurden sie nicht umgebaut.
+
+## Abschließende Review-Prüfung mit v2
+
+357 Tests bestanden (62,553 s), einschließlich 42.600 echter Fahrttakte C++/Python, 12.000 künstlicher Takte, alter CSV-Version, LED-Tabelle und der fünf neuen Fehler-/Formatprüfungen. Der alte Abbruchausdruck wird im Mutationstest erkannt. S3-Bau: 56.788 B RAM, 777.205 B Flash; C3: unverändert 39.180 B RAM, 794.488 B Flash. Im S3-Abbild keine `madd.s`/`msub.s`.
+
+Aktuelle Quellenprüfsummen und Ergebnisse: `beispiele/empfinden-review-v2/pruefung.json`. Der frühere Nachweis mit 345 Tests bleibt als historischer v1-Stand erhalten. Kern, Vokabular, Knoten.h, Vorhersage.h und selbstvorhersage.py sind gegenüber der Basis unverändert. Die Display-Bildproben bleiben ebenfalls unverändert.
+
+Die v2-Änderungen an der Wahrnehmung stehen in `EMPFINDEN-v2-ERGEBNISSE.md`. Für die Fahrt den aktualisierten Leser verwenden: Er erhält den alten Bestand und wertet das neue Reizfeld aus. Hardwareprüfungen werden durch diese Rechen- und Buildprüfungen nicht ersetzt.

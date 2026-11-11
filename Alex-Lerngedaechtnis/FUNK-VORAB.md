@@ -60,3 +60,5 @@ berichten statt einen sicheren Erfolg zu fordern. Derselbe Fehler kann aus Umgeb
 Funk entstehen. Ein einziger Lauf liefert keinen kausalen Beweis; bei interessantem Befund
 wiederholen und die Abschnittsfolge in einem neuen vorab festgelegten Versuch umkehren.
 Erst anschließend gemeinsam entscheiden, ob das Sendebit Eingang der Vorhersage wird.
+
+Review-Nachtrag: Der kontrollierte Funkplan bricht bei Bit 32 weiterhin ab. Nur der Fahrtmodus läuft bei Sendefehlern weiter und speichert das Bit im eigenen Reizfeld (FAHRT-FUNK-v2.md). Die Phasen, Kontraste und Ablehnungsregeln dieses Versuchs bleiben unverändert. Empfinden-Version und Konstanten stehen jeweils in der Aufnahme-JSON; v1 wird mit der erhaltenen v1-Referenz geprüft, v2 mit der neuen Referenz.

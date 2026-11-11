@@ -20,6 +20,9 @@ import time
 from pathlib import Path
 
 SATZ = struct.Struct("<IhBBhhhh")
+V2_KENNUNG = b"OSCFAHRT"
+V2_KOPF = V2_KENNUNG + struct.pack("<II", 2, 20)
+V2_BYTES = 20
 KOPF = ("takt", "temp_dc", "last", "ueberrascht", "vorwarnung", "sofort", "zustand", "neustart", "grund", "bei_null",
         "v10_cg", "v60_cg", "mittel_cg", "grenze_cg")
 ZUSTAENDE = ("OK", "SCHWACH", "AUSFALL", "?")
@@ -31,7 +34,7 @@ def summe(daten, s=0):
     return s
 
 
-def saetze(daten):
+def alte_saetze(daten):
     """Die Sätze des Protokolls als dicts. Ohne Fehlerwert sind mittel_cg und grenze_cg None."""
     if len(daten) % SATZ.size:
         raise ValueError(f"Das Protokoll hat {len(daten)} Byte, das ist kein Vielfaches von {SATZ.size}.")
@@ -46,6 +49,24 @@ def saetze(daten):
                 raise ValueError("Ungültige Empfinden-Nibbles im Fahrtsatz")
             aus.update(gerade=(grund & 15)-8, woanders=(grund >> 4)-8)
         yield aus
+
+
+def saetze(daten):
+    """V1 unverändert oder explizit gekennzeichnete V2 mit eigenem Reizfeld."""
+    if not daten.startswith(V2_KENNUNG):
+        yield from alte_saetze(daten)
+        return
+    if daten[:len(V2_KOPF)] != V2_KOPF or (len(daten)-len(V2_KOPF)) % V2_BYTES:
+        raise ValueError("Ungültiges Fahrt-V2-Format oder unvollständiger Satz")
+    for pos in range(len(V2_KOPF),len(daten),V2_BYTES):
+        raw=daten[pos:pos+V2_BYTES]
+        reiz,r1,r2,bekannt=raw[16:]
+        if r1 or r2 or bekannt not in (0,1) or reiz & ~63 or (not bekannt and reiz):
+            raise ValueError("Ungültiges Reizfeld im Fahrt-V2-Satz")
+        s=next(alte_saetze(raw[:16]))
+        s.update(reiz=reiz if bekannt else None,
+                 funk_sendefehler=bool(reiz & 32) if bekannt else None)
+        yield s
 
 
 def zeilen(port, sekunden):
@@ -81,7 +102,12 @@ def stand(port):
     port.write(b"FAHRTSTAND\n")
     teile = warte(port, b"FAHRT,").decode().split(",")
     gewollt, log, frei, takt, voll = map(int, teile[1:6])
-    return dict(gewollt=bool(gewollt), saetze=log // SATZ.size, frei_bytes=frei, takt=takt, voll=bool(voll))
+    satzbytes = int(teile[6]) if len(teile) >= 7 else SATZ.size
+    kopfbytes = int(teile[7]) if len(teile) >= 8 else 0
+    if satzbytes not in (SATZ.size,V2_BYTES) or kopfbytes not in (0,len(V2_KOPF)) or log<kopfbytes or (log-kopfbytes)%satzbytes:
+        raise ValueError("Ungültige Formatangabe im Fahrtstand")
+    return dict(gewollt=bool(gewollt), saetze=(log-kopfbytes)//satzbytes, frei_bytes=frei,
+                takt=takt, voll=bool(voll), satzbytes=satzbytes)
 
 
 def holen(port):
@@ -125,6 +151,9 @@ def bericht(liste):
         else:
             t += 1
     out.append(f"Überrascht in {len(strecken)} Strecken" + (": " + "; ".join(strecken[:60]) if strecken else "") + ".")
+    if any("reiz" in s for s in liste):
+        bekannt = [s for s in liste if s.get("reiz") is not None]
+        out.append(f"Sende-API-Fehler in {sum(bool(s['funk_sendefehler']) for s in bekannt)} von {len(bekannt)} Sätzen mit Reizfeld; {len(liste)-len(bekannt)} Altsätze ohne Reizinformation.")
     return "\n".join(out)
 
 
@@ -152,6 +181,7 @@ def main(argv=None):
                 with arg.csv.open("x", encoding="utf-8", newline="") as datei:
                     aus = csv.writer(datei)
                     kopf = KOPF + (("gerade", "woanders") if any("gerade" in s for s in liste) else ())
+                    if any("reiz" in s for s in liste): kopf += ("reiz", "funk_sendefehler")
                     aus.writerow(kopf)
                     aus.writerows(["-" if s.get(f) is None else s[f] for f in kopf] for s in liste)
             print(bericht(liste))
@@ -190,7 +220,7 @@ def main(argv=None):
                 warte(port, b"FAHRT,leer", frist=20.0)
             s = stand(port)
             print(f"Fahrtmodus {'gemerkt' if s['gewollt'] else 'aus'}, {s['saetze']} Sätze im Protokoll, "
-                  f"{s['frei_bytes'] // 1024} KB frei (reicht für etwa {max(0, s['frei_bytes'] - 65536) / SATZ.size / 3600:.0f} h), "
+                  f"{s['frei_bytes'] // 1024} KB frei (reicht für etwa {max(0, s['frei_bytes'] - 65536) / s['satzbytes'] / 3600:.0f} h), "
                   f"Takt {s['takt']}" + (", Protokoll voll" if s["voll"] else "") + ".")
             if s["gewollt"] and arg.aktion != "an":
                 print("Hinweis: Der Fahrtmodus ist gemerkt, läuft nach diesem Befehl aber erst wieder nach dem "

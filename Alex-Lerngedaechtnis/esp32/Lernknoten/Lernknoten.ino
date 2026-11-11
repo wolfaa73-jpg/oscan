@@ -55,12 +55,12 @@ bool koerperAn = false;
 Selbstvorhersage vorhersage;
 Empfinden empfinden;
 EmpfindenFunk funk;
+bool fahrtAn = false;
 #ifdef ARDUINO_ARCH_ESP32
 // Fahrtmodus: Der Knoten startet nach dem Einschalten selbst, schreibt jeden Takt in seinen Flash und
 // behält die Vorhersage über einen Stromausfall. An mit FAHRT 1, die Beschreibung steht weiter unten.
 #include "Fahrt.h"
 #include <LittleFS.h>
-bool fahrtAn = false;
 bool fahrtProtokollVoll();
 void fahrtTakt(bool gueltig, int32_t temp, unsigned reiz, Zustand zustand, const Entscheidung &entscheidung);
 #endif
@@ -309,8 +309,8 @@ void ruhe() {
     koerperAn = false;
     funk.plan = false;
     funk.setze(0);
-#ifdef ARDUINO_ARCH_ESP32
     fahrtAn = false;
+#ifdef ARDUINO_ARCH_ESP32
     lastAnMs = 0;
     leck = Leck();
     leckFrei();
@@ -377,8 +377,9 @@ bool koerperTakt(bool tempGueltig, int32_t temp, uint32_t heap, uint32_t luecke)
 #ifdef ARDUINO_ARCH_ESP32
     if (fahrtAn) fahrtTakt(tempGueltig, temp, reiz, zustand, entscheidung);
 #endif
-    // Still sichern. Schlägt es fehl, folgt FEHLER, und die Aufnahme bricht sichtbar ab.
-    return !(reiz & 32u) && (!sichernAlle || takt % sichernAlle || lernstand(true, false));
+    // Fahrt protokolliert Sendefehler und läuft weiter. Der kontrollierte Funkplan
+    // bricht weiterhin sichtbar ab; auch Fehler beim expliziten Sichern bleiben fatal.
+    return (!(reiz & 32u) || (fahrtAn && !funk.plan)) && (!sichernAlle || takt % sichernAlle || lernstand(true, false));
 }
 
 #ifdef ARDUINO_ARCH_ESP32
@@ -473,11 +474,12 @@ bool lernstand(bool speichern, bool melden) {
 
 #ifdef ARDUINO_ARCH_ESP32
 // Fahrtmodus. Sätze und Stand liegen im LittleFS der Partition "spiffs". Alle Fahrtsatz::block Takte
-// kommen erst die Sätze ans Ende von /fahrt.log, dann der Stand der Vorhersage nach /stand.bin (über
+// kommen erst die neuen V2-Sätze ans Ende von /fahrt-v2.log, dann der Stand der Vorhersage nach /stand.bin (über
 // /stand.neu, damit ein Stromausfall mitten im Schreiben den alten Stand lässt). Die Warntabelle des
 // Knotens wird unterwegs nicht gesichert, sie beginnt nach jedem Einschalten neu.
 bool verarbeiteZeile();
-const char *const fahrtLog = "/fahrt.log";
+const char *const fahrtLog = "/fahrt.log";  // alter 16-Byte-Bestand, nur noch lesen
+const char *const fahrtLogV2 = "/fahrt-v2.log";  // neue 20-Byte-Sätze
 const char *const fahrtStand = "/stand.bin";
 const char *const fahrtNeu = "/stand.neu";
 const uint32_t fahrtMagie = 0x52484146;  // "FAHR"
@@ -485,7 +487,7 @@ const uint32_t fahrtReserve = 65536;     // so viel bleibt im Dateisystem frei, 
 struct FahrtKopf {
     uint32_t magie, version, groesse, takt, summe;
 };
-uint8_t fahrtPuffer[Fahrtsatz::block * Fahrtsatz::bytes];
+uint8_t fahrtPuffer[Fahrtsatz::block * FahrtV2::bytes];
 uint8_t fahrtStandPuffer[sizeof(Selbstvorhersage) + Empfinden::standBytes];
 unsigned fahrtGepuffert = 0;
 uint32_t fahrtTaktNr = 0;
@@ -502,19 +504,77 @@ bool fahrtDateisystem() {
     return fahrtBereit;
 }
 
-size_t fahrtLogBytes() {
-    if (!LittleFS.exists(fahrtLog)) return 0;
-    File f = LittleFS.open(fahrtLog, FILE_READ);
+size_t fahrtDateiBytes(const char *pfad) {
+    if (!LittleFS.exists(pfad)) return 0;
+    File f = LittleFS.open(pfad, FILE_READ);
     const size_t n = f ? f.size() : 0;
     f.close();
     return n;
 }
 
+bool fahrtDateiKorrekt(const char *pfad, unsigned bytes) {
+    if (!LittleFS.exists(pfad)) return true;
+    File f = LittleFS.open(pfad, FILE_READ);
+    if (!f) return false;
+    const bool ok = f.size() % bytes == 0;
+    f.close();
+    return ok;
+}
+
+bool fahrtLogKorrekt() {
+    return fahrtDateiKorrekt(fahrtLog, Fahrtsatz::bytes)
+        && fahrtDateiKorrekt(fahrtLogV2, FahrtV2::bytes);
+}
+
+size_t fahrtLogAnzahl() {
+    return fahrtDateiBytes(fahrtLog) / Fahrtsatz::bytes + fahrtDateiBytes(fahrtLogV2) / FahrtV2::bytes;
+}
+
+size_t fahrtLogBytes() {
+    const size_t n = fahrtLogAnzahl();
+    return n ? FahrtV2::kopfBytes + n * FahrtV2::bytes : 0;
+}
+
+// Altdaten werden nur für die Ausgabe erweitert, niemals auf dem Gerät umgeschrieben.
+void fahrtHex(const uint8_t *p, size_t n, uint32_t &summe) {
+    char text[2 * FahrtV2::bytes + 1];
+    for (size_t i=0;i<n;++i) snprintf(text+2*i,3,"%02x",p[i]);
+    Serial.println(text);
+    summe = fahrtSumme(p,n,summe);
+}
+
+bool fahrtLogSenden() {
+    if (!fahrtLogKorrekt()) return false;  // keine beschädigten Ränder als ganze Sätze ausgeben
+    const size_t n = fahrtLogBytes();
+    Serial.print("FAHRTLOG,"); Serial.println(static_cast<unsigned long>(n));
+    uint32_t summe = 0;
+    if (n) {
+        uint8_t satz[FahrtV2::bytes] = {};
+        FahrtV2::kopf(satz); fahrtHex(satz,FahrtV2::kopfBytes,summe);
+        for (unsigned art=0;art<2;++art) {
+            const char *pfad = art ? fahrtLogV2 : fahrtLog;
+            const unsigned bytes = art ? FahrtV2::bytes : Fahrtsatz::bytes;
+            if (!LittleFS.exists(pfad)) continue;
+            File f = LittleFS.open(pfad, FILE_READ);
+            if (!f) return false;
+            const size_t total=f.size();
+            for(size_t gelesen=0;gelesen<total;gelesen+=bytes) {
+                if(f.read(satz,bytes)!=bytes){f.close();return false;}
+                if(!art)FahrtV2::reize(satz,0,false);
+                fahrtHex(satz,FahrtV2::bytes,summe);
+            }
+            f.close();
+        }
+    }
+    Serial.print("FAHRTLOG,ende,");Serial.println(static_cast<unsigned long>(summe));
+    return true;
+}
+
 void fahrtSichere() {
     if (!fahrtVoll) {
-        bool ok = LittleFS.totalBytes() - LittleFS.usedBytes() > fahrtReserve;
+        bool ok = fahrtLogKorrekt() && LittleFS.totalBytes() - LittleFS.usedBytes() > fahrtReserve;
         if (ok) {
-            File f = LittleFS.open(fahrtLog, FILE_APPEND);
+            File f = LittleFS.open(fahrtLogV2, FILE_APPEND);
             ok = f && f.write(fahrtPuffer, sizeof(fahrtPuffer)) == sizeof(fahrtPuffer);
             f.close();
         }
@@ -552,12 +612,13 @@ bool fahrtLade() {
 
 void fahrtTakt(bool gueltig, int32_t temp, unsigned reiz, Zustand zustand, const Entscheidung &entscheidung) {
     ++fahrtTaktNr;
-    Fahrtsatz::packe(fahrtPuffer + fahrtGepuffert * Fahrtsatz::bytes, fahrtTaktNr, gueltig, temp, reiz & 1u,
+    Fahrtsatz::packe(fahrtPuffer + fahrtGepuffert * FahrtV2::bytes, fahrtTaktNr, gueltig, temp, reiz & 1u,
                      vorhersage.ueberrascht(), entscheidung.warnung, entscheidung.sofort, zustand, fahrtErster,
                      static_cast<unsigned>(esp_reset_reason()), fahrtBeiNull, vorhersage.vKurz(), vorhersage.vLang(),
                      vorhersage.hatFehler(), vorhersage.mittel(), vorhersage.grenze());
     if (empfinden.aktiv() && gueltig && !empfinden.anlauf())
-        Fahrtsatz::empfinden(fahrtPuffer + fahrtGepuffert * Fahrtsatz::bytes, empfinden.gerade(), empfinden.woanders());
+        Fahrtsatz::empfinden(fahrtPuffer + fahrtGepuffert * FahrtV2::bytes, empfinden.gerade(), empfinden.woanders());
+    FahrtV2::reize(fahrtPuffer + fahrtGepuffert * FahrtV2::bytes, reiz);
     fahrtErster = false;
     if (++fahrtGepuffert == Fahrtsatz::block) {
         fahrtSichere();
@@ -605,7 +666,7 @@ bool fahrtEmpfinden(bool setzen = false, bool wert = false) {
 bool fahrtFunk(bool setzen = false, bool wert = false) {
     Preferences nvs;
     if (!nvs.begin("alex-lernlabor", false)) return false;
-    const bool ok = setzen ? nvs.putUChar("funk", wert ? 1 : 0) == 1 : nvs.getUChar("funk", 0) == 1;
+    const bool ok = setzen ? nvs.putUChar("funk", wert ? 1 : 0) == 1 : (nvs.isKey("funk") && nvs.getUChar("funk", 0) == 1);
     nvs.end(); return ok;
 }
 
@@ -625,7 +686,7 @@ void fahrtStart() {
     fahrtBeiNull = !fahrtLade();
     if (fahrtBeiNull) {
         vorhersage.starte();
-        fahrtTaktNr = fahrtLogBytes() / Fahrtsatz::bytes;
+        fahrtTaktNr = fahrtLogAnzahl();
     }
     if (fahrtEmpfinden()) {
         if (fahrtBeiNull || !empfinden.aktiv()) empfinden.starte();
@@ -633,7 +694,7 @@ void fahrtStart() {
     } else empfinden.beende();
     fahrtErster = true;
     fahrtGepuffert = 0;
-    fahrtVoll = false;
+    fahrtVoll = !fahrtLogKorrekt();
     if (!(fuehre("GRENZEN 380 390 65536 16384 20000 200000") && fuehre("BLICK 60") && fuehre("LAST 240 240 20261110")
           && fuehre("KOERPER 1000"))) {
         Serial.println("FAHRT,fehler");
@@ -706,42 +767,21 @@ bool verarbeiteZeile() {
         // gewollt, Bytes im Protokoll, freie Bytes, Takt der Fahrt, Protokoll voll
         if (!fahrtDateisystem()) return false;
         char text[96];
-        snprintf(text, sizeof(text), "FAHRT,%d,%lu,%lu,%lu,%d", fahrtGewollt() ? 1 : 0,
+        snprintf(text, sizeof(text), "FAHRT,%d,%lu,%lu,%lu,%d,%u,%u", fahrtGewollt() ? 1 : 0,
                  static_cast<unsigned long>(fahrtLogBytes()),
                  static_cast<unsigned long>(LittleFS.totalBytes() - LittleFS.usedBytes()),
-                 static_cast<unsigned long>(fahrtTaktNr), fahrtVoll ? 1 : 0);
+                 static_cast<unsigned long>(fahrtTaktNr), fahrtVoll ? 1 : 0, FahrtV2::bytes, fahrtLogAnzahl() ? FahrtV2::kopfBytes : 0);
         Serial.println(text);
         return true;
     }
     if (strcmp(zeile, "FAHRTLOG") == 0) {
-        // Das ganze Protokoll als Hexzeilen zu je 32 Byte, davor die Länge, danach die Prüfsumme.
         if (koerperAn || !fahrtDateisystem()) return false;
-        const size_t n = fahrtLogBytes();
-        Serial.print("FAHRTLOG,");
-        Serial.println(static_cast<unsigned long>(n));
-        uint32_t summe = 0;
-        if (n) {
-            File f = LittleFS.open(fahrtLog, FILE_READ);
-            uint8_t stueck[32];
-            char text[65];
-            for (size_t gelesen = 0; f && gelesen < n;) {
-                const size_t m = f.read(stueck, n - gelesen < sizeof(stueck) ? n - gelesen : sizeof(stueck));
-                if (!m) break;
-                summe = fahrtSumme(stueck, m, summe);
-                for (size_t i = 0; i < m; ++i) snprintf(text + 2 * i, 3, "%02x", stueck[i]);
-                Serial.println(text);
-                gelesen += m;
-            }
-            f.close();
-        }
-        Serial.print("FAHRTLOG,ende,");
-        Serial.println(static_cast<unsigned long>(summe));
-        return true;
+        return fahrtLogSenden();
     }
     if (strcmp(zeile, "FAHRTLEER") == 0) {
         // Protokoll und Stand löschen. Nur in Ruhe, und erst nach dem Abholen.
         if (koerperAn || !fahrtDateisystem()) return false;
-        for (const char *pfad : {fahrtLog, fahrtStand, fahrtNeu})
+        for (const char *pfad : {fahrtLog, fahrtLogV2, fahrtStand, fahrtNeu})
             if (LittleFS.exists(pfad)) LittleFS.remove(pfad);
         fahrtTaktNr = 0;
         Serial.println("FAHRT,leer");
