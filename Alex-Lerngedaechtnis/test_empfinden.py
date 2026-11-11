@@ -86,6 +86,12 @@ class EmpfindenTests(unittest.TestCase):
         self.assertLess(aus[-1][6],aus[-1][7])
         self.assertLess(float(np.sqrt(a.qw)),.7)
 
+    def test_unplausible_messung_wie_fehlerwert(self):
+        a=e.Empfinden();stand=a.exportiere()
+        for temp,mittel in ((2001,e.F(0)),(-1001,e.F(0)),(370,e.F(float('nan')))):
+            self.assertEqual(a.takt(temp,mittel)[3],0)
+            self.assertEqual(a.exportiere(),stand)
+
     def test_massband_friert_beim_schock(self):
         a=e.Empfinden()
         for _ in range(2000): a.takt(370,e.F(.1))
@@ -100,6 +106,7 @@ class EmpfindenTests(unittest.TestCase):
         for i in range(9000,10000):
             temp[i]-=round(80*math.exp(-(i-9000)/300))
         for i in (0,1,55,9100,9101,11999): temp[i]=None
+        temp[13],temp[20]=2001,-1001
         a=e.Empfinden(); v=sv.Selbstvorhersage(); soll=[]
         for t,(x,l) in enumerate(zip(temp,last),1):
             if t==6500:

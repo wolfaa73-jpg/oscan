@@ -122,3 +122,12 @@ mit Alex besprechen. Die Parameter wurden nach diesem Ergebnis nicht verändert.
 4. Bei Upgrade alten Stand/Log vorher abholen. Keine automatische Löschung nötig.
 5. Neue Hardwarebeobachtungen mit Firmware-Commit und Prüfergebnis berichten; keine
    privaten Rechnerpfade oder Gerätekennungen in die öffentliche Übergabe aufnehmen.
+
+## Nachprüfung der Eingabegrenzen
+
+Die Firmware behandelt unplausible Temperaturen außerhalb −100..200 °C sowie nicht endliche
+Fehlermittel als ungültige Messungen. Die Python-Referenz ist daran angeglichen: ebenfalls
+kein Lernen statt Ausnahme. Der 12.000-Takt-Vergleich enthält nun auch beide Bereichsfehler.
+Diese Korrektur ändert die Rechnung an den freigegebenen Aufnahmen nicht; deren Temperaturen
+liegen vollständig im gültigen Bereich. Die oben genannten Ergebnisprüfsummen beziehen sich
+weiter auf die eingefrorene Auswertung. Ein zusätzlicher Grenztest kommt hinzu.
