@@ -65,7 +65,8 @@ class EmpfindenTests(unittest.TestCase):
         b.neustart(); q=b.qg
         for _ in range(600):
             z=b.takt(200,e.F(-5))
-            self.assertEqual(z[:3],[0,0,1])
+            self.assertLessEqual(z[0],-2)
+            self.assertEqual(z[2],0)
         self.assertEqual(b.qg,q)
         self.assertFalse(b.takt(200,e.F(-5))[2])
 
@@ -85,6 +86,25 @@ class EmpfindenTests(unittest.TestCase):
         self.assertLessEqual(aus[-1][1],-2)
         self.assertLess(aus[-1][6],aus[-1][7])
         self.assertLess(float(np.sqrt(a.qw)),.7)
+
+    def test_woanders_mass_lernt_ueber_und_unter_den_prior(self):
+        ruhig=e.Empfinden();wechsel=e.Empfinden()
+        for t in range(28800):
+            ruhig.takt(370,e.F(0))
+            wechsel.takt(round(370+20*math.sin(2*math.pi*t/3600)),e.F(0))
+        self.assertLess(float(np.sqrt(ruhig.qw)),.2)
+        self.assertGreater(float(np.sqrt(wechsel.qw)),.5)
+        self.assertGreater(wechsel.nw,7200)
+
+    def test_v1_stand_wird_explizit_uebernommen(self):
+        from referenzen import empfinden_v1 as alt
+        a=alt.Empfinden()
+        for _ in range(2000):a.takt(370,alt.F(.1))
+        b=e.Empfinden();b.importiere(a.exportiere());b.neustart()
+        self.assertEqual(b.M,a.M);self.assertEqual(b.L,a.L)
+        self.assertEqual(b.qw,a.qw)
+        self.assertEqual(int.from_bytes(b.exportiere()[4:8],'little'),2)
+        self.assertLessEqual(b.takt(200,e.F(-5))[0],-2)
 
     def test_unplausible_messung_wie_fehlerwert(self):
         a=e.Empfinden();stand=a.exportiere()
@@ -155,6 +175,55 @@ class EmpfindenIntegrationTests(unittest.TestCase):
             with self.assertRaises(ValueError): koerper.empfinden_pruefen(ziel,dict(meta,empfinden={}),werte)
             neben.unlink()
             with self.assertRaises(ValueError): koerper.empfinden_pruefen(ziel,meta,werte)
+
+    def test_alte_csv_mit_v1_referenz_pruefen(self):
+        import csv
+        import koerper
+        from referenzen import empfinden_v1 as alt
+        a=alt.Empfinden();v=sv.Selbstvorhersage();werte=[];zeilen=[]
+        for t in range(1,2501):
+            temp=370+10*(t%3)
+            z=v.takt(temp,0)
+            zeilen.append([t]+a.takt(temp,z['mittel']))
+            werte.append(dict(takt=t,temp_dc=temp,reiz=0))
+        with tempfile.TemporaryDirectory() as d:
+            p=Path(d,'alt.csv')
+            with p.with_name('alt.empfinden.csv').open('w',newline='') as out:
+                c=csv.writer(out);c.writerow(alt.KOPF);c.writerows(zeilen)
+            meta=dict(intervall_ms=1000,empfinden=dict(zip(koerper.EMPFINDEN_FELDER_V1,alt.KONSTANTEN)))
+            self.assertEqual(koerper.empfinden_pruefen(p,meta,werte),2500)
+            meta['empfinden']=dict(zip(koerper.EMPFINDEN_FELDER,e.KONSTANTEN))
+            with self.assertRaises(ValueError):koerper.empfinden_pruefen(p,meta,werte)
+        for version,konstanten in ((1,alt.KONSTANTEN),(2,e.KONSTANTEN)):
+            antwort=('EMPFINDEN,ok,'+','.join(map(str,konstanten))).encode()
+            self.assertEqual(koerper.lies_empfindenstart(antwort)['version'],version)
+
+    def test_nvs_fehlender_schluessel_bleibt_still(self):
+        sketch=(ROOT/'esp32/Lernknoten/Lernknoten.ino').read_text()
+        a=sketch.index('bool fahrtEmpfinden(');b=sketch.index('\n}',a)+2
+        funktion=sketch[a:b]
+        cpp=r'''
+#include <stdexcept>
+struct Preferences {
+ static bool vorhanden;static unsigned wert,lesen;
+ bool begin(const char*,bool){return true;}
+ bool isKey(const char*){return vorhanden;}
+ unsigned getUChar(const char*,unsigned){++lesen;if(!vorhanden)throw std::runtime_error("NVS-Lesefehler");return wert;}
+ unsigned putUChar(const char*,unsigned v){vorhanden=true;wert=v;return 1;}
+ void end(){}
+};
+bool Preferences::vorhanden=false;unsigned Preferences::wert=0,Preferences::lesen=0;
+'''+funktion+r'''
+int main(){
+ if(fahrtEmpfinden() || Preferences::lesen)return 1;
+ if(!fahrtEmpfinden(true,true)||!fahrtEmpfinden())return 2;
+ if(!fahrtEmpfinden(true,false)||fahrtEmpfinden())return 3;
+}
+'''
+        with tempfile.TemporaryDirectory() as d:
+            p,exe=Path(d,'nvs.cpp'),Path(d,'nvs');p.write_text(cpp)
+            subprocess.run(['c++','-std=c++11','-Wall','-Wextra','-Werror',str(p),'-o',str(exe)],check=True)
+            subprocess.run([str(exe)],check=True)
 
     def test_ausgeschaltet_bytegleich_und_schalter(self):
         with tempfile.TemporaryDirectory() as d:

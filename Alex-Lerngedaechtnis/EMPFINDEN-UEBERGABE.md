@@ -1,5 +1,7 @@
 # Empfinden v1: Übergabe an Alex und Claude
 
+**Aktueller Review-Stand: v2.** Siehe [v2-Plan](EMPFINDEN-PLAN-v2.md) und [v1/v2-Ergebnisse](EMPFINDEN-v2-ERGEBNISSE.md). Der folgende ursprüngliche Bericht dokumentiert v1; seine Zahlen und 600-Takt-Wortsperre gelten nur für v1.
+
 Schritt 1, auf main 847de18. Verfahren vor echter Nachrechnung eingefroren in f3a50d0.
 Keine Geräteprüfung durchgeführt; aufspielen und Stromausfallprobe bleiben bei Alex.
 

@@ -180,14 +180,19 @@ def lies_vorhersagestart(zeile):
 
 
 EMPFINDEN_KOPF = ("takt", "gerade", "woanders", "anlauf", "gueltig", "mass_gerade_mg", "mass_woanders_mg", "mittel_mg", "langsam_mg")
-EMPFINDEN_FELDER = ("version", "mittel_halbwert", "langsam_halbwert", "mass_gerade_halbwert", "anlauf", "wiederanlauf", "norm_ab", "boden_gerade_mg", "boden_woanders_mg", "hysterese_e3")
+EMPFINDEN_FELDER_V1 = ("version", "mittel_halbwert", "langsam_halbwert", "mass_gerade_halbwert", "anlauf", "wiederanlauf", "norm_ab", "boden_gerade_mg", "boden_woanders_mg", "hysterese_e3")
+
+EMPFINDEN_FELDER = EMPFINDEN_FELDER_V1 + ("mass_woanders_halbwert", "start_woanders_mg")
 
 
 def lies_empfindenstart(zeile):
     teile = (zeile or b"").split(b",")
-    if teile[:2] != [b"EMPFINDEN", b"ok"] or len(teile) != 2 + len(EMPFINDEN_FELDER) or not all(t.isdigit() for t in teile[2:]):
+    if len(teile) < 3 or teile[:2] != [b"EMPFINDEN", b"ok"] or teile[2] not in (b"1", b"2"):
         return None
-    return dict(zip(EMPFINDEN_FELDER, map(int, teile[2:])))
+    felder = EMPFINDEN_FELDER_V1 if teile[2] == b"1" else EMPFINDEN_FELDER
+    if len(teile) != 2 + len(felder) or not all(t.isdigit() for t in teile[2:]):
+        return None
+    return dict(zip(felder, map(int, teile[2:])))
 
 
 def lies_empfindenzeile(zeile):
@@ -547,8 +552,12 @@ def empfinden_pruefen(pfad, meta, werte):
             raise ValueError("Empfinden-Datei ohne Konstanten in der JSON")
         return None
     import empfinden as em
+    felder = EMPFINDEN_FELDER
+    if konstanten.get("version") == 1:
+        from referenzen import empfinden_v1 as em
+        felder = EMPFINDEN_FELDER_V1
     import selbstvorhersage as sv
-    if tuple(konstanten.get(f) for f in EMPFINDEN_FELDER) != em.KONSTANTEN:
+    if tuple(konstanten.get(f) for f in felder) != em.KONSTANTEN:
         raise ValueError("Empfinden-Konstanten passen nicht zur Referenz")
     if meta.get("intervall_ms") != 1000 or meta.get("fortsetzung"):
         raise ValueError("Empfinden-Aufnahme muss frisch und im Sekundentakt sein")

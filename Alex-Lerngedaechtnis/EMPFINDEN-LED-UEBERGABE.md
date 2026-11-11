@@ -30,3 +30,11 @@ Die bestehende Hostprüfung kontrolliert außerdem unveränderte Ausgaben ohne S
 Alex: normal, kälter/wärmer je Stufe, langsamer Hinweis bei gerade=0, Anlauf und volles
 Protokoll am Gerät ansehen. LED-Helligkeit und Einfluss auf die Chiptemperatur sind noch
 nicht gemessen. Die Anzeige ist eine Zuordnung von Zahlen, kein weiterer Lernzustand.
+
+## Review-Nachtrag mit Empfinden v2
+
+`hell[]` ist jetzt auch für Stufe 0 (normales Grün) die einzige Helligkeitsquelle. Alle Werte bleiben 2/3/4/6/8/12/16; keine Änderung nach vermuteter Sichtbarkeit. Die getrennte langsame Schicht bleibt gedämpft, wie zuvor festgelegt.
+
+Auf derselben Fahrt (42.600 Sätze) ist woanders ab Stufe 1 in v1 34.036/35.850 betriebsfähigen Takten aktiv (94,94 %), in v2 13.460/40.800 (32,99 %). Tatsächliche vierte Takte: 8.509/35.850 → 3.366/40.800 (23,74 % → 8,25 %). Damit deutlich seltener, aber nicht weg. Zählung einschließlich Stufe 1; die im #10-Bericht verwendete Grenze ≥2 allein wäre für die LED falsch. Protokoll-voll-Überlagerung ist in den Rohdaten unbekannt, daher hier nicht simuliert.
+
+Siehe `EMPFINDEN-v2-ERGEBNISSE.md` und die JSON für gemeinsame Nenner, Wortfolgen und genaue Zählregeln. Unterscheidbarkeit am Board bleibt offen.
