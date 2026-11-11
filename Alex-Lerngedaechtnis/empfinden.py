@@ -62,10 +62,9 @@ class Empfinden:
         gueltig = temp_dc is not None
         if gueltig:
             x = F(temp_dc) / F(10)
-            if not np.isfinite(x) or not -100 <= float(x) <= 200:
-                raise ValueError("Temperatur außerhalb des Empfinden-Bereichs")
-            if mittel is not None and not np.isfinite(F(mittel)):
-                raise ValueError("Ungültiges Fehlermittel")
+            gueltig = bool(np.isfinite(x) and -100 <= float(x) <= 200
+                            and (mittel is None or np.isfinite(F(mittel))))
+        if gueltig:
             self.n = min(16777215, self.n + 1)
             self.boot = min(16777215, self.boot + 1)
             if not self.init:
