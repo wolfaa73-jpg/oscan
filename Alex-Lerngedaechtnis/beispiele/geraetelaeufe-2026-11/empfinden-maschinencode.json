@@ -1,0 +1,46 @@
+{
+  "umgebung": "esp32s3-startwert",
+  "flag": "-ffp-contract=off",
+  "funktionen": [
+    {
+      "funktion": "Empfinden::starte()",
+      "verschmolzen": 0
+    },
+    {
+      "funktion": "Empfinden::stufe(float, float, int)",
+      "verschmolzen": 0
+    },
+    {
+      "funktion": "Empfinden::lerne(float, float, float, float, unsigned int&, float&)",
+      "verschmolzen": 0
+    },
+    {
+      "funktion": "Empfinden::milli(float)",
+      "verschmolzen": 0
+    },
+    {
+      "funktion": "Empfinden::takt(unsigned int, bool, int, bool, float)",
+      "verschmolzen": 0
+    },
+    {
+      "funktion": "Empfinden::importiere(unsigned char const*, unsigned int)",
+      "verschmolzen": 0
+    },
+    {
+      "funktion": "koerperTakt(bool, int, unsigned int, unsigned int)",
+      "verschmolzen": 0
+    },
+    {
+      "funktion": "Empfinden::anlauf() const",
+      "verschmolzen": 0
+    },
+    {
+      "funktion": "Empfinden::put(unsigned char*, unsigned int)",
+      "verschmolzen": 0
+    },
+    {
+      "funktion": "Empfinden::get(unsigned char const*)",
+      "verschmolzen": 0
+    }
+  ]
+}
