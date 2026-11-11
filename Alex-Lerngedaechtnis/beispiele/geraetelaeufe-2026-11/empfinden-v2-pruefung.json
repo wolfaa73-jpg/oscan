@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "s3_ram_bytes": 32096,
+  "s3_flash_bytes": 362421,
+  "tests_gesamtsuite": 343,
+  "tests_zusaetzlich_fahrtparitaet": 1,
+  "fahrt_takte_cpp_python": 42600,
+  "synthetische_takte_cpp_python": 12000,
+  "fma_im_s3_abbild": 0,
+  "quellen": {
+    "empfinden.py": "5f6c88a7b0823ae20ca794ce00758b9a479b9c853dfe4d04650e8481ae09c23a",
+    "esp32/Lernknoten/Empfinden.h": "42e7b225c5dd1cbf0d5389bf89e614584dad0d51b3a7ac5d7148ca65bb7edb9b",
+    "esp32/Lernknoten/Lernknoten.ino": "c286e1cd6167dc0ae5adbe025b8d1885206e830584dc0a4d70cca82a180e5257",
+    "empfinden_vergleich.py": "34628c14fae24d0e689b3c990313b238905986fa437ebe81db39fa578d4c7d96"
+  }
+}
