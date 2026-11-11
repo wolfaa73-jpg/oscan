@@ -6,6 +6,7 @@
 #include "Reize.h"
 #include "Vorhersage.h"
 #include "Empfinden.h"
+#include "EmpfindenLed.h"
 #include <string.h>
 #ifdef ARDUINO_ARCH_ESP32
 #include <Preferences.h>
@@ -545,7 +546,12 @@ void fahrtTakt(bool gueltig, int32_t temp, unsigned reiz, Zustand zustand, const
     // Das Gesicht unterwegs: blau, wenn es kälter ist als erwartet, orange, wenn wärmer. Sonst schwach
     // grün, im Anlauf schwach weiß, mit vollem Protokoll schwach violett.
     blitzAn = false;
-    if (vorhersage.ueberrascht()) {
+    if (empfinden.aktiv()) {
+        const auto muster = EmpfindenLed::muster(empfinden.gerade(), empfinden.woanders(),
+                                                 empfinden.anlauf() || !gueltig, fahrtVoll);
+        const auto farbe = EmpfindenLed::bild(muster, fahrtTaktNr);
+        neopixelWrite(ALEX_RGB_PIN, farbe.r, farbe.g, farbe.b);
+    } else if (vorhersage.ueberrascht()) {
         const bool waermer = vorhersage.mittel() > 0.0f;
         neopixelWrite(ALEX_RGB_PIN, waermer ? 40 : 0, waermer ? 10 : 0, waermer ? 0 : 40);
     } else if (!vorhersage.reif()) {
