@@ -1,0 +1,48 @@
+{
+  "pr": 12,
+  "empfinden_version": 2,
+  "basis": "847de18da6d2a02eb33974d2dddc1ee349d54738",
+  "tests": {
+    "anzahl": 357,
+    "erfolgreich": true,
+    "dauer_s": 62.553,
+    "befehl": "python -m unittest -v"
+  },
+  "builds": {
+    "s3": {
+      "ram_bytes": 56788,
+      "flash_bytes": 777205
+    },
+    "c3": {
+      "ram_bytes": 39180,
+      "flash_bytes": 794488
+    }
+  },
+  "fahrtformat": {
+    "version": 2,
+    "satzbytes": 20,
+    "exportkopfbytes": 16,
+    "alte_datei_unveraendert": true,
+    "reiz_unbekannt_im_altbestand": true
+  },
+  "fma_im_s3_abbild": 0,
+  "hardwareversuch": false,
+  "quellen": {
+    "empfinden.py": "5f6c88a7b0823ae20ca794ce00758b9a479b9c853dfe4d04650e8481ae09c23a",
+    "empfinden_vergleich.py": "34628c14fae24d0e689b3c990313b238905986fa437ebe81db39fa578d4c7d96",
+    "koerper.py": "5d9207c9cd3c70ce641816e47b37a7fd6169697b426647d8c5a0f0a29afc33cd",
+    "fahrt.py": "ac6d3f7b0642075f20669a2a88bdedac4e9a600e9b31c1189064d0922c9b16c4",
+    "test_fahrt_funk.py": "b911ffa3055cdf6da97819c8669b9be62646cac3c77bfa464854a4cc29ffed8f",
+    "test_empfinden.py": "cbeba0067443410e1039775091faa3a41233d76e686ff2dd19bd8d6d6f6bb39d",
+    "test_empfinden_vergleich.py": "1744e8976aa2eebb906dd64a01b0bc485b56182121abb62b5227408a074a0207",
+    "esp32/Lernknoten/Lernknoten.ino": "8f9324cde14f4dfdb67c03ae96b0965df834eeabe1ba539ef85c1bf401510637",
+    "esp32/Lernknoten/Fahrt.h": "24e25878665ba28213bd288557e74cac919e56683c8135abbda7ec0fa3e2d6bd",
+    "esp32/Lernknoten/Empfinden.h": "42e7b225c5dd1cbf0d5389bf89e614584dad0d51b3a7ac5d7148ca65bb7edb9b",
+    "esp32/Lernknoten/EmpfindenLed.h": "97e51238ea6d7375f13dade130974d66bcbce7ade9fe9f2633c512f4296f2102",
+    "esp32/Lernknoten/EmpfindenFunk.h": "16af5fcbec6de6ff4920878c30c57abd00686740b4f5aaa089f569aaba355886",
+    "esp32/Gesicht/src/main.cpp": "bdeaec500ac1533ec84687ba4858ba50842b439aae6beeb6d8f65dc7bed57735",
+    "esp32/Gemeinsam/EmpfindenPaket.h": "5463344e0893186d94408b444327f8b5a3a9cc3e6f4038d0ad5402f5dec89757",
+    "esp32/Gemeinsam/GesichtFormen.h": "18951d759aba70704d373fd99bda909ba08f9b706b8053d2f53beba7f8601e60",
+    "esp32/Gemeinsam/FunkPlan.h": "3c6bba995c67b55977d0e96b59c058fc5cb1c86556ef463c632d03e1b7a26948"
+  }
+}

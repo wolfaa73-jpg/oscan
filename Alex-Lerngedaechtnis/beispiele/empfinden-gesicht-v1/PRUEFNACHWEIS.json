@@ -1,0 +1,170 @@
+{
+  "basis": "847de18",
+  "schritte": [
+    1,
+    2,
+    3
+  ],
+  "tests": {
+    "gesamt": 345,
+    "fehler": 0,
+    "uebersprungen": 0,
+    "sekunden": 53.195
+  },
+  "werkzeuge": {
+    "python": "3.9.6",
+    "numpy": "2.0.2",
+    "pillow": "11.3.0",
+    "platformio": "6.2.0",
+    "espressif32": "6.12.0",
+    "lovyangfx": "1.2.29"
+  },
+  "builds": [
+    {
+      "umgebung": "esp32s3-startwert",
+      "ram": 56668,
+      "flash": 776693
+    },
+    {
+      "umgebung": "guition-c3",
+      "ram": 39180,
+      "flash": 794488
+    }
+  ],
+  "paketproben": 10000,
+  "einzelbitdefekte": 960000,
+  "bildproben": 62,
+  "png_metadaten_leer": true,
+  "auf_geraet_geprueft": false,
+  "maschinencode": [
+    {
+      "funktion": "Empfinden::starte()",
+      "madd_msub": 0
+    },
+    {
+      "funktion": "Empfinden::stufe(float, float, int)",
+      "madd_msub": 0
+    },
+    {
+      "funktion": "Empfinden::lerne(float, float, float, float, unsigned int&, float&)",
+      "madd_msub": 0
+    },
+    {
+      "funktion": "Empfinden::milli(float)",
+      "madd_msub": 0
+    },
+    {
+      "funktion": "Empfinden::takt(unsigned int, bool, int, bool, float)",
+      "madd_msub": 0
+    },
+    {
+      "funktion": "Empfinden::importiere(unsigned char const*, unsigned int)",
+      "madd_msub": 0
+    },
+    {
+      "funktion": "koerperTakt(bool, int, unsigned int, unsigned int)",
+      "madd_msub": 0
+    },
+    {
+      "funktion": "Empfinden::anlauf() const",
+      "madd_msub": 0
+    },
+    {
+      "funktion": "Empfinden::put(unsigned char*, unsigned int)",
+      "madd_msub": 0
+    },
+    {
+      "funktion": "Empfinden::get(unsigned char const*)",
+      "madd_msub": 0
+    }
+  ],
+  "quellen_sha256": {
+    "arbeiterlaufzeit.py": "0488c2c4daceaf8e63695af0c98b772c2d334b2ac0c7dc94c78f967866c1b4a1",
+    "arbeitsspeicher.py": "2aae1bf2e6dec72330a74acc6f5c6db3ebc1a3f68983a2e8bf121a0e6a4548f0",
+    "auftraege.py": "1d142712afd813550cd69ebaff88f7c123ab7a99c8c31037f982d4abe65e01ef",
+    "auftragsjournal.py": "39f5a8ce49ff7140883b72e936a6c4aef9cb2c3fd62906fcf4d35ebdb5133c4c",
+    "boardprobe.py": "b081855b56fad1dd97850489478784e87563183576a6774f497939a4374d2012",
+    "einheitenbootstrap.py": "a190778c2f36eee4a9bfa7f71bf394e3b1ef02e224c23f50e1a7abef0dc2e88a",
+    "empfinden.py": "2dba7fcc9d2837f6ab7fec4b2b7420b5ff99d4a49ff462dad23e72f7125aa00e",
+    "empfinden_auswertung.py": "ea567a20d0d43372627d5435bb2ce823bbba665284aa8a7d6f3346baa4345c0d",
+    "empfinden_paket.py": "a3a908d491dcc6f80654e0ad5075ddc0fd804e1bfdc41a32e3b815636dd6ba31",
+    "esp32/Gemeinsam/EmpfindenPaket.h": "5463344e0893186d94408b444327f8b5a3a9cc3e6f4038d0ad5402f5dec89757",
+    "esp32/Gemeinsam/FunkPlan.h": "3c6bba995c67b55977d0e96b59c058fc5cb1c86556ef463c632d03e1b7a26948",
+    "esp32/Gemeinsam/GesichtFormen.h": "18951d759aba70704d373fd99bda909ba08f9b706b8053d2f53beba7f8601e60",
+    "esp32/Gesicht/host.cpp": "fdd8f154305ceefd7e27aebaab9d0791d5cb32fa8a30fc2c0df479e02c67026c",
+    "esp32/Gesicht/platformio.ini": "284138f1de70a7e7cb2d4873b873150b5f7ad04a52f5f8d884f83560d6aa6008",
+    "esp32/Gesicht/src/main.cpp": "bdeaec500ac1533ec84687ba4858ba50842b439aae6beeb6d8f65dc7bed57735",
+    "esp32/Lernknoten/Empfinden.h": "439ec84e872a66bf67f0464de5a8b37ae0b39be126b3bdd21d29febc6029f0da",
+    "esp32/Lernknoten/EmpfindenFunk.h": "16af5fcbec6de6ff4920878c30c57abd00686740b4f5aaa089f569aaba355886",
+    "esp32/Lernknoten/EmpfindenLed.h": "30c8cba9fab1179abbd1d03ac6267636422ad8ff4e27722be3425ccdb8853536",
+    "esp32/Lernknoten/Erkundung.h": "ac04b69b08e39d8021f0654cc233a41f26af5f301591d59e89f35ced7882163d",
+    "esp32/Lernknoten/Fahrt.h": "d44087636e8a5bd7bad831faa397b63b41ebefe4cc53ae6cb29009b52eb4fd70",
+    "esp32/Lernknoten/Knoten.h": "ceccf137a89546ee20e67fb72e41265840cc7cc3bf8f4a081a8a3c85112e3f17",
+    "esp32/Lernknoten/Koerper.h": "ab867d2ad27ad8fc032024ede38953e21bed40116d7f886e4856779161c026b8",
+    "esp32/Lernknoten/Lernknoten.ino": "399f89d9c7f4343ae61507568ba171acd079da4d74f978ffa495cc9e60d734ee",
+    "esp32/Lernknoten/Reize.h": "e30a0217e48eb2c02e6ed03c6e06b52b86faddec6a8f0a98b0a40da246ea536f",
+    "esp32/Lernknoten/Vorhersage.h": "7520331957110907d8d47ba89044cfe0fc6648d8a4bd5bc1e4106723974446fd",
+    "esp32/host.cpp": "e975afe506b87c0b19da7b634d1fa3a37d11ea424d9e78fbe480727c03274058",
+    "esp32/platformio.ini": "154b58b984883e44d8c306ccab98523d4d4bad3ec9aae1618bde4efd80513737",
+    "fahrt.py": "c53db5dd18e132177e559b008f252f58c3d2c8582428fe14b3b7f5108a4c4515",
+    "feinstufe.py": "9951e112e9546e2a2ec94e2e028452b98b8606af9785b27e0ae7e397c5d99b7f",
+    "firmwarelanglauf.py": "9a3cd4a91235ab4584626e02ee4171e1b9db6d72a1f6ae64c5a22ce66cb4a753",
+    "firmwaremutationen.py": "cb8b7fd44f6b9e208554e53b0ca23c27f494d1ebfb13cf593a5ea325b57c09d1",
+    "firmwarepruefung.py": "d68c4696cf34e9561d4b57a8d1ac160e79df4ddf5258611b839939b6cfd4fab1",
+    "funkversuch.py": "72ff5094ceaa12dc82e8266453a65cea7cb726c8dafc54a920d47e67ce542f1b",
+    "funkversuch_probe.py": "64ca489e64ecf0570b97caa7155c7be8ee5067d5f1cd767870a7dad6b0cae8ad",
+    "gesicht_bilder.py": "a55c2c8544cefd6bff23f2a835c5c6e05f80378a00a4791b4fdb78e1d28c1ef2",
+    "kaelteprobe.py": "281c382a0f1b840062d5ed44667faaa656c26b37379d262ce8c127808e641c23",
+    "kaelteversuch.py": "c5c5a61e27499ef72fcd092fdc693f5cb4c346c060d7dd48ae62a5d8471f160e",
+    "kern.py": "5c285af1cf53b68ad7536d9640213362a10db1ce07ba6129481e433e58cf07cd",
+    "koerper.py": "f54efa1e01b27781ce723a653d0d6735ddfe1a9fa681319072cd8221bb90496a",
+    "kostenbericht.py": "0c9af04f9dc4a90e020fd713c289ddd50b6e772cde4fad250dc4a6a286a8b6bc",
+    "kostenlabor.py": "a0241537b04d0c62126b212697b0e833385c18200d7e9b4ed8cd6abc1a3a4cf7",
+    "kunstkoerper.py": "2b76e25c2054f5c4c847c01efff22047c9e44b5193a3fa1e5d3ca71afad4722d",
+    "labor.py": "c49e10432b5087ee73aa2fdb9c8e3f12f65166ba28770f51cb1058165309699d",
+    "melder.py": "ad59af766fa1dffa80379489f2551a6c281989c10a6dac28b9ce6d182db417e9",
+    "messen.py": "c8b9964ae5b7bad82a8461c22c7a2f85f675068b76e53a1b660310a23f52215a",
+    "neustart.py": "809024117551ddbf646c52665ec2c9d146b81b872c056a86a0bacf32c43d6a3f",
+    "neustartlabor.py": "54f2467223723b55971691960ac2ab591f48bbb1e3c12081c557a1b0d84341cd",
+    "pruefung24h.py": "ec579c7b25b6fbe59e98005a24019a629f3b72026d1ddf88951acde32bd97e18",
+    "selbsterkundung.py": "c819fea859140badb2c6b3b6b86ffa58a90a91a0c70950ecb2561d11e1fe1488",
+    "selbstvorhersage.py": "11daa3bba54bc5cd38ad821ee629fc5f2c3036f894cb6f0fc5e2457983982064",
+    "signallabor.py": "802ad62b2e67ad852f54981b7e85b8503eac68f06cf02d63603d72a22618eced",
+    "systemkern.py": "a956328deafd924d9be1822bcf2219da09ed551262d32b9442ae2a7b46e63039",
+    "systemlabor.py": "064f2224bd816e12e16a9d56424c48aaf011eeed0f18888c1432259e0c9b3567",
+    "test_auftragsjournal.py": "78677247fd52962d4c443584a3442f026ac858db051393b63ce0f5f6c9456090",
+    "test_einheitenbootstrap.py": "fe28c85108a06a2b78abca63eaa6d2b354abf64931d9861526e3f37da5887578",
+    "test_empfinden.py": "b91c79a842df6d1be83dc3dee718cbbc9f302516f3cb6325ea6d75e8c1eef0f6",
+    "test_empfinden_led.py": "462d64c042ad0d3eb06cf6e18f2485c5ceccc06e437588b593d754201fc3da3f",
+    "test_empfinden_paket.py": "01f079e488dc578163624c8b60ff1484cce4419ea549d88f52b26cea1962d295",
+    "test_firmwarelanglauf.py": "cd4934fb07178e8c5301eece5de182451f0c423ffbc9b48696a5ab4729d119ff",
+    "test_firmwarepruefung.py": "6c9ac062b28ffdc8020fdc1d02e59eea777a101a55ed4fe1fb3c67123883d869",
+    "test_funkversuch.py": "d109587fb0e77e36e6ac24843b2d5fa140233066eeb44359395e6236fff93d93",
+    "test_kostenbericht.py": "63c1cda2f31faa033d5162cbab826b1909acf19f1ffcaa5d960a315f6281cd2a",
+    "test_kostenlabor.py": "8079a0375a49048100cc0ba5a8999c3c56954fbb4668eda9ae07b23c14fd0e1f",
+    "test_labor.py": "a735d5f2747e9d397ae0f378c66a9614654f2b444a7462df7310e1b1e9e5a91c",
+    "test_melder.py": "40c2b366b5a794cf068d2ab5d494ed9a811eccc8efbb090678e93f745f5490e5",
+    "test_pruefung24h.py": "1a68b31080e7ea9aae427951b507cb5e387960950171ed654559883587801da3",
+    "test_signallabor.py": "bb20d8fd3ec27c0b03d643c7e30352b89e3ef9f0560230237ba596930c1b5077",
+    "test_system.py": "ca82da37e6458fe2fceedd69f1d679b29f6b92b441bcef5af6bf42c7dd1db2cf",
+    "test_verbund.py": "584e5f5af2f214d655db5d19329eab5c0cd8f3ff2a21f6faa59290b44cad36be",
+    "test_verbundsystem.py": "cc29fbfefcb6887c7e7268f824f1a6134341738a6b9283e7f980023ad02a5c7a",
+    "test_versuch.py": "8e48bf7978e30ba49e958cb5ffa263530f9015f15b0ebca22316139efdb8e51e",
+    "test_verweildauer.py": "bacf0f194d472702efaede55893b6e5890b8875d28430d9669576bf03bcd6ab1",
+    "test_verweildauerlabor.py": "cbb0ec0d6d8ee5037a5065b6a99bd50e90526211f4bd70826de66781490206d4",
+    "test_wiederanlauf.py": "92361140ee195bfba6c4c1bbb43a69b5fddc9df3cbf07c860c5489a8535c0b17",
+    "transport.py": "2123ccc1c82e39d9317d43554608882daba06645cedf63b80027f9b7ad1a3151",
+    "umgebung.py": "1274ce743e859d75ff5c4f4e2cbc9452bfb38058f81eef26b65dfd7296d7156a",
+    "verbund.py": "c26da0d1d4885fa83043767d3a8b13ef655a6fa5f336fbbd7ff84782d6817611",
+    "verbundlabor.py": "61383e11c5130977badbefbb8f027b90461c0e30c13b8dd0a5f7756dd096ccb5",
+    "verbundsystem.py": "eb732c21fe57fcccb110290abc27eb7a27f6ccae22db650e823c68108a96db69",
+    "versuch.py": "6657f6d6126b54e5f690025c97688a43badbd7739c31f99470f6febe9038d29c",
+    "verweildauer.py": "726b20dd073c0b177b7be261f87b5c5a5a410b390e05fc45f7d110b8e8e7cad7",
+    "verweildauerlabor.py": "197e13009f70ce9ab2dc3d554312805e19ca3bb2b537dc57c5b38a4b70ffed3d",
+    "vokabular.py": "f0543a0e8586ef7be9261eeb371a433f6af6160223bcf983630c8ec09160b868",
+    "vorhersage.py": "401e9566b20f8810d6d4cf81137f2652865cb7cf2bb4a805d663d5a012d30667",
+    "wiederanlauf.py": "377f9937b9fac04a0ef427567835232a51e5e0c8db9c31fe8d7489cbb3fd406f",
+    "wiederanlauflabor.py": "19bf17846f60211c0a9dda8b7dd2a44dcdff23c50448e75db042e2404d2d5e6f"
+  },
+  "eingabekorrektur_alle_echten_ergebnisse_identisch": true
+}

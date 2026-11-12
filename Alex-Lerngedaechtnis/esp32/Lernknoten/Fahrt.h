@@ -53,3 +53,19 @@ struct Fahrtsatz {
         }
     }
 };
+
+// V2 erweitert den unveränderten 16-Byte-Satz um ein eigenes Reizfeld.
+// Exportkopf: OSCFAHRT, uint32 Version 2, uint32 Satzgröße 20 (little endian).
+// Byte 16: Reizbits inkl. 32 = Sende-API-Fehler; 17/18 reserviert 0;
+// Byte 19: 1 = Reizfeld vorhanden, 0 = unbekannt (konvertierter Altsatz).
+struct FahrtV2 {
+    static const unsigned bytes = 20, kopfBytes = 16;
+    static void kopf(uint8_t *p) {
+        const uint8_t k[kopfBytes] = {'O','S','C','F','A','H','R','T',2,0,0,0,20,0,0,0};
+        for(unsigned i=0;i<kopfBytes;++i)p[i]=k[i];
+    }
+    static void reize(uint8_t *p, unsigned reiz, bool bekannt=true) {
+        p[16]=bekannt ? static_cast<uint8_t>(reiz) : 0;
+        p[17]=p[18]=0;p[19]=bekannt ? 1 : 0;
+    }
+};
