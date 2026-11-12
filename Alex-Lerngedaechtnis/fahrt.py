@@ -106,8 +106,9 @@ def stand(port):
     kopfbytes = int(teile[7]) if len(teile) >= 8 else 0
     if satzbytes not in (SATZ.size,V2_BYTES) or kopfbytes not in (0,len(V2_KOPF)) or log<kopfbytes or (log-kopfbytes)%satzbytes:
         raise ValueError("Ungültige Formatangabe im Fahrtstand")
+    # Das Selbstgesicht hängt eine 1 an: Es hält bei STOP nicht an und läuft neben den Befehlen weiter.
     return dict(gewollt=bool(gewollt), saetze=(log-kopfbytes)//satzbytes, frei_bytes=frei,
-                takt=takt, voll=bool(voll), satzbytes=satzbytes)
+                takt=takt, voll=bool(voll), satzbytes=satzbytes, laeuft_weiter=teile[8:9] == ["1"])
 
 
 def holen(port):
@@ -222,7 +223,7 @@ def main(argv=None):
             print(f"Fahrtmodus {'gemerkt' if s['gewollt'] else 'aus'}, {s['saetze']} Sätze im Protokoll, "
                   f"{s['frei_bytes'] // 1024} KB frei (reicht für etwa {max(0, s['frei_bytes'] - 65536) / s['satzbytes'] / 3600:.0f} h), "
                   f"Takt {s['takt']}" + (", Protokoll voll" if s["voll"] else "") + ".")
-            if s["gewollt"] and arg.aktion != "an":
+            if s["gewollt"] and arg.aktion != "an" and not s["laeuft_weiter"]:
                 print("Hinweis: Der Fahrtmodus ist gemerkt, läuft nach diesem Befehl aber erst wieder nach dem "
                       "nächsten Einschalten oder Zurücksetzen.")
     except (OSError, ValueError, KeyError) as fehler:
