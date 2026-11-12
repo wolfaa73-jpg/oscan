@@ -378,7 +378,9 @@ bool koerperTakt(bool tempGueltig, int32_t temp, uint32_t heap, uint32_t luecke)
     if (fahrtAn) fahrtTakt(tempGueltig, temp, reiz, zustand, entscheidung);
 #endif
     // Still sichern. Schlägt es fehl, folgt FEHLER, und die Aufnahme bricht sichtbar ab.
-    return !(reiz & 32u) && (!sichernAlle || takt % sichernAlle || lernstand(true, false));
+    // Ein Sendefehler bricht nur den festgelegten Funkversuch ab. Sonst steht er als Reizbit 32 in der
+    // Körperzeile, und der Knoten läuft weiter.
+    return !((reiz & 32u) && funk.plan) && (!sichernAlle || takt % sichernAlle || lernstand(true, false));
 }
 
 #ifdef ARDUINO_ARCH_ESP32
@@ -597,7 +599,8 @@ bool fahrtGewollt(bool setzen = false, bool wert = false) {
 bool fahrtEmpfinden(bool setzen = false, bool wert = false) {
     Preferences nvs;
     if (!nvs.begin("alex-lernlabor", false)) return false;
-    const bool ok = setzen ? nvs.putUChar("empfinden", wert ? 1 : 0) == 1 : nvs.getUChar("empfinden", 0) == 1;
+    const bool ok = setzen ? nvs.putUChar("empfinden", wert ? 1 : 0) == 1
+                           : nvs.isKey("empfinden") && nvs.getUChar("empfinden", 0) == 1;
     nvs.end();
     return ok;
 }
@@ -605,7 +608,7 @@ bool fahrtEmpfinden(bool setzen = false, bool wert = false) {
 bool fahrtFunk(bool setzen = false, bool wert = false) {
     Preferences nvs;
     if (!nvs.begin("alex-lernlabor", false)) return false;
-    const bool ok = setzen ? nvs.putUChar("funk", wert ? 1 : 0) == 1 : nvs.getUChar("funk", 0) == 1;
+    const bool ok = setzen ? nvs.putUChar("funk", wert ? 1 : 0) == 1 : nvs.isKey("funk") && nvs.getUChar("funk", 0) == 1;
     nvs.end(); return ok;
 }
 
@@ -768,7 +771,7 @@ bool verarbeiteZeile() {
         if (!an) { empfinden.beende(); Serial.println("EMPFINDEN,aus"); return true; }
         vorhersage.starte();
         empfinden.starte();
-        Serial.println("EMPFINDEN,ok,1,600,86400,3600,1800,600,600,200,500,1500");
+        Serial.println("EMPFINDEN,ok,2,600,3600,3600,1800,0,600,200,500,1500");
         return true;
     }
     if (befehl("VORHERSAGE", rest)) {

@@ -12,7 +12,8 @@ struct Empfinden {
     static const unsigned standBytes = 60;
     static const uint32_t magie = 0x31464d45;
     static float anteilM() { return 1.0f - static_cast<float>(0.9988454217380301); }
-    static float anteilL() { return 1.0f - static_cast<float>(0.9999919774953673); }
+    static float anteilL() { return 1.0f - static_cast<float>(0.9998074776513175); }  // 1 h, v2
+    static float anteilW() { return 1.0f - static_cast<float>(0.9999919774953673); }  // Maßband woanders, 1 Tag
     static float anteilG() { return 1.0f - static_cast<float>(0.9998074776513175); }
     void starte() { *this = Empfinden(); aktiv_ = true; }
     void beende() { aktiv_ = false; text[0] = 0; }
@@ -21,7 +22,7 @@ struct Empfinden {
     const char *zeile() const { return text; }
     int gerade() const { return g; }
     int woanders() const { return w; }
-    bool anlauf() const { return n <= 1800 || boot <= 600; }
+    bool anlauf() const { return n <= 1800 || boot == 0; }  // v2: kein stummer Wiederanlauf
     static int stufe(float d, float mass, int vor = 0) {
         const float a = fabsf(d);
         float grenze = 2.0f * mass;
@@ -53,7 +54,7 @@ struct Empfinden {
         w = gueltig && !anlauf() ? stufe(d, mw, w) : 0;
         if (gueltig && boot > 600) {
             if (hatFehler) lerne(mittel, mg, anteilG(), .04f, ng, qg);
-            lerne(d, mw, anteilL(), .25f, nw, qw);
+            lerne(d, mw, anteilW(), .25f, nw, qw);
         }
         snprintf(text, sizeof(text), "EMPFINDEN,%lu,%d,%d,%d,%d,%ld,%ld,%ld,%ld",
                  static_cast<unsigned long>(t), g, w, anlauf() ? 1 : 0, gueltig ? 1 : 0,

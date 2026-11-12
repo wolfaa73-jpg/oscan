@@ -8,6 +8,10 @@
 #endif
 
 struct EmpfindenFunk {
+    // Sendeleistung in Viertel-dBm, hier 2 dBm. Gemessen am 11.11.2026: Mit voller Leistung (20 dBm) kam bei
+    // 5 cm Abstand kein einziges Paket am Display an, der Empfänger übersteuerte. Mit 2 dBm kamen sie mit
+    // −50 dBm an. Gesetzt für Schreibtisch und Auto; die Reichweite ist nicht gemessen.
+    static const int8_t sendeleistung = 8;
     unsigned modus=0;
     bool plan=false;
     bool setze(unsigned neu) {
@@ -22,7 +26,8 @@ struct EmpfindenFunk {
             if(!WiFi.mode(WIFI_STA))return false;
             WiFi.disconnect(false,false);
             if(esp_wifi_set_channel(EmpfindenPaket::kanal,WIFI_SECOND_CHAN_NONE)!=ESP_OK
-               || esp_wifi_set_ps(WIFI_PS_NONE)!=ESP_OK || esp_now_init()!=ESP_OK) {
+               || esp_wifi_set_ps(WIFI_PS_NONE)!=ESP_OK || esp_wifi_set_max_tx_power(sendeleistung)!=ESP_OK
+               || esp_now_init()!=ESP_OK) {
                 WiFi.mode(WIFI_OFF);return false;
             }
             esp_now_peer_info_t peer={};

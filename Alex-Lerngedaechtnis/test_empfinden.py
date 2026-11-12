@@ -63,9 +63,10 @@ class EmpfindenTests(unittest.TestCase):
             with self.assertRaises(ValueError): b.importiere(kaputt)
             self.assertEqual(b.exportiere(),a.exportiere())
         b.neustart(); q=b.qg
-        for _ in range(600):
+        for _ in range(600):   # v2: nach dem Laden sofort Wörter, aber das Maßband lernt 600 Takte nicht
             z=b.takt(200,e.F(-5))
-            self.assertEqual(z[:3],[0,0,1])
+            self.assertLessEqual(z[0],-2)
+            self.assertEqual(z[2],0)
         self.assertEqual(b.qg,q)
         self.assertFalse(b.takt(200,e.F(-5))[2])
 

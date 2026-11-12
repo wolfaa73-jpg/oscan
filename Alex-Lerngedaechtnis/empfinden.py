@@ -1,4 +1,6 @@
-"""Empfinden v1, float32-Referenz zu Empfinden.h. Entscheidungen: EMPFINDEN-PLAN.md.
+"""Empfinden v2, float32-Referenz zu Empfinden.h. Entscheidungen: EMPFINDEN-PLAN.md, Änderungen von Alex am
+11.11.2026 in EMPFINDEN-V2.md: Das langsame Normal wandert mit einer Stunde, und nach einem geladenen
+Neustart gibt es keine stummen Takte mehr.
 
 Der schnelle Eingang ist das unveränderte 20-Takt-Fehlermittel der Selbstvorhersage.
 Fehlende Temperatur: kein Lernen, keine neuen Wörter. Kalte Starts: 1800 gültige
@@ -9,9 +11,10 @@ import struct
 import numpy as np
 
 F = np.float32
-HM, HL, HG = 600, 86400, 3600
-ANLAUF, WIEDERANLAUF, NORM_AB = 1800, 600, 600
-KONSTANTEN = (1, HM, HL, HG, ANLAUF, WIEDERANLAUF, NORM_AB, 200, 500, 1500)
+HM, HL, HG = 600, 3600, 3600
+HW = 86400  # Maßband von „woanders“: lernt weiter mit einem Tag, sonst wüchse es bei jedem langsamen Wechsel mit
+ANLAUF, WIEDERANLAUF, NORM_AB = 1800, 0, 600
+KONSTANTEN = (2, HM, HL, HG, ANLAUF, WIEDERANLAUF, NORM_AB, 200, 500, 1500)
 KOPF = ("takt", "gerade", "woanders", "anlauf", "gueltig", "mass_gerade_mg", "mass_woanders_mg", "mittel_mg", "langsam_mg")
 MAGIE = 0x31464D45
 FORMAT = struct.Struct("<8I2i4fI")
@@ -79,7 +82,7 @@ class Empfinden:
         self.w = stufe(d, mw, self.w) if gueltig and not anlauf else 0
         if gueltig and self.boot > NORM_AB:
             for kanal, wert, h, boden, mass in (("g", None if mittel is None else F(mittel), HG, F(.04), mg),
-                                             ("w", d, HL, F(.25), mw)):
+                                             ("w", d, HW, F(.25), mw)):
                 if wert is None or abs(wert) >= F(4) * mass:
                     continue
                 n = min(16777215, getattr(self, "n" + kanal) + 1)
