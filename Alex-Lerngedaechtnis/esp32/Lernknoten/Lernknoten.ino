@@ -5,6 +5,7 @@
 #include "Koerper.h"
 #include "Reize.h"
 #include "Vorhersage.h"
+#include "Empfinden.h"
 #include <string.h>
 #ifdef ARDUINO_ARCH_ESP32
 #include <Preferences.h>
@@ -50,6 +51,7 @@ bool grenzenGesetzt = false;
 bool koerperAn = false;
 // Selbstvorhersage der Temperatur, an mit VORHERSAGE 1. Ihr Stand überlebt STOP, nicht NEUER_LAUF.
 Selbstvorhersage vorhersage;
+Empfinden empfinden;
 #ifdef ARDUINO_ARCH_ESP32
 // Fahrtmodus: Der Knoten startet nach dem Einschalten selbst, schreibt jeden Takt in seinen Flash und
 // behält die Vorhersage über einen Stromausfall. An mit FAHRT 1, die Beschreibung steht weiter unten.
@@ -332,6 +334,8 @@ bool koerperTakt(bool tempGueltig, int32_t temp, uint32_t heap, uint32_t luecke)
     // auch die Vorhersage des letzten Takts hat.
     vorhersage.takt(takt, tempGueltig, temp, reiz & 1u);
     if (*vorhersage.zeile()) Serial.println(vorhersage.zeile());
+    empfinden.takt(takt, tempGueltig, temp, vorhersage.hatFehler(), vorhersage.mittel());
+    if (*empfinden.zeile()) Serial.println(empfinden.zeile());
     Serial.print("K,");
     Serial.print(takt);
     Serial.print(',');
@@ -461,7 +465,7 @@ struct FahrtKopf {
     uint32_t magie, version, groesse, takt, summe;
 };
 uint8_t fahrtPuffer[Fahrtsatz::block * Fahrtsatz::bytes];
-uint8_t fahrtStandPuffer[sizeof(Selbstvorhersage)];
+uint8_t fahrtStandPuffer[sizeof(Selbstvorhersage) + Empfinden::standBytes];
 unsigned fahrtGepuffert = 0;
 uint32_t fahrtTaktNr = 0;
 bool fahrtErster = false, fahrtBeiNull = false, fahrtVoll = false, fahrtBereit = false;
@@ -495,11 +499,13 @@ void fahrtSichere() {
         fahrtVoll = !ok;
     }
     vorhersage.exportiere(fahrtStandPuffer);
-    const FahrtKopf kopf = {fahrtMagie, Selbstvorhersage::standVersion, static_cast<uint32_t>(sizeof(fahrtStandPuffer)),
-                            fahrtTaktNr, fahrtSumme(fahrtStandPuffer, sizeof(fahrtStandPuffer))};
+    const size_t bytes = sizeof(Selbstvorhersage) + (empfinden.aktiv() ? Empfinden::standBytes : 0);
+    if (empfinden.aktiv()) empfinden.exportiere(fahrtStandPuffer + sizeof(Selbstvorhersage));
+    const FahrtKopf kopf = {fahrtMagie, empfinden.aktiv() ? 2u : Selbstvorhersage::standVersion,
+                            static_cast<uint32_t>(bytes), fahrtTaktNr, fahrtSumme(fahrtStandPuffer, bytes)};
     File f = LittleFS.open(fahrtNeu, FILE_WRITE);
     const bool ok = f && f.write(reinterpret_cast<const uint8_t *>(&kopf), sizeof(kopf)) == sizeof(kopf)
-                    && f.write(fahrtStandPuffer, sizeof(fahrtStandPuffer)) == sizeof(fahrtStandPuffer);
+                    && f.write(fahrtStandPuffer, bytes) == bytes;
     f.close();
     if (ok) LittleFS.rename(fahrtNeu, fahrtStand);
 }
@@ -508,14 +514,16 @@ bool fahrtLade() {
     if (!LittleFS.exists(fahrtStand)) return false;
     File f = LittleFS.open(fahrtStand, FILE_READ);
     FahrtKopf kopf = {};
-    const bool gelesen = f && f.size() == sizeof(kopf) + sizeof(fahrtStandPuffer)
-                         && f.read(reinterpret_cast<uint8_t *>(&kopf), sizeof(kopf)) == sizeof(kopf)
-                         && f.read(fahrtStandPuffer, sizeof(fahrtStandPuffer)) == sizeof(fahrtStandPuffer);
+    const bool kopfOk = f && f.read(reinterpret_cast<uint8_t *>(&kopf), sizeof(kopf)) == sizeof(kopf);
+    const size_t bytes = kopf.version == 1 ? sizeof(Selbstvorhersage) : sizeof(fahrtStandPuffer);
+    const bool gelesen = kopfOk && (kopf.version == 1 || kopf.version == 2)
+                         && kopf.magie == fahrtMagie && kopf.groesse == bytes
+                         && f.size() == sizeof(kopf) + bytes && f.read(fahrtStandPuffer, bytes) == bytes;
     f.close();
-    if (!gelesen || kopf.magie != fahrtMagie || kopf.version != Selbstvorhersage::standVersion
-        || kopf.groesse != sizeof(fahrtStandPuffer)
-        || kopf.summe != fahrtSumme(fahrtStandPuffer, sizeof(fahrtStandPuffer))) return false;
+    if (!gelesen || kopf.summe != fahrtSumme(fahrtStandPuffer, bytes)) return false;
     if (!vorhersage.importiere(fahrtStandPuffer)) return false;
+    empfinden.beende();
+    if (kopf.version == 2 && !empfinden.importiere(fahrtStandPuffer + sizeof(Selbstvorhersage))) return false;
     fahrtTaktNr = kopf.takt;
     return true;
 }
@@ -526,6 +534,8 @@ void fahrtTakt(bool gueltig, int32_t temp, unsigned reiz, Zustand zustand, const
                      vorhersage.ueberrascht(), entscheidung.warnung, entscheidung.sofort, zustand, fahrtErster,
                      static_cast<unsigned>(esp_reset_reason()), fahrtBeiNull, vorhersage.vKurz(), vorhersage.vLang(),
                      vorhersage.hatFehler(), vorhersage.mittel(), vorhersage.grenze());
+    if (empfinden.aktiv() && gueltig && !empfinden.anlauf())
+        Fahrtsatz::empfinden(fahrtPuffer + fahrtGepuffert * Fahrtsatz::bytes, empfinden.gerade(), empfinden.woanders());
     fahrtErster = false;
     if (++fahrtGepuffert == Fahrtsatz::block) {
         fahrtSichere();
@@ -556,6 +566,15 @@ bool fahrtGewollt(bool setzen = false, bool wert = false) {
     return an;
 }
 
+// Eigener Schalter: erst EMPFINDEN 1, dann FAHRT 1. Ohne ihn bleibt Fahrt unverändert.
+bool fahrtEmpfinden(bool setzen = false, bool wert = false) {
+    Preferences nvs;
+    if (!nvs.begin("alex-lernlabor", false)) return false;
+    const bool ok = setzen ? nvs.putUChar("empfinden", wert ? 1 : 0) == 1 : (nvs.isKey("empfinden") && nvs.getUChar("empfinden", 0) == 1);
+    nvs.end();
+    return ok;
+}
+
 bool fuehre(const char *text) {
     strncpy(zeile, text, sizeof(zeile) - 1);
     zeile[sizeof(zeile) - 1] = '\0';
@@ -574,6 +593,10 @@ void fahrtStart() {
         vorhersage.starte();
         fahrtTaktNr = fahrtLogBytes() / Fahrtsatz::bytes;
     }
+    if (fahrtEmpfinden()) {
+        if (fahrtBeiNull || !empfinden.aktiv()) empfinden.starte();
+        else empfinden.neustart();
+    } else empfinden.beende();
     fahrtErster = true;
     fahrtGepuffert = 0;
     fahrtVoll = false;
@@ -596,6 +619,7 @@ bool verarbeiteZeile() {
     if (strcmp(zeile, "NEUER_LAUF") == 0) {
         knoten.neuerLauf();
         vorhersage.beende();
+        empfinden.beende();
         sichernAlle = 0;
         frischGeladen = false;
         ruhe();
@@ -636,6 +660,7 @@ bool verarbeiteZeile() {
             Serial.println("FAHRT,aus");
             return true;
         }
+        if (!fahrtEmpfinden(true, empfinden.aktiv())) return false;
         Serial.println("FAHRT,an");
         Serial.flush();
         delay(100);
@@ -688,7 +713,17 @@ bool verarbeiteZeile() {
         return true;
     }
 #endif
+    if (befehl("EMPFINDEN", rest)) {
+        uint32_t an;
+        if (koerperAn || !felder(rest, &an, 1) || an > 1) return false;
+        if (!an) { empfinden.beende(); Serial.println("EMPFINDEN,aus"); return true; }
+        vorhersage.starte();
+        empfinden.starte();
+        Serial.println("EMPFINDEN,ok,2,600,3600,3600,1800,0,600,200,100,1500,7200,500");
+        return true;
+    }
     if (befehl("VORHERSAGE", rest)) {
+        if (empfinden.aktiv()) return false;  // kein unbemerkter Wechsel des schnellen Eingangs
         // 1 beginnt die Selbstvorhersage bei null und meldet ihre Konstanten, 0 beendet sie.
         uint32_t an;
         if (koerperAn || !felder(rest, &an, 1) || an > 1) return false;

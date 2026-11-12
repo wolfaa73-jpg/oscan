@@ -178,7 +178,37 @@ def lies_vorhersagestart(zeile):
     return dict(zip(VORHERSAGE_FELDER, map(int, teile[2:])))
 
 
-NEBENZEILEN = ((b"SPEICHER,", ".speicher.csv", SPEICHER_KOPF, lies_speicherzeile),
+EMPFINDEN_KOPF = ("takt", "gerade", "woanders", "anlauf", "gueltig", "mass_gerade_mg", "mass_woanders_mg", "mittel_mg", "langsam_mg")
+EMPFINDEN_FELDER_V1 = ("version", "mittel_halbwert", "langsam_halbwert", "mass_gerade_halbwert", "anlauf", "wiederanlauf", "norm_ab", "boden_gerade_mg", "boden_woanders_mg", "hysterese_e3")
+
+EMPFINDEN_FELDER = EMPFINDEN_FELDER_V1 + ("mass_woanders_halbwert", "start_woanders_mg")
+
+
+def lies_empfindenstart(zeile):
+    teile = (zeile or b"").split(b",")
+    if len(teile) < 3 or teile[:2] != [b"EMPFINDEN", b"ok"] or teile[2] not in (b"1", b"2"):
+        return None
+    felder = EMPFINDEN_FELDER_V1 if teile[2] == b"1" else EMPFINDEN_FELDER
+    if len(teile) != 2 + len(felder) or not all(t.isdigit() for t in teile[2:]):
+        return None
+    return dict(zip(felder, map(int, teile[2:])))
+
+
+def lies_empfindenzeile(zeile):
+    try:
+        teile = zeile.decode("ascii").split(",")
+        if len(teile) != 10 or teile[0] != "EMPFINDEN":
+            raise ValueError
+        werte = [_ganzzahl(t, True) for t in teile[1:]]
+        if werte[0] < 1 or any(abs(x) > 30 for x in werte[1:3]) or any(x not in (0, 1) for x in werte[3:5]) or any(x < 0 for x in werte[5:7]):
+            raise ValueError
+    except (ValueError, UnicodeDecodeError):
+        raise ValueError("Ungültige Empfinden-Zeile") from None
+    return dict(zip(EMPFINDEN_KOPF, werte))
+
+
+NEBENZEILEN = ((b"EMPFINDEN,", ".empfinden.csv", EMPFINDEN_KOPF, lies_empfindenzeile),
+               (b"SPEICHER,", ".speicher.csv", SPEICHER_KOPF, lies_speicherzeile),
                (b"VORHERSAGE,", ".vorhersage.csv", VORHERSAGE_KOPF, lies_vorhersagezeile),
                (b"PIN,", ".pin.csv", PIN_KOPF, lies_pinzeile),
                (b"VERSUCH,", ".versuch.csv", VERSUCH_KOPF, lies_versuchszeile))
@@ -224,7 +254,7 @@ def lastdauern(saat, an_s, aus_s, anzahl):
 
 
 def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=1, leck=None, bremse=None,
-              fortsetzen=None, sichern_alle=0, melder=None, erkundung=None, vorhersage=False):
+              fortsetzen=None, sichern_alle=0, melder=None, erkundung=None, vorhersage=False, empfinden=False):
     """Körpermodus starten und jede Zeile mitschreiben. Gibt die Zahl der Takte zurück.
 
     last=(an_s, aus_s) lässt Kern 0 in diesem Rhythmus arbeiten. Mit einer Saat als drittem Wert
@@ -252,6 +282,10 @@ def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=
 
     Kommt statt einer Körperzeile etwas anderes, etwa das Startbanner nach einem Neustart,
     hebt <name>.abbruch.txt diese Zeile und alles danach auf, mit dem Grund des Neustarts."""
+    if empfinden:
+        if intervall_ms != 1000 or fortsetzen is not None:
+            raise ValueError("Empfinden-Aufnahme braucht 1000 ms und einen frischen Lauf")
+        vorhersage = True
     if not 100 <= intervall_ms < 2**32:
         raise ValueError("Das Intervall muss mindestens 100 ms betragen.")
     if last is not None and not (len(last) in (2, 3) and all(type(s) is int and 0 <= s <= 3600 for s in last[:2])
@@ -305,10 +339,12 @@ def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=
             befehle.append(("ERKUNDUNG " + " ".join(map(str, erkundung)), None, "Erkundung nicht gestartet"))
         if vorhersage:
             befehle.append(("VORHERSAGE 1", lies_vorhersagestart, "Vorhersage nicht gestartet"))
+        if empfinden:
+            befehle.append(("EMPFINDEN 1", lies_empfindenstart, "Empfinden nicht gestartet"))
         if fortsetzen is not None:
             befehle.append(("LADEN", b"GELADEN", "Kein gesicherter Stand geladen"))
         befehle.append((f"KOERPER {intervall_ms}", b"KOERPER,an", "Körpermodus nicht gestartet"))
-        klassen = konstanten = None
+        klassen = konstanten = empfindenkonstanten = None
         for befehl, bestaetigung, fehler in befehle:
             port.write(befehl.encode("ascii") + b"\n")
             erhalten = antwort(port, frist=3.0)
@@ -317,8 +353,12 @@ def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=
                 if klassen is None:
                     raise ValueError(f"{fehler}, erhalten {erhalten!r}.")
             elif callable(bestaetigung):
-                konstanten = bestaetigung(erhalten)
-                if konstanten is None:
+                gelesen = bestaetigung(erhalten)
+                if bestaetigung is lies_empfindenstart:
+                    empfindenkonstanten = gelesen
+                else:
+                    konstanten = gelesen
+                if gelesen is None:
                     raise ValueError(f"{fehler}, erhalten {erhalten!r}.")
             elif erhalten != bestaetigung:
                 raise ValueError(f"{fehler}, erhalten {erhalten!r}.")
@@ -331,6 +371,8 @@ def aufnehmen(port, regel, grenzen, intervall_ms, takte, ziel, last=None, blick=
             meta["erkundung"] = dict(zip(ERKUNDUNG_FELDER, erkundung), pins={str(p): k for p, k in klassen.items()})
         if vorhersage:
             meta["vorhersage"] = konstanten
+        if empfinden:
+            meta["empfinden"] = empfindenkonstanten
         with ziel.with_suffix(".json").open("x", encoding="utf-8") as datei:
             json.dump(meta, datei, ensure_ascii=False, indent=1)
         with ziel.open("x", encoding="utf-8", newline="") as datei, ExitStack() as nebendateien:
@@ -488,7 +530,38 @@ def pruefen(pfad):
             raise ValueError(f"Zeile {nummer}: Entscheidung weicht von Python ab.")
     erkundung_pruefen(pfad, meta, werte)
     vorhersage_pruefen(pfad, meta, werte)
+    empfinden_pruefen(pfad, meta, werte)
     return meta, werte
+
+
+def empfinden_pruefen(pfad, meta, werte):
+    """Exakt jede Zeile nachrechnen, einschließlich Anlauf, Fehlwert und Normalmaß."""
+    geraet = nebendatei(pfad, ".empfinden.csv", EMPFINDEN_KOPF)
+    konstanten = meta.get("empfinden")
+    if konstanten is None:
+        if geraet:
+            raise ValueError("Empfinden-Datei ohne Konstanten in der JSON")
+        return None
+    import empfinden as em
+    felder = EMPFINDEN_FELDER
+    if konstanten.get("version") == 1:
+        from referenzen import empfinden_v1 as em
+        felder = EMPFINDEN_FELDER_V1
+    import selbstvorhersage as sv
+    if tuple(konstanten.get(f) for f in felder) != em.KONSTANTEN:
+        raise ValueError("Empfinden-Konstanten passen nicht zur Referenz")
+    if meta.get("intervall_ms") != 1000 or meta.get("fortsetzung"):
+        raise ValueError("Empfinden-Aufnahme muss frisch und im Sekundentakt sein")
+    modell, v, soll = em.Empfinden(), sv.Selbstvorhersage(), []
+    for w in werte:
+        z = v.takt(w["temp_dc"], w["reiz"] & 1)
+        soll.append(em.zeile(w["takt"], modell.takt(w["temp_dc"], None if z is None else z["mittel"])))
+    if len(geraet) != len(soll):
+        raise ValueError("Empfinden-Zeilenzahl stimmt nicht")
+    for nr, (ist, erwartet) in enumerate(zip(geraet, soll), 1):
+        if ist != erwartet:
+            raise ValueError(f"Empfinden weicht in Zeile {nr} ab: {ist} statt {erwartet}")
+    return len(soll)
 
 
 def vorhersage_pruefen(pfad, meta, werte):
@@ -683,6 +756,7 @@ def main():
                         "kühlt, wenn er über seine letzten FENSTER Versuche sicher um mehr als SCHWELLE Zehntelgrad "
                         "kühlt. Mit Kühler regelt der Knoten selbst und prüft nach je PRUEFE Takten nach. SAAT "
                         "bestimmt die zufällige Reihenfolge")
+    a.add_argument("--empfinden", action="store_true", help="Beide Empfindungsschichten samt Selbstvorhersage aufzeichnen")
     a.add_argument("--vorhersage", action="store_true",
                    help="Selbstvorhersage: Der Knoten sagt seine Temperatur 10 und 60 Takte voraus, lernt dabei und "
                         "meldet, wenn er sich verschätzt. Beginnt bei null")
@@ -714,7 +788,7 @@ def main():
                                    tuple(arg.last) if arg.last else None, arg.blick,
                                    tuple(arg.leck) if arg.leck else None, tuple(arg.bremse) if arg.bremse else None,
                                    arg.fortsetzen, arg.sichern_alle, melder,
-                                   tuple(arg.erkundung) if arg.erkundung else None, arg.vorhersage)
+                                   tuple(arg.erkundung) if arg.erkundung else None, arg.vorhersage, arg.empfinden)
             print(f"{anzahl} Takte aufgezeichnet in {arg.datei}.")
         elif arg.aktion == "pruefen":
             meta, werte = pruefen(arg.datei)
@@ -724,6 +798,9 @@ def main():
             if soll is not None:
                 print(erkundung_bericht(meta, soll))
                 print("Alle Pin- und Versuchszeilen stimmen mit selbsterkundung.py überein.")
+            e = empfinden_pruefen(arg.datei, meta, werte)
+            if e is not None:
+                print(f"Empfinden: alle {e} Zeilen exakt gleich wie die Referenz.")
             v = vorhersage_pruefen(arg.datei, meta, werte)
             if v is not None:
                 zeilen, gleich, groesste, strecken = v
