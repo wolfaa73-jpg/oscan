@@ -1,0 +1,26 @@
+{
+  "phase": "zusaetzliche_Prueferabsicherung_nach_Kontrolllauf",
+  "freeze_commit": "278ebad39ab3850ef8c7b4349e4a6e30b8a4b27d",
+  "quellhashes": {
+    "ideenlabor.py": "7763fdfe4591166f1a1bea31946d10102bfb713f02d5d6775a0400948fbb1b39",
+    "ideenlabor_basis.py": "739069a1abe109779cf0af59b70a2539e732a06915a2b8a30cc566968ec1eba7",
+    "ideenlabor_pruefer.py": "90bffdc59a6f90ce54ba389174198d12dcbaa664d67dc51fd22658127c9ffaf3",
+    "ideenlabor_a.py": "f81a36c48d28657daaefc095841a18bbe02f68a9c7983aa6943e0151de170542",
+    "ideenlabor_b.py": "8cec3bcbd9ba0eac7b972b2f5c9bac70fa7d1967ef66588b15b76ffdb335abe4",
+    "ideenlabor_c.py": "0222f68de386305fc07cf5226a8bf1964348080755a718b85692f8feffcd5bf5",
+    "test_ideenlabor_pruefer.py": "ffbb44b8549298931206d99ecaaa4d30257b480e9ca589a5ba629a351f69be0a",
+    "test_ideenlabor.py": "8817e68f8c8a7f93b078147a13b142b284dd9fd3babc0dae96e3f0379fd808a1",
+    "test_ideenlabor_c.py": "569decbd91998fcb47b1a4451bc30c6accc2b2554e40969c348dc0b30deb39dd",
+    "IDEEN-DANIEL.md": "d5336a8812f53e6cfe0abe25e8228d55b57638bff495c88360fbc2e313d2b512"
+  },
+  "zustandspruefungen_handfolgen": 73728,
+  "gepruefte_rohzeilen": 9600,
+  "neue_kontrollziehungen": 0,
+  "kandidaten_geaendert": false,
+  "urspruenglicher_pruefer_erkannte_gekuerzten_serializer": false,
+  "unabhaengige_pruefung_bestanden": true,
+  "nachpruefer_hashes": {
+    "ideenlabor_speicherpruefung.py": "3dd6bd437098f9fea717374209a25a2928bc8b37aea4bbf6352e21a0ed3d12e9",
+    "test_ideenlabor_speicherpruefung.py": "3e91106eb0d5eaec5ad9c86fcc2ac9aeab97e4d01b1d66664f4a6bea13cb8b5c"
+  }
+}
