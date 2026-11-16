@@ -49,6 +49,9 @@ EmpfindenPaket::Zustand zustand, gezeichnet;
 uint8_t puffer[Fahrtsatz::block * FahrtV2::bytes], standPuffer[Selbst::standBytes];
 unsigned gepuffert = 0, grund = 0;
 bool dateisystem = false, voll = false, lichtAn = true, hell = false, zeilen = false;
+// Nach einem Speicherfehler keine weiteren Dateien verändern. Erfolgreiches Leeren
+// oder ein Neustart mit lesbarem Bestand gibt das Schreiben wieder frei.
+bool speicherFehler = false;
 bool zahlen = false, letzteTaste = true, stabileTaste = true, neuZeichnen = true;
 uint32_t tasteSeit = 0, naechsterTakt = 0;
 size_t sendeOrt = 0, sendeEnde = 0;
@@ -62,12 +65,16 @@ uint32_t summe(const uint8_t *p, size_t n, uint32_t s = 0) {
     return s;
 }
 
-size_t logBytes() {
-    if (!dateisystem || !LittleFS.exists(logPfad)) return 0;
+// Fehlende Datei und leere Datei sind gültig; ein Öffnungsfehler ist keine Länge 0.
+bool logBytes(size_t &n) {
+    n = 0;
+    if (!dateisystem) return false;
+    if (!LittleFS.exists(logPfad)) return true;
     File f = LittleFS.open(logPfad, FILE_READ);
-    const size_t n = f ? f.size() : 0;
+    if (!f) return false;
+    n = f.size();
     f.close();
-    return n;
+    return true;
 }
 
 bool einstellung(const char *name, bool vorgabe, bool setzen = false, bool wert = false) {
@@ -81,9 +88,11 @@ bool einstellung(const char *name, bool vorgabe, bool setzen = false, bool wert 
 
 // Erst die Sätze, dann der Stand über eine zweite Datei: Ein Stromausfall mittendrin lässt den alten Stand.
 void sichere() {
-    if (!dateisystem) { voll = true; return; }
+    if (!dateisystem || speicherFehler) { voll = true; return; }
+    size_t n;
+    if (!logBytes(n) || n % FahrtV2::bytes) { speicherFehler = voll = true; return; }
     if (!voll) {
-        bool ok = logBytes() % FahrtV2::bytes == 0 && LittleFS.totalBytes() - LittleFS.usedBytes() > reserve;
+        bool ok = LittleFS.totalBytes() - LittleFS.usedBytes() > reserve;
         if (ok) {
             File f = LittleFS.open(logPfad, FILE_APPEND);
             ok = f && f.write(puffer, sizeof(puffer)) == sizeof(puffer);
@@ -115,14 +124,18 @@ bool lade() {
 void beginne(unsigned neustartgrund) {
     grund = neustartgrund;
     gepuffert = 0;
-    if (!lade()) selbst.beginne(static_cast<uint32_t>(logBytes() / FahrtV2::bytes));
-    voll = !dateisystem || logBytes() % FahrtV2::bytes != 0;
+    size_t n;
+    const bool logOk = logBytes(n);
+    if (!lade()) selbst.beginne(logOk ? static_cast<uint32_t>(n / FahrtV2::bytes) : 0);
+    speicherFehler = !logOk || n % FahrtV2::bytes != 0;
+    voll = speicherFehler;
     lichtplan.starte(20261112u ^ (selbst.takt * 2654435761u));
     hell = false;
     lcd.setBrightness(lichtDunkel);
     Serial.print("SELBST,laeuft,");
     Serial.print(selbst.takt);
     Serial.println(selbst.beiNull ? ",null" : ",geladen");
+    if (speicherFehler) Serial.println("SELBST,speicherfehler");
 }
 
 void zeichne() {
@@ -167,7 +180,9 @@ void takt() {
     const bool gueltig = !isnan(grad);
     const int32_t temp = gueltig ? static_cast<int32_t>(lroundf(grad * 10.0f)) : 0;
     zustand = selbst.schritt(gueltig, temp, hell, grund, voll, puffer + gepuffert * FahrtV2::bytes);
-    if (zeilen) {
+    // Der Mess-/Lerntakt läuft weiter. Nur Diagnosezeilen dürfen den Hexexport
+    // nicht unterbrechen; der Schalter bleibt für die Zeit danach erhalten.
+    if (zeilen && !sendet) {
         if (*selbst.vorhersage.zeile()) Serial.println(selbst.vorhersage.zeile());
         Serial.println(selbst.empfinden.zeile());
     }
@@ -229,7 +244,8 @@ bool befehl() {
     if (!dateisystem) return false;
     if (!strcmp(eingabe, "FAHRTSTAND")) {
         // wie am Knoten: gewollt, Bytes im Export, frei, Takt, voll, Satzgröße, Kopfgröße; dazu 1 = läuft weiter
-        const size_t n = logBytes();
+        size_t n;
+        if (!logBytes(n) || n % FahrtV2::bytes) { speicherFehler = voll = true; return false; }
         snprintf(text, sizeof(text), "FAHRT,1,%lu,%lu,%lu,%d,%u,%u,1",
                  static_cast<unsigned long>(n ? n + FahrtV2::kopfBytes : 0),
                  static_cast<unsigned long>(LittleFS.totalBytes() - LittleFS.usedBytes()),
@@ -238,8 +254,9 @@ bool befehl() {
         return true;
     }
     if (!strcmp(eingabe, "FAHRTLOG")) {
-        const size_t n = logBytes();
-        if (sendet || n % FahrtV2::bytes) return false;
+        if (sendet) return false;
+        size_t n;
+        if (!logBytes(n) || n % FahrtV2::bytes) { speicherFehler = voll = true; return false; }
         Serial.print("FAHRTLOG,"); Serial.println(static_cast<unsigned long>(n ? n + FahrtV2::kopfBytes : 0));
         sendeSumme = 0;
         if (!n) { Serial.println("FAHRTLOG,ende,0"); return true; }
@@ -254,11 +271,17 @@ bool befehl() {
     if (!strcmp(eingabe, "FAHRTLEER")) {
         // Protokoll und Gedächtnis löschen, danach beginnt das Display bei null.
         if (sendet) return false;
-        for (const char *pfad : {logPfad, standPfad, standNeu})
-            if (LittleFS.exists(pfad)) LittleFS.remove(pfad);
-        Serial.println("FAHRT,leer");
+        for (const char *pfad : {logPfad, standPfad, standNeu}) {
+            if (LittleFS.exists(pfad) && (!LittleFS.remove(pfad) || LittleFS.exists(pfad))) {
+                // Es können bereits einzelne Dateien fehlen. Den RAM-Stand nicht
+                // zurücksetzen und den restlichen Bestand nicht weiter überschreiben.
+                speicherFehler = voll = true;
+                return false;
+            }
+        }
         beginne(Selbst::pause);
         neuZeichnen = true;
+        Serial.println("FAHRT,leer");
         return true;
     }
     return false;
