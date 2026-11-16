@@ -1,0 +1,32 @@
+{
+  "basis": "9d2e103d112dc87591c87505e6ed15797d06663a",
+  "tests": {
+    "gesamt": 370,
+    "erfolgreich": true,
+    "dauer_s": 81.872,
+    "neue_tests": 9,
+    "vor_korrektur": {
+      "tests": 9,
+      "assertion_fehlversuche_inkl_teilfaelle": 8,
+      "fehler": 1
+    }
+  },
+  "build": {
+    "projekt": "esp32/Selbstgesicht",
+    "umgebung": "guition-c3",
+    "erfolgreich": true,
+    "ram_bytes": 24508,
+    "flash_bytes": 389818,
+    "platformio_core": "6.1.18"
+  },
+  "hardware_geflasht": false,
+  "physische_flashfehler_geprueft": false,
+  "quellen": {
+    "esp32/Selbstgesicht/src/main.cpp": "d0f5d62d49a2dd5911fd2eba57e9355a98b4e4a1c4f55e99c0530c2fcc056539",
+    "test_selbstgesicht_flash.py": "0e41828ae1fae12726c379e3247cb618fc36ebc2e5c51298fc3c25c6ac00ec53",
+    "esp32/Selbstgesicht/Selbst.h": "b1bed7e70560e631a8a55c630b1c084ff54ea9502202b5209da125cd227f80bc",
+    "test_selbstgesicht.py": "07601e0d840559f7f2bce6f135155a1784109d99d4fcfc35d37d21706a55df4c",
+    "fahrt.py": "f2f184331e4c2c402fb147fe61690691e8a9b3e2fabfc344ed24c8d9021dd8db",
+    "esp32/Selbstgesicht/platformio.ini": "25e1ceb1d0149a0a10482bd0e52f844a2db2986aae91a9f41e0bb0380fdcce01"
+  }
+}
