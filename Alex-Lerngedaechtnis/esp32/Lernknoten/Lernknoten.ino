@@ -787,6 +787,15 @@ bool verarbeiteZeile() {
         Serial.println("FAHRT,leer");
         return true;
     }
+    if (strcmp(zeile, "FAHRTLOGLEER") == 0) {
+        // Nur das Protokoll löschen, erst nach dem Abholen. Stand und Takt bleiben, die nächsten Sätze setzen fort.
+        if (koerperAn || !fahrtDateisystem()) return false;
+        for (const char *pfad : {fahrtLog, fahrtLogV2})
+            if (LittleFS.exists(pfad) && (!LittleFS.remove(pfad) || LittleFS.exists(pfad))) return false;
+        fahrtVoll = !fahrtLogKorrekt();
+        Serial.println("FAHRT,logleer");
+        return true;
+    }
 #endif
     if (befehl("FUNK", rest)) {
         uint32_t modus;

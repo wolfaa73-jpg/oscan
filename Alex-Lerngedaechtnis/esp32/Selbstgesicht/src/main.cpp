@@ -6,6 +6,7 @@
 //   LICHT 0|1     eigene Last aus oder an (gemerkt). Aus: Das Licht bleibt gedimmt.
 //   ZEILEN 0|1    je Takt die Zeilen VORHERSAGE und EMPFINDEN mitschreiben (nicht gemerkt)
 //   FAHRTSTAND, FAHRTLOG, FAHRTLEER, STOP   wie am Lernknoten, damit fahrt.py das Protokoll holen kann.
+//   FAHRTLOGLEER  nur das Protokoll löschen: Gedächtnis und Takt bleiben, das Display schreibt weiter.
 //                 Anders als der Knoten hält das Display dabei nicht an: STOP antwortet nur, und das
 //                 Protokoll geht stückweise zwischen den Takten hinaus.
 #include <Arduino.h>
@@ -282,6 +283,21 @@ bool befehl() {
         beginne(Selbst::pause);
         neuZeichnen = true;
         Serial.println("FAHRT,leer");
+        return true;
+    }
+    if (!strcmp(eingabe, "FAHRTLOGLEER")) {
+        // Nur das Protokoll löschen, erst nach dem Abholen. Gedächtnis, Takt und die noch ungeschriebenen
+        // Sätze bleiben; die nächsten Sätze setzen die Takte fort. Ein Lösch- oder Lesefehler sperrt das
+        // Schreiben wie bei FAHRTLEER, ein erneuter Auftrag gibt es wieder frei.
+        if (sendet) return false;
+        if (LittleFS.exists(logPfad) && (!LittleFS.remove(logPfad) || LittleFS.exists(logPfad))) {
+            speicherFehler = voll = true;
+            return false;
+        }
+        size_t n;
+        if (!logBytes(n)) { speicherFehler = voll = true; return false; }
+        speicherFehler = voll = false;
+        Serial.println("FAHRT,logleer");
         return true;
     }
     return false;
