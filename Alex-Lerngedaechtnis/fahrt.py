@@ -6,6 +6,7 @@ jeden Takt in seinen Flash (Format in esp32/Lernknoten/Fahrt.h) und behält die 
     fahrt.py aus    --port PORT            Fahrtmodus beenden
     fahrt.py holen  --port PORT ziel.bin   Protokoll abholen (löscht nichts, überschreibt nichts)
     fahrt.py leeren --port PORT --ja       Protokoll und Stand auf dem Gerät löschen
+    fahrt.py logleeren --port PORT --ja    nur das Protokoll löschen, das Gedächtnis bleibt (erst abholen!)
     fahrt.py lesen  ziel.bin [ziel.csv]    Protokoll zusammenfassen, wahlweise als CSV schreiben
 
 Jeder Befehl hält den Körpermodus an (STOP). Danach läuft der Fahrtmodus erst nach dem nächsten Einschalten
@@ -161,7 +162,7 @@ def bericht(liste):
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest="aktion", required=True)
-    for name in ("stand", "an", "aus", "holen", "leeren"):
+    for name in ("stand", "an", "aus", "holen", "leeren", "logleeren"):
         a = sub.add_parser(name)
         a.add_argument("--port", required=True)
         if name == "an":
@@ -169,7 +170,7 @@ def main(argv=None):
             a.add_argument("--empfinden", action="store_true", help="Empfinden im Fahrtmodus mitführen")
         if name == "holen":
             a.add_argument("ziel", type=Path)
-        if name == "leeren":
+        if name in ("leeren", "logleeren"):
             a.add_argument("--ja", action="store_true", help="wirklich löschen")
     a = sub.add_parser("lesen")
     a.add_argument("datei", type=Path)
@@ -189,7 +190,7 @@ def main(argv=None):
             return 0
         if arg.aktion == "holen" and arg.ziel.exists():
             raise ValueError(f"{arg.ziel} gibt es schon.")
-        if arg.aktion == "leeren" and not arg.ja:
+        if arg.aktion in ("leeren", "logleeren") and not arg.ja:
             raise ValueError("Zum Löschen --ja angeben, und vorher abholen.")
         import serial
         with serial.Serial(arg.port, 115200, timeout=0.6, write_timeout=2) as port:
@@ -219,6 +220,9 @@ def main(argv=None):
             elif arg.aktion == "leeren":
                 port.write(b"FAHRTLEER\n")
                 warte(port, b"FAHRT,leer", frist=20.0)
+            elif arg.aktion == "logleeren":
+                port.write(b"FAHRTLOGLEER\n")
+                warte(port, b"FAHRT,logleer", frist=20.0)
             s = stand(port)
             print(f"Fahrtmodus {'gemerkt' if s['gewollt'] else 'aus'}, {s['saetze']} Sätze im Protokoll, "
                   f"{s['frei_bytes'] // 1024} KB frei (reicht für etwa {max(0, s['frei_bytes'] - 65536) / s['satzbytes'] / 3600:.0f} h), "
