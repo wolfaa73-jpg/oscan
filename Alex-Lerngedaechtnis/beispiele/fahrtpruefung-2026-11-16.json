@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "eingabe": {
+    "bytes": 681600,
+    "sha256": "541de0bfcc7d2511ef40caa4817901970caaa1226f1819ee93cd3d21b0da945f",
+    "format": "v1",
+    "erwartet": "v1"
+  },
+  "saetze": 42600,
+  "dekodiert": 42600,
+  "neustarts": 12,
+  "neustarts_bei_null": 1,
+  "empfinden_saetze": 0,
+  "taktuebergaenge_geprueft": 42599,
+  "erster_takt": 1,
+  "letzter_takt": 42600,
+  "fehlende_taktnummern": 0,
+  "befunde": {},
+  "beispiele": [],
+  "grenzen": [
+    "Kein Nachweis gegen beliebige Bitfehler: Das Dateiformat enthält keine eigene vollständige Prüfsumme.",
+    "SHA-256 identifiziert die geprüften Bytes; ohne vorab bekannten Sollwert ist das keine Integritätsbestätigung.",
+    "Nicht gesicherte Takte vor Stromausfall und stromlose Zeit sind im Protokoll nicht rekonstruierbar.",
+    "Ein lückenloser Taktzähler belegt weder einen Sekundentakt noch die Übereinstimmung mit dem gespeicherten Lernstand.",
+    "V1 hat keine Kennung; bei bekanntem V2-Export --format v2 wählen, damit ein beschädigter Kopf nicht als V1 gelesen wird."
+  ],
+  "beispiele_ausgelassen": 0,
+  "status": "unauffaellig"
+}
